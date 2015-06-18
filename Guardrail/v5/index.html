@@ -1,0 +1,493 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!--<html manifest="offlineCache.manifest">-->
+<html>
+<head>
+<title>Asset Collection</title>
+<meta content='user-scalable=0' name='viewport'>
+<link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+<link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+<style type="text/css">
+    body {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -o-user-select: none;
+    }
+    #overlay {
+        display: none;
+        width: 100%;
+        height: 200%;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        background-color:#000;
+        opacity: .75
+    }
+    #wait {
+        z-index:1001;
+        width: 100%;
+        position: absolute;
+        
+        top: 50%;
+        display: none;
+        color: white;
+        text-align: center;
+    }
+    div {
+        border-style: solid;
+        border-width: 0px;
+        text-align: center;
+        font-size: 40px;
+    }
+    button {
+        display: block;
+        font-size:60px;
+        width: 90%;
+        padding: 10px;
+        margin: 20 auto;
+        -webkit-appearance: none;
+        -webkit-border-radius: 0;
+    }
+    td {
+        width: 50%;
+    }
+    table {
+        border-style: solid;
+        border-width: 0px;
+        text-align: center;
+        margin-left:auto; 
+        margin-right:auto;
+        width: 95%;
+    }
+    button:ACTIVE {
+        background: red;
+    }
+    #header {
+        width: 100%;
+    }
+    #outputLocation {
+        float:left;
+        position: relative;
+        left: 30px;
+    }
+    #pointStatus {
+        float:right;
+        position: relative;
+        right: 30px;
+    }
+    #dropdownDist, #dropdownAsset {
+        width: 100%;
+        margin: auto;
+    }
+</style>
+<link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
+<script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+<script src="http://js.arcgis.com/3.12/"></script>
+<script type="text/javascript">
+    require(["esri/geometry/Point","esri/SpatialReference","esri/geometry/webMercatorUtils", "dijit/form/Select"], function(Point, SpatialReference, webMercatorUtils) {});
+    var deviceinfo;
+    var latty=0;
+    var longy=0;
+    var accy;
+    var alty;
+    var heady;
+    var speedy;
+    var d;
+    var t;
+    var pos;		 
+    var logger;		 
+    var previewShow = false;
+    var totalpoints = 0;
+    var district = "";
+
+    function device(){
+        if(navigator){
+        deviceinfo = navigator.platform;
+        deviceinfo = deviceinfo.replace(' ', '');
+        }
+        else{
+        deviceinfo = "NOT AVAILABLE";
+        }
+    }
+
+    function startupGPS () {
+        if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+
+        }
+        else {
+            var x = document.getElementById("outputLocation");
+            x.style.color = "red";
+            x.innerHTML="Geolocation is not supported by this browser.";	
+        }
+}
+
+    function showPosition(position) {
+        d = new Date();
+        var m = d.getMonth() + 1;
+        var day = d.getDate();
+        var yr = d.getFullYear();
+        var hr = d.getHours();
+        var min = d.getMinutes();
+        var sec = d.getSeconds();
+        t = yr.toString() + "-" + m.toString() + "-" + day.toString() + "-" + hr.toString() + "-" + min.toString() + "-" + sec;
+        
+        pos = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+        latt = position.coords.latitude;
+        long = position.coords.longitude;
+        latty = latt.toFixed(5);
+        longy = long.toFixed(5);
+        accy = position.coords.accuracy * 3.28084;
+        alty = position.coords.altitude * 3.28084;
+        heady = position.coords.heading;
+        var spd = position.coords.speed * 2.23694;
+        speedy = Math.round(spd);
+        if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+            var x = document.getElementById("outputLocation");
+            x.style.color = "green";
+            x.innerHTML = latty + "," + longy;
+        }
+    }
+    
+    function beep() {
+        var snd = new  Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");  
+        snd.play();
+    }
+    
+    function distSelected() {
+        district = document.getElementById("distSelect").value;
+        if (document.getElementById("distSelect").value !== ""){
+            document.getElementById("dropdownAsset").style.display = "block";
+            document.getElementById("dropdownDist").style.display = "none";
+        }
+        else {
+            document.getElementById("dropdownAsset").style.display = "none";
+            document.getElementById("dropdownDist").style.display = "block";
+        }
+    }
+    
+    function assetSelected() {
+        if (document.getElementById("assetSelect").value === "GET"){
+            document.getElementById("getContainer").style.display = "block";
+            document.getElementById("slContainer").style.display = "none";
+        }
+        else if (document.getElementById("assetSelect").value === "SL") {
+            document.getElementById("getContainer").style.display = "none";
+            document.getElementById("slContainer").style.display = "block";
+        }
+        else if (document.getElementById("assetSelect").value === "CD") {
+            document.getElementById("dropdownAsset").style.display = "none";
+            document.getElementById("dropdownDist").style.display = "block";
+            
+            document.getElementById("getContainer").style.display = "none";
+            document.getElementById("slContainer").style.display = "none";
+        }
+        else {
+            document.getElementById("getContainer").style.display = "none";
+            document.getElementById("slContainer").style.display = "none";
+        }
+    }
+
+
+    function collectPoint(value) {
+        beep();	
+        var y = document.getElementById("pointStatus");	
+        var intKEY = totalpoints;
+        var featureService = document.getElementById("assetSelect").value;
+        if (featureService === "GET"){
+            var type = value.substring(0, value.length-1);
+            var side = value.slice(-1);
+            var POD=[type,side,t,accy,speedy,latty,longy,deviceinfo, district, featureService];
+        }
+        else if (featureService === "SL") {
+            var POD=[value,t,accy,speedy,latty,longy,deviceinfo, district, featureService];
+        }
+        
+        
+        if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+            logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+            totalpoints += 1;
+            y.innerHTML=totalpoints + " point(s) logged.";    
+        }
+        else {
+            y.innerHTML=totalpoints + " point(s) logged."; 
+        }
+    }
+
+    function clearStorage(){
+        var yes = confirm("Discard all logged points?");
+        if (yes === true) {
+            if (totalpoints > 0) {
+                localStorage.clear();
+                totalpoints = 0;
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+                beep();
+            }
+            else {
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+            }
+        }
+    }
+
+    function DeleteLast() {
+        var yes = confirm("Delete last logged point?");
+        if (yes === true) {
+            var last = localStorage.length;
+            last = last - 1;
+            var key = localStorage.key(last);
+            localStorage.removeItem(key);
+            if (totalpoints > 0) {
+                totalpoints = totalpoints - 1;
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+                beep();
+            }
+            else {
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+            }
+        }
+    }
+
+    function uploadStorage() {
+        beep();
+        var x = document.getElementById("uploadStatus");
+        var Buttons = document.getElementsByTagName("button");
+        for (var i = 0; i < Buttons.length; i++) {
+            Buttons[i].disabled = true;
+        }
+        if (localStorage.length > 0) {
+            x.innerHTML = 'Uploading Data, please wait...';
+            document.getElementById('overlay').style.display='block';
+            document.getElementById('wait').style.display='block';
+        }
+        setTimeout(function(){
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp=new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+                   document.getElementById("uploadStatus").innerHTML = xmlhttp.responseText;
+                }
+            };
+
+            var featureArray = [];
+            for (var i=0, len = localStorage.length; i  <  len; i++){
+                var key = localStorage.key(i);
+                feature = localStorage.getItem(key);
+                featureArray.push(feature);
+            }
+
+            if(featureArray.length > 0){
+                //Service URL 
+//                var serviceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0/addFeatures?f=json&features=";
+                //Build the String
+                var counter = 0;
+                var theText = "";
+                for (var i=0, len = featureArray.length; i  <  len; i++) {
+                    var pnt = JSON.parse(featureArray[i]);
+                    var featureService = pnt[pnt.length - 1];
+                    if (featureService === "GET"){
+//                var serviceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0/addFeatures?f=json&features=";
+                    }
+                    else if (featureService === "SL"){
+//                var serviceURL = "";                        
+                    }
+                    
+                    var dist = pnt[pnt.length - 2];
+                    var newPT = esri.geometry.lngLatToXY(pnt[6],pnt[5]);
+                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'TreatmentType':'" + pnt[0] + "','RoadbedSide':'" + pnt[1] + "','Date':'" + pnt[2] + "','AccuracyFeet':'" + pnt[3] + "','Speed':'" + pnt[4] + "','Device':'" + pnt[7] + "','Latitude':'" + pnt[5] + "','Longitude':'" + pnt[6] + "'}}";           
+                    theText = serviceURL + "[" + theText + "]";
+                    xmlhttp.open("POST",theText,false);
+                    try {
+                        xmlhttp.send();
+                        if (xmlhttp.status >= 200 && xmlhttp.status < 304) {
+                            if (xmlhttp.responseText.slice(-7) === "true}]}"){
+                                counter += 1;
+                            }
+                        } else {
+                            document.getElementById('overlay').style.display='none';
+                            document.getElementById('wait').style.display='none';
+                            x.innerHTML = 'Upload Failed. Try again with an internet connection.';
+                            for (var i = 0; i < Buttons.length; i++) {
+                                Buttons[i].disabled = false;
+                            }
+                            alert("Upload Failed. Try again with an internet connection.");
+                        }
+                    } catch (e) {
+                        document.getElementById('overlay').style.display='none';
+                        document.getElementById('wait').style.display='none';
+                        x.innerHTML = 'Upload Failed. Try again with an internet connection.';
+                        for (var i = 0; i < Buttons.length; i++) {
+                            Buttons[i].disabled = false;
+                        }
+                        alert("Upload Failed. Try again with an internet connection.");
+                    }
+                }
+                if (counter === featureArray.length){
+                    document.getElementById('overlay').style.display='none';
+                    document.getElementById('wait').style.display='none';
+                    localStorage.clear();
+                    totalpoints = 0;
+                    var y = document.getElementById("pointStatus");
+                    y.innerHTML=totalpoints + " point(s) logged.";
+                    beep();
+                    x.style.color = "green";
+                    x.innerHTML = 'Data uploaded successfully!';
+                    for (var i = 0; i < Buttons.length; i++) {
+                        Buttons[i].disabled = false;
+                    }
+                    alert("Data uploaded successfully");
+                    setTimeout(function(){
+                        x.style.color = "initial";
+                        x.innerHTML = '';
+                    }, 5000);
+                }
+            }
+            else{
+                document.getElementById('overlay').style.display='none';
+                document.getElementById('wait').style.display='none';
+                for (var i = 0; i < Buttons.length; i++) {
+                    Buttons[i].disabled = false;
+                }
+                x.style.color = "initial";
+                x.innerHTML = 'No data collected. Please collect data and try to upload again.';
+                setTimeout(function(){
+                    x.innerHTML = '';
+                }, 5000);
+            }  
+        }, 1);
+    }
+    
+    function start() {
+        startupGPS();
+        device();
+        totalpoints = localStorage.length;
+        var y = document.getElementById("pointStatus");
+        y.innerHTML=totalpoints + " point(s) logged.";
+        try {
+            localStorage.setItem('mod', 'mod');
+            localStorage.removeItem('mod');
+        }
+        catch (e) {
+            alert('You are in Private Browsing mode. Please turn off Private Browsing to use this application.');
+        }
+      
+    }
+    window.onload = start;
+</script>
+</head>
+    <body ontouchstart="" class="claro">
+        <div id="wait">Uploading Data, please wait...</div>
+        <div id="overlay"></div>
+        <div id="header">
+            <div id="outputLocation"></div>
+            <div id="pointStatus"></div>
+        </div>
+        <div id="dropdowns">
+            <div id="dropdownDist">
+                <br>
+                <select style="font-size: large;" id="distSelect" onchange="distSelected()">
+                <option value="">Select a District</option>    <option value='Abilene'>Abilene</option>   <option value='Amarillo'>Amarillo</option>	<option value='Atlanta'>Atlanta</option>	<option value='Austin'>Austin</option>	<option value='Beaumont'>Beaumont</option>	<option value='Brownwood'>Brownwood</option>	<option value='Bryan'>Bryan</option>	<option value='Childress'>Childress</option>	<option value='Corpus Christi'>Corpus Christi</option>	<option value='Dallas'>Dallas</option>	<option value='El Paso'>El Paso</option>	<option value='Fort Worth'>Fort Worth</option>	<option value='Houston'>Houston</option>	<option value='Laredo'>Laredo</option>	<option value='Lubbock'>Lubbock</option>	<option value='Lufkin'>Lufkin</option>	<option value='Odessa'>Odessa</option>	<option value='Paris'>Paris</option>	<option value='Pharr'>Pharr</option>	<option value='San Angelo'>San Angelo</option>	<option value='San Antonio'>San Antonio</option>	<option value='Tyler'>Tyler</option>	<option value='Waco'>Waco</option>	<option value='Wichita Falls'>Wichita Falls</option>	<option value='Yoakum'>Yoakum</option>
+                </select>
+            </div>
+            <div id="dropdownAsset" style="display: none;">
+                <br>
+                <select style="font-size: large;" id="assetSelect" onchange="assetSelected()">
+                <option value="">Select an Asset</option>     <option value="GET">Guardrail End Treatments</option>   <option value="SL">Speed Limit Signs</option>   <option value="CD">Change District</option>
+                </select>
+            </div>
+        </div>
+        <div id="getContainer" style="display: none;">
+            <table>
+                <tr>
+                    <td><button id="ETPLUSL" value="ETPLUSL" type="button" onclick="collectPoint(this.value);">ET Plus</button></td>
+                    <td><button id="ETPLUSR" value="ETPLUSR" type="button" onclick="collectPoint(this.value);">ET Plus</button></td>
+                </tr>
+                <tr>
+                    <td><button id="ET2000L" value="ET2000L" type="button" onclick="collectPoint(this.value);">ET 2000</button></td>
+                    <td><button id="ET2000R" value="ET2000R" type="button" onclick="collectPoint(this.value);">ET 2000</button></td>
+                </tr>
+                <tr>
+                    <td><button id="SKT350L" value="SKT350L" type="button" onclick="collectPoint(this.value);">SKT 350</button></td>
+                    <td><button id="SKT350R" value="SKT350R" type="button" onclick="collectPoint(this.value);">SKT 350</button></td>
+                </tr>
+                <tr>
+                    <td><button id="TURNDOWNL" value="TURNDOWNL" type="button" onclick="collectPoint(this.value);">Turndown</button></td>
+                    <td><button id="TURNDOWNR" value="TURNDOWNR" type="button" onclick="collectPoint(this.value);">Turndown</button></td>
+                </tr>
+                <tr>
+                    <td><button id="XLITEL" value="XLITEL" type="button" onclick="collectPoint(this.value);">X-Lite</button></td>
+                    <td><button id="XLITER" value="XLITER" type="button" onclick="collectPoint(this.value);">X-Lite</button></td>
+                </tr>
+                <tr>
+                    <td><button id="SOFTSTOPL" value="SOFTSTOPL" type="button" onclick="collectPoint(this.value);">SoftStop</button></td>
+                    <td><button id="SOFTSTOPR" value="SOFTSTOPR" type="button" onclick="collectPoint(this.value);">SoftStop</button></td>
+                </tr>
+                <tr>
+                    <td><button id="OTHERL" value="OTHERL" type="button" onclick="collectPoint(this.value);">Other</button></td>
+                    <td><button id="OTHERR" value="OTHERR" type="button" onclick="collectPoint(this.value);">Other</button></td>
+                </tr>
+            </table>
+        </div>
+        <div id="slContainer" style="display: none;">
+            <table>
+                <tr>
+                    <td><button id="s20" value="20" type="button" onclick="collectPoint(this.value);">20</button></td>
+                    <td><button id="s25" value="25" type="button" onclick="collectPoint(this.value);">25</button></td>
+                </tr>
+                <tr>
+                    <td><button id="s30" value="30" type="button" onclick="collectPoint(this.value);">30</button></td>
+                    <td><button id="s35" value="35" type="button" onclick="collectPoint(this.value);">35</button></td>
+                </tr>
+                <tr>
+                    <td><button id="s40" value="40" type="button" onclick="collectPoint(this.value);">40</button></td>
+                    <td><button id="s45" value="45" type="button" onclick="collectPoint(this.value);">45</button></td>
+                </tr>
+                <tr>
+                    <td><button id="s50" value="50" type="button" onclick="collectPoint(this.value);">50</button></td>
+                    <td><button id="s55" value="55" type="button" onclick="collectPoint(this.value);">55</button></td>
+                </tr>
+                <tr>
+                    <td><button id="s60" value="60" type="button" onclick="collectPoint(this.value);">60</button></td>
+                    <td><button id="s65" value="65" type="button" onclick="collectPoint(this.value);">65</button></td>
+                </tr>
+                <tr>
+                    <td><button id="s70" value="70" type="button" onclick="collectPoint(this.value);">70</button></td>
+                    <td><button id="s75" value="75" type="button" onclick="collectPoint(this.value);">75</button></td>
+                </tr>
+                <tr>
+                    <td><button id="s80" value="80" type="button" onclick="collectPoint(this.value);">80</button></td>
+                    <td><button id="s85" value="85" type="button" onclick="collectPoint(this.value);">85</button></td>
+                </tr>
+            </table>
+        </div>
+        <div id="uploadContainer">
+            <table>
+                <tr>
+                    <td colspan=2><div style="font-weight: bold;"><hr width="35%" style="display: inline-block; vertical-align:middle;">  Options  <hr width="35%" style="display: inline-block; vertical-align:middle;"></div></td>
+                </tr>
+                <tr>
+                    <td><button id="cmdClearMyStorage" value="Clear Local Storage" type="button" onclick="clearStorage();">Start Over</button></td>
+                    <td><button id="cmdDeleteLast" value="Delete Last Point" type="button" onclick="DeleteLast();">Delete Last Point</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><button id="cmdUploadData" value="Upload Data" type="button" onclick="uploadStorage();">Upload Collected Data</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><div id="uploadStatus"></div></td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

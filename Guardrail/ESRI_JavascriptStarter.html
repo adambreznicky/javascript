@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TPP WebMap Template</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+        <style type="text/css">
+            html, body, #divMap {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.13/"></script>
+        <script>
+            var map;
+            require(["esri/map",
+                "esri/layers/FeatureLayer",
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/domReady!"],
+            function(Map, FeatureLayer, ready, parser) {
+                ready(function(){
+                    map = new Map("divMap", {
+                      center: [-100, 32],
+                      zoom: 7,
+                      basemap: "topo"
+                    });
+                    
+                    var guardrailURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0";
+                    var guardrails = new FeatureLayer (guardrailURL);
+                    map.addLayer(guardrails);
+                    
+                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";
+                    var counties = new FeatureLayer (countiesURL);
+                    map.addLayer(counties);
+                });
+            });
+        </script>
+    </head>
+    <body class="claro">
+        <div id="divMap"></div>
+    </body>
+</html>

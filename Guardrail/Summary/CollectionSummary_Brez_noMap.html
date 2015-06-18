@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TPP WebMap Template</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+        <style type="text/css">
+            html, body {
+                padding: 1%;
+                margin: 0;
+                height: 100%;
+            }
+            #divMap {
+                height: 50%
+            }
+            table {
+                border-style: solid;
+                border-width: 1px;
+                width: 350px;
+                padding: 5px;
+            }
+            td {
+                padding: 5px;
+            }
+            th {
+                padding: 5px;
+            }
+            .titleHeader {
+                color: black;	
+                font-size: 24px;
+                text-align: center;	
+            }
+            .titleSubHeader {
+                color: black;	
+                font-size: 20px;
+                text-align: center;
+            }
+            .alt {
+                background-color: #99CCFF;
+                color: white;
+            }
+            .norm {
+                background-color: #FFFFFF;
+                color: black;
+            }
+            .altHeader {
+                background-color: #3399FF;  
+                color: white;
+                font-size: 18px;
+                text-align: center;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.13/"></script>
+        <script>
+            var map;
+            var theTotal = 0;
+            var pause = false;
+            require(["esri/map",
+                "esri/graphic",
+                "esri/geometry/Geometry",
+                "esri/arcgis/utils",
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                "esri/layers/FeatureLayer",
+                "esri/symbols/SimpleFillSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/Color",
+                
+                "esri/geometry/Extent",
+
+                
+                "dojo/_base/array",
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/dom",
+                
+                "dijit/form/Select",
+                "dijit/form/Button",
+                "dijit/layout/BorderContainer", 
+                "dijit/layout/ContentPane",
+                
+                "dojo/domReady!"],
+            function(Map, Graphic, Geometry, arcgisUtils, Query, QueryTask, FeatureLayer, SimpleFillSymbol, SimpleLineSymbol, SimpleMarkerSymbol, Color, 
+                    Extent, 
+                    array, ready, parser, dom) {
+                ready(function(){
+//                    map = new Map("divMap", {
+//                      center: [-99.8, 32],
+//                      zoom: 6,
+//                      basemap: "topo"
+//                    });
+                    
+                    var districtsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Districts/FeatureServer/0";
+                    var districts = new FeatureLayer(districtsURL, {
+                        visible: false,
+                        outFields: ["*"]
+                    });
+
+                    var guardrailsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0";
+                    var guardrails = new FeatureLayer(guardrailsURL, {
+                        visible: false,
+                        outFields: ["*"]
+                    });
+                    
+                    function getTotals() {
+                        theTotal = 0;
+                        queryAttributes("TreatmentType='ETPLUS'","ETPLUS");
+                        queryAttributes("TreatmentType='ET2000'","ET2000");
+                        queryAttributes("TreatmentType='SKT350'","ETSKT");
+                        queryAttributes("TreatmentType='TURNDOWN'","ETTURN");
+                        queryAttributes("TreatmentType='XLITE'","ETLITE");
+                        queryAttributes("TreatmentType='SOFTSTOP'","ETSOFT");
+                        queryAttributes("TreatmentType='OTHER'","ETOTHER");
+                        getErrors();
+                        var dateObj = new Date();
+                        var month = dateObj.getUTCMonth() + 1; //months from 1-12
+                        var day = dateObj.getUTCDate();
+                        var year = dateObj.getUTCFullYear();
+
+                        var newdate = year + "/" + month + "/" + day;
+                        dom.byId("dateTime").innerHTML = newdate;
+                        dom.byId("extent").innerHTML = "Statewide";
+                    }
+                    
+                    function queryAttributes(theQuery,theID) {						
+                        var query0 = new Query();
+                        query0.returnGeometry = false;
+                        query0.where = theQuery;	
+                        var task0 = new QueryTask (guardrailsURL);
+                        task0.executeForIds(query0, function (objectIds) {
+                                theTotal = theTotal + objectIds.length;
+                                dom.byId(theID).innerHTML = addCommas(objectIds.length);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                        });
+                    }
+                    
+                    function addCommas(nStr) {
+                        nStr += '';
+                        x = nStr.split('.');
+                        x1 = x[0];
+                        x2 = x.length > 1 ? '.' + x[1] : '';
+                        var rgx = /(\d+)(\d{3})/;
+                        while (rgx.test(x1)) {
+                              x1 = x1.replace(rgx, '$1' + ',' + '$2');
+                        }
+                        return x1 + x2;
+                    }
+                    
+                    function getErrors() {
+                        queryAttributesErrors("AccuracyFeet>250","ETERROR");		
+                        queryAttributesErrors("Speed=0","ETTOTALMPH");		
+                    }
+                    
+                    function queryAttributesErrors(theQuery,theID) {						
+                        var queryE = new Query();
+                        queryE.returnGeometry = false;
+                        queryE.where = theQuery;
+                        var taskE = new QueryTask (guardrailsURL);
+                        taskE.executeForIds(queryE, function (objectIds) {
+                                dom.byId(theID).innerHTML = addCommas(objectIds.length);
+                        });
+                    }	
+        
+                    var selector = dijit.byId("distSelect");
+                    selector.on('change', distChosen);
+                    var refresher = dijit.byId("refreshData");
+                    refresher.on('Click', refresh);
+                    
+                    function refresh(){
+                        if (selector.value !== ""){
+                            distChosen();
+                        }
+                        else {
+                            getTotals();
+                        }
+                    }
+                    
+                    function distChosen(){
+                        if (selector.value !== ""){
+                            dom.byId("extent").innerHTML = selector.value;
+                            dom.byId("info").innerHTML = "Calculating, Please Wait...";
+                            theTotal = 0;
+                            dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                            dom.byId("ETPLUS").innerHTML = "...";
+                            dom.byId("ET2000").innerHTML = "...";
+                            dom.byId("ETSKT").innerHTML = "...";
+                            dom.byId("ETTURN").innerHTML = "...";
+                            dom.byId("ETLITE").innerHTML = "...";
+                            dom.byId("ETSOFT").innerHTML = "...";
+                            dom.byId("ETOTHER").innerHTML = "...";
+                            dom.byId("ETERROR").innerHTML = "...";
+                            dom.byId("ETTOTALMPH").innerHTML = "...";
+//                            map.graphics.clear();
+                            var geom;
+                            var query = new Query();
+                            query.where = "DIST_NM = '" + selector.value + "'";
+                            query.returnGeometry = true;
+                            var task = new QueryTask (districtsURL);
+                            task.execute(query, function(results){
+                                var resultFeatures = results.features;
+                                for (var i=0, il=resultFeatures.length; i<il; i++) {
+                                    var graphic = resultFeatures[i];
+                                    geom = graphic.geometry;
+                                }
+                                plusQuery(geom, "ETPLUS", "ETPLUS");
+                            });
+                        }
+                        else {
+                            
+                            getTotals();
+                            dom.byId("info").innerHTML = "";
+                        }
+
+                        function plusQuery(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+    //                        task2.executeForCount(query2, function(results2){
+    //                            dom.byId("info").innerHTML = results2 + " features matched the input query";
+    //                        });
+
+    //                        var query2 = new Query();
+    //                        query2.geometry = geom;
+    //                        query2.where = "TreatmentType='SKT350'";
+    //                        query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+    //                        var task2 = new QueryTask(guardrailsURL);
+    //                        task2.executeForCount(query2, function(results2){
+    //                                dom.byId("info").innerHTML = results2 + " features matched the input query";
+    //                        });
+
+                            task2.executeForCount(query2, function(results2){
+    //                            var total = 0;
+    //                            var resultFeatures = results2.features;
+    //                            for (var i=0, il=resultFeatures.length; i<il; i++) {
+    //                                var graphic = resultFeatures[i];
+    //                                var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE, 10,
+    //                                            new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+    //                                            new Color([255,0,0]), 1),
+    //                                            new Color([0,255,0,0.25]));
+    //                                geom2 = graphic.geometry;
+    //                                var qGET = new Graphic(geom2, symbol);
+    ////                                map.graphics.add(qGET);
+    //                                total += 1;
+    //                            }
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                et2Query(GEOM, "ET2000", "ET2000");
+                            });
+                        }
+                        function et2Query(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                sktQuery(GEOM, "SKT350", "ETSKT");
+                            });
+                        }
+                        function sktQuery(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                tdQuery(GEOM, "TURNDOWN", "ETTURN");
+                            });
+                        }
+                        function tdQuery(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                xlQuery(GEOM, "XLITE", "ETLITE");
+                            });
+                        }
+                        function xlQuery(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                ssQuery(GEOM, "SOFTSTOP", "ETSOFT");
+                            });
+                        }
+                        function ssQuery(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                otQuery(GEOM, "OTHER", "ETOTHER");
+                            });
+                        }
+                        function otQuery(GEOM, eachType, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "TreatmentType='" + eachType + "'";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                theTotal = theTotal + total;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("ETTOTAL").innerHTML = addCommas(theTotal);
+                                errQuery(GEOM, "ETERROR");
+                            });
+                        }
+                        function errQuery(GEOM, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "AccuracyFeet>250";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                spdQuery(GEOM, "ETTOTALMPH");
+                            });
+                        }
+                        function spdQuery(GEOM, theID){       
+                            dom.byId(theID).innerHTML = "...";
+                            var query2 = new Query();
+                            query2.geometry = GEOM;
+                            query2.where = "Speed=0";
+                            query2.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
+                            query2.returnGeometry = false;
+                            var task2 = new QueryTask(guardrailsURL);
+                            task2.executeForCount(query2, function(results2){
+                                var total = results2;
+                                dom.byId(theID).innerHTML = addCommas(total);
+                                dom.byId("info").innerHTML = "Complete!";
+                            });
+                        }
+                    }
+                    
+                getTotals();    
+                });
+            
+            });
+        </script>
+    </head>
+    <body class="claro">
+        <button data-dojo-type="dijit/form/Button" type="button" id="refreshData">Refresh the Data</button>
+        <select data-dojo-type="dijit/form/Select" name="selectCounty"  style="font-size: medium; width: 150px" id="distSelect">
+            <option value="">Select a District</option>     <option value='Abilene'>Abilene</option>   <option value='Amarillo'>Amarillo</option>	<option value='Atlanta'>Atlanta</option>	<option value='Austin'>Austin</option>	<option value='Beaumont'>Beaumont</option>	<option value='Brownwood'>Brownwood</option>	<option value='Bryan'>Bryan</option>	<option value='Childress'>Childress</option>	<option value='Corpus Christi'>Corpus Christi</option>	<option value='Dallas'>Dallas</option>	<option value='El Paso'>El Paso</option>	<option value='Fort Worth'>Fort Worth</option>	<option value='Houston'>Houston</option>	<option value='Laredo'>Laredo</option>	<option value='Lubbock'>Lubbock</option>	<option value='Lufkin'>Lufkin</option>	<option value='Odessa'>Odessa</option>	<option value='Paris'>Paris</option>	<option value='Pharr'>Pharr</option>	<option value='San Angelo'>San Angelo</option>	<option value='San Antonio'>San Antonio</option>	<option value='Tyler'>Tyler</option>	<option value='Waco'>Waco</option>	<option value='Wichita Falls'>Wichita Falls</option>	<option value='Yoakum'>Yoakum</option>
+        </select>
+        <br><br>
+        <div id="container">
+		<table border=0>
+		<tr class="titleHeader">
+			<td colspan=2>End Treatment Project Summary</td>
+		</tr>	
+                <tr class="titleSubHeader">
+			<td colspan=2 id="extent"></td>
+		</tr>	
+		<tr class="altHeader">
+			<th>Treatment Type</th><th>Count</th>
+		</tr>			
+		<tr class="norm">
+			<td>ET Plus</td><td id="ETPLUS" align="right"></td>
+		</tr>
+		<tr class="alt">
+			<td>ET 2000</td><td id="ET2000" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>SKT 350</td><td id="ETSKT" align="right"></td>
+		</tr>
+		<tr class="alt">
+			<td>Turndown</td><td id="ETTURN" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>X-Lite</td><td id="ETLITE" align="right"></td>
+		</tr>
+		<tr class="alt">
+			<td>Softstop</td><td id="ETSOFT" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>Other</td><td id="ETOTHER" align="right"></td>
+		</tr>	
+		<tr class="alt">
+			<td>Total</td><td id="ETTOTAL" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>Accuracy > 250 ft.</td><td id="ETERROR" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>0 MPH</td><td id="ETTOTALMPH" align="right"></td>
+		</tr>		
+		<tr class="alt">
+			<td colspan=2 align="right" id="dateTime"></td>
+		</tr>		
+		</table>
+	</div>
+	<br>
+        <div id="info"></div>
+        <br>
+        <!--<div id="divMap"></div>-->
+    </body>
+</html>

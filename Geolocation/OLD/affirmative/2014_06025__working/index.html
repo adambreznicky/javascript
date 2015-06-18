@@ -1,0 +1,947 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html manifest="offlineCache.manifest">
+<head>
+<title>Data Collection</title>
+<style type="text/css">
+body {
+	font-size:200%;
+}
+label {
+  display:block;
+  font-size:200%;
+  text-align:center;
+}
+label.CRIFields {
+  display:block;
+  font-size:250%;
+  text-align:center;
+  font-weight:bold;
+}
+
+h4.loco {
+  display:block;
+  font-size:200%;
+  text-align:center;
+}
+input.CRIFields {
+    display:block;
+	width: 80%;
+	font-size:300%;
+	margin-left:auto;
+    margin-right:auto;
+} 
+input.RDNumber {
+    display:block;
+	width: 50%;
+	font-size:500%;
+	margin-left:auto;
+    margin-right:auto;
+} 
+textarea {
+    display:block;
+	width: 90%;
+	font-size:300%;
+	margin-left:auto;
+    margin-right:auto;
+} 
+
+button {
+	display:block;
+	width: 80%;
+	font-size:180%;
+	margin-left:auto;
+    margin-right:auto;
+} 
+.tempbutton {
+	display:block;
+	width: 80%;
+	height: 100px;
+	font-size:130%;
+	margin-left:auto;
+    margin-right:auto;
+} 
+button:ACTIVE {
+	background: red;
+}
+select {
+  display:block;
+  width: 80%;
+  font-size:250%;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+h1.title {
+	display:block;
+	text-align:center;
+	font-size:350%;
+}
+.testdisplay {
+	display:block;
+	width:90%;
+	margin-left:auto;
+    margin-right:auto;
+}
+
+.map-canvas {
+	width:80%;
+    margin-left:auto;
+    margin-right:auto;
+}
+.outputLocation {
+	display:block;
+	text-align: center;
+	font-size:150%;
+	margin-left:auto;
+    margin-right:auto;
+}
+.loggingSTATUS {
+	color: red;
+	text-align: center;
+	font-size:180%;
+	display:block;
+	margin-left:auto;
+    margin-right:auto;
+}
+
+.allLINEfeat{
+	display:block;
+}
+.allPOINTfeat{
+	display:block;
+}
+hr.dotted{
+	width:80%;
+	border:#000 2px dotted;
+	border-style: none none dotted;
+}
+label.feattype{
+
+	font-size:350%;
+	margin-left:auto;
+    margin-right:auto;
+	font-weight:bold;
+}
+
+.featureTYPE{
+	width: 25%;
+	border: 2px;
+}
+.arrow-right {
+	width: 0; 
+	height: 0; 
+	border-top: 40px solid transparent;
+	border-bottom: 40px solid transparent;
+	
+	border-left: 800px solid grey;
+}
+.arrow-down {
+	width: 0; 
+	height: 0; 
+	border-left: 400px solid transparent;
+	border-right: 400px solid transparent;
+	
+	border-top: 70px solid grey;
+}
+.arrowlabel{
+	font-size:250%;
+	margin-left:auto;
+    margin-right:auto;
+	font-weight:bold;
+}
+</style>
+<link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
+
+<script>
+
+function startupGPS () {
+	if (navigator.geolocation) {
+		navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+	
+	}
+	else {
+	   x.innerHTML="Geolocation is not supported by this browser.";	
+	}
+}
+
+
+var featcollected;
+function radiosfeat() {
+		var ref = document.getElementsByName("featradio");
+		for (var i=0; i < ref.length; i++) {
+			if(ref[i].checked){
+			featcollected = ref[i].value;
+			}
+		}
+		if(featcollected=="POINT") {
+
+		document.getElementById("lblradioPOINT").style.color='blue';
+		document.getElementById("lblradioLINE").style.color='black';
+		document.getElementById("cmdLogPoint").style.display='block';
+		document.getElementById("cmdLogging").style.display='none';
+		document.getElementById("allLINEfeat").style.display='none';
+		document.getElementById("allPOINTfeat").style.display='block';
+		document.getElementById("selCRIDesign").disabled=true;
+		document.getElementById("selCRISurfaceType").disabled=true;
+		document.getElementById("selCRILanes").disabled=true;
+		document.getElementById("txtStreetName").disabled=true;
+		document.getElementById("selRFC").disabled=false;
+		}
+
+		if(featcollected=="LINE") {
+
+		document.getElementById("lblradioPOINT").style.color='black';
+		document.getElementById("lblradioLINE").style.color='blue';
+		document.getElementById("cmdLogPoint").style.display='none';
+		document.getElementById("cmdLogging").style.display='block';
+		document.getElementById("allLINEfeat").style.display='block';
+		document.getElementById("allPOINTfeat").style.display='none';
+		document.getElementById("selCRIDesign").disabled=false;
+		document.getElementById("selCRISurfaceType").disabled=false;
+		document.getElementById("selCRILanes").disabled=false;
+		document.getElementById("txtStreetName").disabled=false;
+		document.getElementById("selRFC").disabled=true;
+		}
+
+}
+
+function countyNUMBER() {
+	 if (document.getElementById("selprefix").value=="AA"){
+	 document.getElementById("selroadbed").style.display='none';
+	 document.getElementById("lblroadbed").style.display='none';
+	 document.getElementById("selroadbed").disabled=true;
+	 document.getElementById("selcntynum").style.display='block';
+	 document.getElementById("lblcntynum").style.display='block';
+	 document.getElementById("selcntynum").disabled=false;
+	 }
+	 else{
+	 document.getElementById("selroadbed").style.display='block';
+	 document.getElementById("lblroadbed").style.display='block';
+	 document.getElementById("selroadbed").disabled=false;
+	 document.getElementById("selcntynum").style.display='none';
+	 document.getElementById("lblcntynum").style.display='none';
+	 document.getElementById("selcntynum").disabled=true;
+	 }
+}
+
+function rfcRestriction() {
+	 if (document.getElementById("selRFC").value=="33"){
+	 document.getElementById("selINTftyp").style.display='block';
+	 document.getElementById("lblINTftyp").style.display='block';
+	 document.getElementById("selINTftyp").disabled=false;
+	 }
+	 else{
+	 document.getElementById("selINTftyp").style.display='none';
+	 document.getElementById("lblINTftyp").style.display='none';
+	 document.getElementById("selINTftyp").disabled=true;
+	 }
+	 if (document.getElementById("selRFC").value=="41"){
+	 document.getElementById("selRSDftyp").style.display='block';
+	 document.getElementById("lblRSDftyp").style.display='block';
+	 document.getElementById("selRSDftyp").disabled=false;
+	 }
+	 else{
+	 document.getElementById("selRSDftyp").style.display='none';
+	 document.getElementById("lblRSDftyp").style.display='none';
+	 document.getElementById("selRSDftyp").disabled=true;
+	 }
+	 if (document.getElementById("selRFC").value=="11"){
+	 document.getElementById("lblmkrnum").style.display='block';
+	 document.getElementById("txtmkrnum").style.display='block';
+	 document.getElementById("txtmkrnum").disabled=false;
+	 }
+	 else{
+	 document.getElementById("lblmkrnum").style.display='none';
+	 document.getElementById("txtmkrnum").style.display='none';
+	 document.getElementById("txtmkrnum").disabled=true;
+	 }
+}
+
+var mapShow = false;
+function mapReveal(){
+		if(mapShow){
+			mapShow = false;
+			document.getElementById("showlabel").innerText="Show Map";
+			document.getElementById("map-canvas").style.display='none';
+			document.getElementById("cmdZoomLocation").style.display='none';
+			document.getElementById("map-canvas").disabled=true;
+			document.getElementById("cmdZoomLocation").disabled=true;
+			
+			document.getElementById("map-arrow").className="arrow-right";
+		
+			}
+		else{
+			mapShow = true;
+			document.getElementById("showlabel").innerText="Hide Map";
+			document.getElementById("map-canvas").style.display='block';
+			document.getElementById("cmdZoomLocation").style.display='block';
+			document.getElementById("map-canvas").disabled=false;
+			document.getElementById("cmdZoomLocation").disabled=false;
+			
+			document.getElementById("map-arrow").className="arrow-down";
+			
+		}
+}
+
+
+var latty=0;
+var longy=0;
+var accy;
+var alty;
+var altyaccy;
+var heady;
+var speedy;
+var d;
+var t;
+var pos;		 
+var logger;		 
+
+
+function showPosition(position) {
+	d = new Date();
+	t = d.toJSON();
+	pos = new google.maps.LatLng(position.coords.latitude,
+											   position.coords.longitude);
+	infowindow.setPosition(pos);
+	latty = position.coords.latitude;
+	longy = position.coords.longitude;
+	accy = position.coords.accuracy;
+	alty = position.coords.altitude;
+	altyaccy = position.coords.altitudeAccuracy;
+	heady = position.coords.heading;
+	speedy = position.coords.speed;
+	
+	if (logStart){
+	    gpsLogData();
+	   
+	}
+}
+
+	
+function markerPositionChange() {
+	map.setCenter(pos);
+	map.setZoom(17);
+}
+
+logStart = false;
+function startLogging(){
+		if (logStart){
+				logStart = false;
+				gpsStopData();
+				document.getElementById("cmdLogging").innerText="Start Logging Line";
+		   }
+		   else{
+				if(document.getElementById("txtrtenum").value.length > 5 || document.getElementById("txtrtenum").value.length < 4){
+					cancelled();
+					alert("INVALID ROUTE NUMBER! Please re-enter with 4 digits and start logging again. Exceptions only include county roads within Fort Bend and Harris Counties.");
+				}
+				else{
+				logStart = true;
+				document.getElementById("cmdLogging").innerText="Stop Logging Line";
+				}
+		   }
+}
+
+var linegeog = [];
+var accyVary = [];
+var speedVary = [];
+var altVary = [];
+var hdgVary = [];
+function gpsLogData() {
+			var x = document.getElementById("outputLocation");
+			x.innerHTML="Latitude: " + latty + 
+			"<br>Longitude: " + longy +
+			"<br>Accuracy: " + accy +
+			"<br>Altitude: " + alty +
+			"<br>Altitude Accuracy: " + altyaccy +
+			"<br>Heading: " + heady +
+			"<br>Speed: " + speedy +
+			"<br>Timestamp: " + t;	
+			var y = document.getElementById("loggingSTATUS");	
+			y.innerHTML="Logging Line...";
+			
+			var currentLocation = [longy, latty]
+			if (accy < 30){
+			linegeog.push(currentLocation);
+			accyVary.push(accy);
+			speedVary.push(speedy);
+			altVary.push(altyaccy);
+			hdgVary.push(heady);
+			}
+			else{
+			y.innerHTML="Not logging. Weak signal... Accuracy only " + accy + " meters.";
+			}
+		 
+}
+		
+function gpsStopData() {
+			
+			var roadbed;
+		 	var ROUTEID;	
+			if (document.getElementById("selprefix").value=="AA"){
+					if(document.getElementById("txtrtenum").value.length==5){
+					ROUTEID = document.getElementById("selcntynum").value+"A"+document.getElementById("txtrtenum").value;
+					roadbed = "KG";
+					}
+					else{
+					ROUTEID = document.getElementById("selcntynum").value+"AA"+document.getElementById("txtrtenum").value;
+					roadbed = "KG";
+					}
+			}
+			else {
+							ROUTEID = document.getElementById("selprefix").value+document.getElementById("txtrtenum").value+"-"+document.getElementById("selroadbed").value;
+							roadbed = document.getElementById("selroadbed").value;
+			}
+			
+			var amax = 0;
+			var amin = 999;
+			var asum = 0;
+			for(var i = 0; i < accyVary.length; i++){
+				asum += accyVary[i];
+				if(accyVary[i] > amax){
+				amax = accyVary[i]
+				}
+				if(accyVary[i] < amin){
+				amin = accyVary[i]
+				}
+			}
+			var aavg = asum / accyVary.length;
+			
+			var smax = 0;
+			var smin = 999;
+			var ssum = 0;
+			for(var i = 0; i < speedVary.length; i++){
+				ssum += speedVary[i];
+				if(speedVary[i] > smax){
+				smax = speedVary[i]
+				}
+				if(speedVary[i] < smin){
+				smin = speedVary[i]
+				}
+			}
+			var savg = ssum / speedVary.length;
+			
+			var lmax = 0;
+			var lmin = 999;
+			var lsum = 0;
+			for(var i = 0; i < altVary.length; i++){
+				lsum += altVary[i];
+				if(altVary[i] > lmax){
+				lmax = altVary[i]
+				}
+				if(altVary[i] < lmin){
+				lmin = altVary[i]
+				}
+			}
+			var lavg = lsum / altVary.length;
+			
+			var hsum = 0;
+			for(var i = 0; i < hdgVary.length; i++){
+				hsum += hdgVary[i];
+			}
+			var havg = hsum / hdgVary.length;
+			
+			var intKEY =[ROUTEID,t];
+			var POD=[featcollected,ROUTEID,document.getElementById("selprefix").value,document.getElementById("txtrtenum").value,roadbed,t,accy,alty,speedy,heady,altyaccy,aavg,amax,amin,savg,smin,smax,lavg,lmax,lmin,havg,document.getElementById("selCRIDesign").value,document.getElementById("selCRISurfaceType").value,document.getElementById("selCRILanes").value,document.getElementById("txtStreetName").value,document.getElementById("txtCommentLine").value,JSON.stringify(linegeog)];
+			logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+			
+			var y = document.getElementById("loggingSTATUS");	
+			y.innerHTML="Line Log Stopped";
+			if(previewShow == true){
+						previewShow = false;
+						previewData();
+						}
+			linegeog = [];
+			accyVary = [];
+			speedVary = [];
+			altVary = [];
+			hdgVary = [];
+}
+
+function cancelled() {
+			logger = null;
+			var y = document.getElementById("loggingSTATUS");	
+			y.innerHTML="";
+}
+		
+function getPoint() {
+				var x = document.getElementById("outputLocation");
+				x.innerHTML="Latitude: " + latty + 
+				"<br>Longitude: " + longy +
+				"<br>Accuracy: " + accy +
+				"<br>Altitude: " + alty +
+				"<br>Altitude Accuracy: " + altyaccy +
+				"<br>Heading: " + heady +
+				"<br>Speed: " + speedy +
+				"<br>Timestamp: " + t;	
+				var y = document.getElementById("loggingSTATUS");	
+					
+				if(document.getElementById("txtrtenum").value.length > 5 || document.getElementById("txtrtenum").value.length < 4){
+					cancelled();
+					alert("INVALID ROUTE NUMBER! Please re-enter with 4 digits and start logging again. Exceptions only include county roads within Fort Bend and Harris Counties.");
+				}
+				else if(document.getElementById("selRFC").value == "11" && document.getElementById("txtmkrnum").value.length < 1){
+						cancelled();
+						alert("INVALID MARKER NUMBER! Marker number must be populated.");
+				}
+				
+				var ROUTEID;	
+			 	if (document.getElementById("selprefix").value=="AA"){
+					if(document.getElementById("txtrtenum").value.length==5){
+					ROUTEID = document.getElementById("selcntynum").value+"A"+document.getElementById("txtrtenum").value;
+					}
+					else{
+					ROUTEID = document.getElementById("selcntynum").value+"AA"+document.getElementById("txtrtenum").value;
+					}
+				}
+				else {
+						ROUTEID = document.getElementById("selprefix").value+document.getElementById("txtrtenum").value+"-"+document.getElementById("selroadbed").value;
+				}
+				
+				var intersectionValue;
+				var roadsideValue;
+				var markerValue;
+				if(document.getElementById("selRFC").value == "33"){
+					intersectionValue = document.getElementById("selINTftyp").value;
+					roadsideValue = 0;
+					markerValue = 0;
+				}
+				else if(document.getElementById("selRFC").value == "41"){
+					intersectionValue = 0;
+					roadsideValue = document.getElementById("selRSDftyp").value;
+					markerValue = 0;
+				}
+				else if(document.getElementById("selRFC").value == "11"){
+					intersectionValue = 0;
+					roadsideValue = 0;
+					markerValue = document.getElementById("txtmkrnum").value;
+				}
+				else{
+					intersectionValue = 0;
+					roadsideValue = 0;
+					markerValue = 0;
+				}
+				
+				var intKEY =[ROUTEID,t];
+				var pntgeog = [longy, latty];
+				var POD=[featcollected,ROUTEID,document.getElementById("selprefix").value,document.getElementById("txtrtenum").value,document.getElementById("selroadbed").value,t,accy,alty,speedy,heady,altyaccy,document.getElementById("selRFC").value,intersectionValue,roadsideValue,markerValue,document.getElementById("txtCommentPoint").value,JSON.stringify(pntgeog)];
+				if (accy < 30){
+					logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+					y.innerHTML="Point Logged.";
+					if(previewShow == true){
+						previewShow = false;
+						previewData();
+						}
+				}
+				else{
+					y.innerHTML="Point NOT recorded. Accuracy only " + accy + " meters ... try again.";
+				}
+}
+
+
+
+function myStorage(){
+	localStorage.clear();
+	if(previewShow == true){
+			previewData();
+			}
+}
+
+var previewShow = false;
+function previewData() {
+	var x = document.getElementById("testdisplay");
+
+	if(previewShow){
+			previewShow = false;
+			document.getElementById("cmdpreviewData").innerText="Preview Collected Data";
+			x.innerHTML = "";
+	}
+	else{
+			previewShow = true;
+			document.getElementById("cmdpreviewData").innerText="Hide Collected Data";
+
+			onhand = localStorage.length;
+			if(onhand == 0){
+				var value = "No collected data currently recorded.";
+			}
+			else{
+				var value = "--FEATURE TYPE, ROUTE ID, DATE/TIME--<br>";
+			}
+			for (var i=0, len = localStorage.length; i  <  len; i++){
+					var key = localStorage.key(i);
+					//value.push(localStorage.getItem(key)); 
+					var record = JSON.parse(localStorage.getItem(key));
+					var recNum = i + 1
+					value = value + recNum + ") " + record[0] + "," + record[1] + "," + record[5] + "<br>";
+			}	
+			x.innerHTML = value;
+	}
+}
+
+var feature;
+var featureArray;
+// handles the click event for link 1, sends the query
+function uploadStorage() {
+  var x = document.getElementById("dbltestdisplay");
+  x.innerHTML = 'Uploading data, please wait...';
+  featureArray = [];
+  for (var i=0, len = localStorage.length; i  <  len; i++){
+			var key = localStorage.key(i);
+			feature = localStorage.getItem(key);
+			featureArray.push(feature);
+  }
+  if(featureArray.length > 0){
+	  featureArray = JSON.stringify(featureArray);
+	  getRequest(
+				'upload_Postgres.php', // URL for the PHP file
+				drawOutput,  // handle successful request
+				drawError    // handle error
+				);
+	  return false;
+	}
+	else{
+	x.innerHTML = 'No data collected. Please collect data and try to upload again.';
+	}
+}
+
+// handles drawing an error message
+function drawError () {
+    var container = document.getElementById('dbltestdisplay');
+    container.innerHTML = 'Bummer: there was an error! Try again.';
+}
+// handles the response, adds the html
+function drawOutput(responseText) {
+    var container = document.getElementById('dbltestdisplay');
+    container.innerHTML = responseText;
+	if (responseText[0] == "U"){
+	myStorage();
+	}
+}
+// helper function for cross-browser request object
+function getRequest(url, success, error) {
+    var req = false;
+    try{
+        // most browsers
+        req = new XMLHttpRequest();
+    }
+	catch (e){
+        // IE
+        try{
+            req = new ActiveXObject('Msxml2.XMLHTTP');
+        }
+		catch (e) {
+            // try an older version
+            try{
+                req = new ActiveXObject('Microsoft.XMLHTTP');
+            }
+			catch (e){
+                return false;
+            }
+        }
+    }
+    if (!req) return false;
+    if (typeof success != 'function') success = function () {};
+    if (typeof error!= 'function') error = function () {};
+    req.onreadystatechange = function(){
+        if(req .readyState == 4){
+            return req.status === 200 ? 
+                success(req.responseText) : error(req.status);
+        }
+    }
+    req.open('POST', url, true);
+	req.setRequestHeader("Content-type","application/json");
+    req.send(featureArray);
+    return req;
+}
+
+
+var map;
+var infowindow;
+function initialize() {
+		  var mapOptions = {
+			zoom: 17,
+			mapTypeId: google.maps.MapTypeId.HYBRID
+		  };
+		  map = new google.maps.Map(document.getElementById('map-canvas'),
+			  mapOptions);
+
+		  // Try HTML5 geolocation
+		  if(navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(function(position) {
+			  var pos = new google.maps.LatLng(position.coords.latitude,
+											   position.coords.longitude);
+			  infowindow = new google.maps.Marker({
+				map: map,
+				position: pos,
+				title: 'Current Location'
+			  });
+
+			  map.setCenter(pos);
+			}, function() {
+			  handleNoGeolocation(true);
+			});
+		  } else {
+			// Browser doesn't support Geolocation
+			handleNoGeolocation(false);
+		  }
+}
+
+function handleNoGeolocation(errorFlag) {
+  if (errorFlag) {
+    var content = 'Error: The Geolocation service failed.';
+  } else {
+    var content = 'Error: Your browser doesn\'t support geolocation.';
+  }
+
+  var options = {
+    map: map,
+    position: new google.maps.LatLng(30.2669, -97.7428),
+    content: content
+  };
+
+  var infowindow = new google.maps.InfoWindow(options);
+  map.setCenter(options.position);
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+function start() {
+  startupGPS();
+  radiosfeat();
+  countyNUMBER();
+  rfcRestriction();
+
+}
+window.onload = start;
+
+</script>
+</head>
+
+<body>
+<h1 class="title" style="color:blue">Field Data Collection</h1>
+<hr width="80%" color="blue"><br>
+ 
+ <div class="routeIDinfo" id="routeIDinfo">
+  <!-- Route ID -->			   
+  <label Class="CRIFields" id="lblprefix">Route Prefix</label>
+  <select Class="CRIFields" id="selprefix" name="selprefix" onchange="countyNUMBER();">
+		   <option value="AA">AA - County Road</option>
+		   <option value="BF">BF - Business FM</option>
+		   <option value="BI">BI - Business IH</option>
+		   <option value="BS">BS - Business State</option>
+		   <option value="BU">BU - Business US</option>
+		   <option value="FC">FC - Functionally Classified City Street</option>
+		   <option value="CS">CS - Local City Street</option>
+		   <option value="FM">FM - Farm to Market</option>
+		   <option value="FS">FS - FM Spur</option>
+		   <option value="IH">IH - Interstate</option>
+		   <option value="PA">PA - Principal Arterial</option>
+		   <option value="PR">PR - Park Road</option>
+		   <option value="RE">RE - Recreational Road</option>
+		   <option value="RM">RM - Ranch to Market</option>
+		   <option value="RP">RP - Recreational Road Spur</option>
+		   <option value="RR">RR - Ranch Road</option>
+		   <option value="RS">RS - RM Spur</option>
+		   <option value="RU">RU - RR Spur</option>
+		   <option value="SA">SA - State Alternate</option>
+		   <option value="SH">SH - State Highway</option>
+		   <option value="SL">SL - State Loop</option>
+		   <option value="SS">SS - State Spur</option>
+		   <option value="UA">UA - US Alternate</option>
+		   <option value="UP">UP - US Spur</option>
+		   <option value="US">US - US Highway</option>
+		   <option value="NA">NA - Not Applicable</option>
+  </select>
+  <br>
+  <label Class="CRIFields" id="lblrtenum">Route Number</label>
+  <input Class="RDNumber" type="text" id="txtrtenum" name="txtrtenum" value="" maxlength="5" placeholder="XXXX">
+  <br>
+  <label Class="CRIFields" id="lblroadbed">Roadbed Type</label>
+  <select Class="RDBED" id="selroadbed" name="selroadbed">
+		   <option value="KG">KG - Single Roadbed</option>
+		   <option value="LG">LG - Left Roadbed</option>
+		   <option value="RG">RG - Right Roadbed</option>
+		   <option value="XG">XG - Left Frontage</option>
+		   <option value="AG">AG - Right Frontage</option>
+		   <option value="MG">MG - Left Supplemental Main Lane</option>
+		   <option value="SG">SG - Right Supplemental Main Lane</option>
+		   <option value="PG">PG - Left Supplemental Supplemental Main Lane</option>
+		   <option value="TG">TG - Right Supplemental Supplemental Main Lane</option>
+		   <option value="YG">YG - Left Supplemental Frontage Road</option>
+		   <option value="BG">BG - Right Supplemental Frontage Road</option>
+		   <option value="CONNECTOR">Connector</option>
+		   <option value="RAMP">Ramp</option>
+		   <option value="TURNAROUND">Turn Around</option>
+		   <option value="CNCTR-GS">Grade Separated Connector</option>
+		   <option value="OTHER">Picnic Area, Rest Area, Weight Station</option>
+  </select>
+  <label Class="CRIFields" id="lblcntynum">County</label>
+  <select Class="CRIFields" id="selcntynum" name="selcntynum">
+			<option value="001">001 - Anderson</option>	<option value="002">002 - Andrews</option>	<option value="003">003 - Angelina</option>	<option value="004">004 - Aransas</option>	<option value="005">005 - Archer</option>	<option value="006">006 - Armstrong</option>	<option value="007">007 - Atascosa</option>	<option value="008">008 - Austin</option>	<option value="009">009 - Bailey</option>	<option value="010">010 - Bandera</option>	<option value="011">011 - Bastrop</option>	<option value="012">012 - Baylor</option>	<option value="013">013 - Bee</option>	<option value="014">014 - Bell</option>	<option value="015">015 - Bexar</option>	<option value="016">016 - Blanco</option>	<option value="017">017 - Borden</option>	<option value="018">018 - Bosque</option>	<option value="019">019 - Bowie</option>	<option value="020">020 - Brazoria</option>	<option value="021">021 - Brazos</option>	<option value="022">022 - Brewster</option>	<option value="023">023 - Briscoe</option>	<option value="024">024 - Brooks</option>	<option value="025">025 - Brown</option>	<option value="026">026 - Burleson</option>	<option value="027">027 - Burnet</option>	<option value="028">028 - Caldwell</option>	<option value="029">029 - Calhoun</option>	<option value="030">030 - Callahan</option>	<option value="031">031 - Cameron</option>	<option value="032">032 - Camp</option>	<option value="033">033 - Carson</option>	<option value="034">034 - Cass</option>	<option value="035">035 - Castro</option>	<option value="036">036 - Chambers</option>	<option value="037">037 - Cherokee</option>	<option value="038">038 - Childress</option>	<option value="039">039 - Clay</option>	<option value="040">040 - Cochran</option>	<option value="041">041 - Coke</option>	<option value="042">042 - Coleman</option>	<option value="043">043 - Collin</option>	<option value="044">044 - Collingsworth</option>	<option value="045">045 - Colorado</option>	<option value="046">046 - Comal</option>	<option value="047">047 - Comanche</option>	<option value="048">048 - Concho</option>	<option value="049">049 - Cooke</option>	<option value="050">050 - Coryell</option>	<option value="051">051 - Cottle</option>	<option value="052">052 - Crane</option>	<option value="053">053 - Crockett</option>	<option value="054">054 - Crosby</option>	<option value="055">055 - Culberson</option>	<option value="056">056 - Dallam</option>	<option value="057">057 - Dallas</option>	<option value="058">058 - Dawson</option>	<option value="059">059 - Deaf Smith</option>	<option value="060">060 - Delta</option>	<option value="061">061 - Denton</option>	<option value="062">062 - De Witt</option>	<option value="063">063 - Dickens</option>	<option value="064">064 - Dimmit</option>	<option value="065">065 - Donley</option>	<option value="066">066 - Kenedy</option>	<option value="067">067 - Duval</option>	<option value="068">068 - Eastland</option>	<option value="069">069 - Ector</option>	<option value="070">070 - Edwards</option>	<option value="071">071 - Ellis</option>	<option value="072">072 - El Paso</option>	<option value="073">073 - Erath</option>	<option value="074">074 - Falls</option>	<option value="075">075 - Fannin</option>	<option value="076">076 - Fayette</option>	<option value="077">077 - Fisher</option>	<option value="078">078 - Floyd</option>	<option value="079">079 - Foard</option>	<option value="080">080 - Fort Bend</option>	<option value="081">081 - Franklin</option>	<option value="082">082 - Freestone</option>	<option value="083">083 - Frio</option>	<option value="084">084 - Gaines</option>	<option value="085">085 - Galveston</option>	<option value="086">086 - Garza</option>	<option value="087">087 - Gillespie</option>	<option value="088">088 - Glasscock</option>	<option value="089">089 - Goliad</option>	<option value="090">090 - Gonzales</option>	<option value="091">091 - Gray</option>	<option value="092">092 - Grayson</option>	<option value="093">093 - Gregg</option>	<option value="094">094 - Grimes</option>	<option value="095">095 - Guadalupe</option>	<option value="096">096 - Hale</option>	<option value="097">097 - Hall</option>	<option value="098">098 - Hamilton</option>	<option value="099">099 - Hansford</option>	<option value="100">100 - Hardeman</option>	<option value="101">101 - Hardin</option>	<option value="102">102 - Harris</option>	<option value="103">103 - Harrison</option>	<option value="104">104 - Hartley</option>	<option value="105">105 - Haskell</option>	<option value="106">106 - Hays</option>	<option value="107">107 - Hemphill</option>	<option value="108">108 - Henderson</option>	<option value="109">109 - Hidalgo</option>	<option value="110">110 - Hill</option>	<option value="111">111 - Hockley</option>	<option value="112">112 - Hood</option>	<option value="113">113 - Hopkins</option>	<option value="114">114 - Houston</option>	<option value="115">115 - Howard</option>	<option value="116">116 - Hudspeth</option>	<option value="117">117 - Hunt</option>	<option value="118">118 - Hutchinson</option>	<option value="119">119 - Irion</option>	<option value="120">120 - Jack</option>	<option value="121">121 - Jackson</option>	<option value="122">122 - Jasper</option>	<option value="123">123 - Jeff Davis</option>	<option value="124">124 - Jefferson</option>	<option value="125">125 - Jim Hogg</option>	<option value="126">126 - Jim Wells</option>	<option value="127">127 - Johnson</option>	<option value="128">128 - Jones</option>	<option value="129">129 - Karnes</option>	<option value="130">130 - Kaufman</option>	<option value="131">131 - Kendall</option>	<option value="132">132 - Kent</option>	<option value="133">133 - Kerr</option>	<option value="134">134 - Kimble</option>	<option value="135">135 - King</option>	<option value="136">136 - Kinney</option>	<option value="137">137 - Kleberg</option>	<option value="138">138 - Knox</option>	<option value="139">139 - Lamar</option>	<option value="140">140 - Lamb</option>	<option value="141">141 - Lampasas</option>	<option value="142">142 - La Salle</option>	<option value="143">143 - Lavaca</option>	<option value="144">144 - Lee</option>	<option value="145">145 - Leon</option>	<option value="146">146 - Liberty</option>	<option value="147">147 - Limestone</option>	<option value="148">148 - Lipscomb</option>	<option value="149">149 - Live Oak</option>	<option value="150">150 - Llano</option>	<option value="151">151 - Loving</option>	<option value="152">152 - Lubbock</option>	<option value="153">153 - Lynn</option>	<option value="154">154 - Madison</option>	<option value="155">155 - Marion</option>	<option value="156">156 - Martin</option>	<option value="157">157 - Mason</option>	<option value="158">158 - Matagorda</option>	<option value="159">159 - Maverick</option>	<option value="160">160 - McCulloch</option>	<option value="161">161 - McLennan</option>	<option value="162">162 - McMullen</option>	<option value="163">163 - Medina</option>	<option value="164">164 - Menard</option>	<option value="165">165 - Midland</option>	<option value="166">166 - Milam</option>	<option value="167">167 - Mills</option>	<option value="168">168 - Mitchell</option>	<option value="169">169 - Montague</option>	<option value="170">170 - Montgomery</option>	<option value="171">171 - Moore</option>	<option value="172">172 - Morris</option>	<option value="173">173 - Motley</option>	<option value="174">174 - Nacogdoches</option>	<option value="175">175 - Navarro</option>	<option value="176">176 - Newton</option>	<option value="177">177 - Nolan</option>	<option value="178">178 - Nueces</option>	<option value="179">179 - Ochiltree</option>	<option value="180">180 - Oldham</option>	<option value="181">181 - Orange</option>	<option value="182">182 - Palo Pinto</option>	<option value="183">183 - Panola</option>	<option value="184">184 - Parker</option>	<option value="185">185 - Parmer</option>	<option value="186">186 - Pecos</option>	<option value="187">187 - Polk</option>	<option value="188">188 - Potter</option>	<option value="189">189 - Presidio</option>	<option value="190">190 - Rains</option>	<option value="191">191 - Randall</option>	<option value="192">192 - Reagan</option>	<option value="193">193 - Real</option>	<option value="194">194 - Red River</option>	<option value="195">195 - Reeves</option>	<option value="196">196 - Refugio</option>	<option value="197">197 - Roberts</option>	<option value="198">198 - Robertson</option>	<option value="199">199 - Rockwall</option>	<option value="200">200 - Runnels</option>	<option value="201">201 - Rusk</option>	<option value="202">202 - Sabine</option>	<option value="203">203 - San Augustine</option>	<option value="204">204 - San Jacinto</option>	<option value="205">205 - San Patricio</option>	<option value="206">206 - San Saba</option>	<option value="207">207 - Schleicher</option>	<option value="208">208 - Scurry</option>	<option value="209">209 - Shackelford</option>	<option value="210">210 - Shelby</option>	<option value="211">211 - Sherman</option>	<option value="212">212 - Smith</option>	<option value="213">213 - Somervell</option>	<option value="214">214 - Starr</option>	<option value="215">215 - Stephens</option>	<option value="216">216 - Sterling</option>	<option value="217">217 - Stonewall</option>	<option value="218">218 - Sutton</option>	<option value="219">219 - Swisher</option>	<option value="220">220 - Tarrant</option>	<option value="221">221 - Taylor</option>	<option value="222">222 - Terrell</option>	<option value="223">223 - Terry</option>	<option value="224">224 - Throckmorton</option>	<option value="225">225 - Titus</option>	<option value="226">226 - Tom Green</option>	<option value="227">227 - Travis</option>	<option value="228">228 - Trinity</option>	<option value="229">229 - Tyler</option>	<option value="230">230 - Upshur</option>	<option value="231">231 - Upton</option>	<option value="232">232 - Uvalde</option>	<option value="233">233 - Val Verde</option>	<option value="234">234 - Van Zandt</option>	<option value="235">235 - Victoria</option>	<option value="236">236 - Walker</option>	<option value="237">237 - Waller</option>	<option value="238">238 - Ward</option>	<option value="239">239 - Washington</option>	<option value="240">240 - Webb</option>	<option value="241">241 - Wharton</option>	<option value="242">242 - Wheeler</option>	<option value="243">243 - Wichita</option>	<option value="244">244 - Wilbarger</option>	<option value="245">245 - Willacy</option>	<option value="246">246 - Williamson</option>	<option value="247">247 - Wilson</option>	<option value="248">248 - Winkler</option>	<option value="249">249 - Wise</option>	<option value="250">250 - Wood</option>	<option value="251">251 - Yoakum</option>	<option value="252">252 - Young</option>	<option value="253">253 - Zapata</option>	<option value="254">254 - Zavala</option>
+  </select><br>
+ </div>
+ <hr class="dotted">
+ <label Class="CRIFields" id="featuretype">Feature Type</label>
+ <div class="featureTYPE" id="pointTYPEdiv" style="float:left;">	
+  <label class="feattype" id="lblradioPOINT" for="radioPOINT"><input Class="feattype" type="radio" id="radioPOINT" name="featradio" value="POINT" checked="checked" onclick="radiosfeat();"/> Point</label><br>
+  </div>
+  
+  <div class="featureTYPE" id="lineTYPEdiv" style="float:right;">	
+  <label class="feattype" id="lblradioLINE" for="radioLINE"><input Class="feattype" type="radio" id="radioLINE" name="featradio" value="LINE" onclick="radiosfeat();"/> Line</label><br>
+</div>
+<br><br>
+ <div class="allLINEfeat" id="allLINEfeat">
+  <br><br>
+  <!-- Roadway Design -->	
+  <label Class="CRIFields" id="lblCRIDesign">Roadway Design</label>
+  <select Class="CRIFields" id="selCRIDesign" name="selCRIDesign">
+           <option value="1">1 - One Way</option>
+           <option value="2" selected>2 - Two Way</option>
+           <option value="3">3 - Blvd.</option>
+  </select>
+ 
+	<br>
+	
+  <!-- Surface Type -->	
+  <label Class="CRIFields" id="lblCRISurfaceType">Surface Type</label>
+  <select Class="CRIFields" id="selCRISurfaceType" name="selCRISurfaceType">
+           <option value="10">10 - Natural</option>
+           <option value="32">32 - Gravel</option>
+           <option value="51" selected>51 - Paved</option>
+           <option value="61">61 - Concrete</option>					 
+  </select>
+	<br>
+	
+  <!-- Number of Lanes -->	
+  <label Class="CRIFields" id="lblCRILanes">Number of Lanes</label>
+  <select Class="CRIFields" id="selCRILanes" name="selCRILanes">
+           <option value="1">1</option>
+           <option value="2" selected>2</option>
+           <option value="3">3</option>
+           <option value="4">4</option>			
+           <option value="5">5</option>
+           <option value="6">6</option>
+           <option value="7">7</option>
+           <option value="8">8</option>
+           <option value="9">9</option>
+           <option value="10">10</option>
+           <option value="11">11</option>
+           <option value="12">12</option>
+           <option value="13">13</option>
+           <option value="14">14</option>
+           <option value="15">15</option>
+					 <option value="16">16</option>					 					 		 
+  </select>
+	<br>
+	
+  <!-- Street Name -->		
+  <label class="CRIFields" id="lblStreetName">Street Name</label>
+  <input class="CRIFields" type="text" id="txtStreetName" name="txtStreetName" value="" placeholder="Full Street Name">
+	<br>
+	 <label class="commentz" id="lblCommentLine">Line Comment</label>
+  <textarea class="commentz" type="text" id="txtCommentLine" name="txtComment" value="" maxlength="100" rows="3"></textarea>
+</div>
+
+<div class="allPOINTfeat" id="allPOINTfeat">
+		  <br><br>
+		<label Class="CRIFields" id="lblRFC">Roadway Feature Code</label>
+		<select Class="CRIFields" id="selRFC" name="selRFC" onchange="rfcRestriction();">
+			   <option value="11">11 - Marker</option>
+			   <option value="25">25 - Ferry</option>
+			   <option value="33">33 - Intersection</option>
+			   <option value="34">34 - Structure</option>
+			   <option value="31">31 - Connector</option>
+			   <option value="36">36 - Tunnel</option>
+			   <option value="32">32 - Ramp</option>
+			   <option value="41">41 - Roadside Feature</option>
+			   <option value="99">99 - Other Feature</option>
+		</select>
+		<br>
+		<label Class="CRIFields" id="lblmkrnum">Marker Number</label>
+		<input Class="RDNumber" type="text" id="txtmkrnum" name="txtmkrnum" value="" maxlength="5" placeholder="XXXX">
+		
+		<label Class="CRIFields" id="lblINTftyp">Intersection Feature Type</label>
+		<select Class="CRIFields" id="selINTftyp" name="selINTftyp">
+			   <option value="11">11 - On System Mainlane</option>
+			   <option value="21">21 - Local Road</option>
+			   <option value="31">31 - On System Frontage</option>
+			   <option value="41">41 - Federal Lands</option>
+			   <option value="51">51 - State Lands</option>
+			   <option value="61">61 - Toll Road</option>
+			   <option value="65">65 - Crossover</option>
+			   <option value="66">66 - Turnaround Backwards</option>
+			   <option value="67">67 - Turnaround Forwards</option>
+			   <option value="70">70 - Railroad Crossing</option>
+			   <option value="71">71 - Stream Flowing to the Left</option>
+			   <option value="72">72 - Stream Flowing to the Right</option>
+			   <option value="73">73 - Culvert to the Left</option>
+			   <option value="74">74 - Culvert to the Right</option>
+			   <option value="75">75 - Culvert Both Sides</option>
+			   <option value="80">80 - Pipeline</option>
+			   <option value="81">81 - Transmission</option>
+			   <option value="82">82 - Telephone</option>
+			   <option value="83">83 - Waterline</option>
+			   <option value="90">90 - Ped Pass</option>
+			   <option value="91">91 - Cattle Guard</option>
+			   <option value="92">92 - Gate</option>
+			   <option value="93">93 - Overhead Sign</option>
+			   <option value="99">99 - Other Intersection Feature</option>
+		</select>
+		<label Class="CRIFields" id="lblRSDftyp">Roadside Feature Type</label>
+		<select Class="CRIFields" id="selRSDftyp" name="selRSDftyp">
+			   <option value="A">A - On System Mainlane</option>
+			   <option value="B">B - Local Road</option>
+			   <option value="C">C - On System Frontage</option>
+			   <option value="D">D - Federal Lands</option>
+			   <option value="E">E - State Lands</option>
+			   <option value="F">F - Toll Road</option>
+			   <option value="G">G - Crossover</option>
+			   <option value="H">H - Turnaround Backwards</option>
+			   <option value="I">I - Turnaround Forwards</option>
+			   <option value="J">J - Railroad Crossing</option>
+			   <option value="K">K - Stream Flowing to the Left</option>
+			   <option value="L">L - Stream Flowing to the Right</option>
+			   <option value="M">M - Culvert to the Left</option>
+			   <option value="N">N - Culvert to the Right</option>
+			   <option value="O">O - Culvert Both Sides</option>
+			   <option value="Z">Z - Pipeline</option>
+		</select>
+		<br>
+		<label class="commentz" id="lblCommentPoint">Point Comment</label>
+		<textarea class="commentz" type="text" id="txtCommentPoint" name="txtComment" value="" maxlength="100" rows="3"></textarea>
+</div>
+<hr width="80%" color="blue"><br>
+<button class="button" id="cmdLogPoint" value="Log Point" type="button" onclick="getPoint();">Log Point</button><br>
+<button class="button" id="cmdLogging" value="Log Line" type="button" onclick="startLogging();">Start Logging Line</button>
+<div class="loggingSTATUS" id="loggingSTATUS"></div>
+
+<h4 class="loco">Location Information:</h4>
+<div class="outputLocation" id="outputLocation"></div>
+
+<br>
+<button class="tempbutton" id="cmdClearMyStorage" value="Clear Local Storage" type="button" onclick="myStorage();">Clear Local Storage</button>
+<br>
+<button class="tempbutton" id="cmdpreviewData" value="Preview Collected Data" type="button" onclick="previewData();">Preview Collected Data</button>
+<br>
+<div class="testdisplay" id="testdisplay"></div>
+<button class="tempbutton" id="cmdUploadData" value="Upload Data" type="button" onclick="return uploadStorage();">Upload Data</button>
+<br>
+
+<div class="dbltestdisplay" id="dbltestdisplay"></div>
+
+
+<br><br>
+<div class="mapMask" onclick="mapReveal();">
+	<div class="arrow-right" id="map-arrow" style="float:left;"></div>
+	
+	<label Class="arrowlabel" id="showlabel" style="float:right; color:gray;">Show Map</label>
+
+</div>
+<br><br><br>
+<button class="button" id="cmdZoomLocation" value="Zoom to Current Location" type="button" onclick="markerPositionChange();" style='display:none;' disabled>Zoom to Current Location</button>
+<br>
+<div class="map-canvas" id="map-canvas" style='display:none;' disabled></div>
+</body>
+</html>

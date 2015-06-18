@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TPP WebMap Template</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+        <style type="text/css">
+            html, body, #divMap {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.13/"></script>
+        <script>
+            var map;
+            var WMS;
+            var roads;
+            
+            require(["esri/map",
+                "esri/layers/WMSLayer",
+                "esri/layers/FeatureLayer",
+                "esri/config",
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/domReady!"],
+            function(Map, WMSlayer, FeatureLayer, config, ready, parser) {
+                ready(function(){
+//                    config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
+                    
+                    map = new Map("divMap", {
+                      center: [-98, 30],
+                      zoom: 8,
+                      basemap: "topo"
+                    });
+                    
+                    var WMSurl = "https://mapsengine.google.com/00732540713385015153-14694594672087232711-4/wms/?version=1.3.0";
+                    WMS = new WMSlayer(WMSurl, {
+                        visibleLayers: ['00732540713385015153-14694594672087232711-4']
+                    });
+                    map.addLayer(WMS);
+                    WMS.setVisiblity(true);
+                    
+                    var roadsurl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/OnSystemRoadways/FeatureServer/0";
+                    roads = new FeatureLayer(roadsurl);
+//                    map.addLayer(roads);
+                    
+                    
+                });
+            });
+        </script>
+    </head>
+    <body class="claro">
+        <div id="divMap"></div>
+    </body>
+</html>

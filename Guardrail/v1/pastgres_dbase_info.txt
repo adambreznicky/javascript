@@ -1,0 +1,5 @@
+HOST: stevie.heliohost.org
+port: 5432
+dbase: smudge_assets
+user: smudge_adam
+pass: 05M-w}J$.;F[

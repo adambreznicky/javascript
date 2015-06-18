@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TPP WebMap Template</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+        <style type="text/css">
+            html, body, #divMap {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.13/"></script>
+        <script>
+            require(["esri/map",
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/domReady!"],
+            function(Map, ready, parser) {
+                ready(function(){
+                    var map = new Map("divMap", {
+                      center: [-100, 32],
+                      zoom: 7,
+                      basemap: "topo"
+                    });
+                });
+            });
+        </script>
+    </head>
+    <body class="claro">
+        <div id="divMap"></div>
+    </body>
+</html>

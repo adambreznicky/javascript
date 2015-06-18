@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)http://maps.dot.state.tx.us/AGO_Template/TPP_Template/ -->
+<html class="dj_webkit dj_chrome dj_contentbox esriLTR" dir="ltr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Basic Map</title>
+<link rel="stylesheet" type="text/css" href="./original_files/tundra.css">
+<link rel="stylesheet" type="text/css" href="./original_files/esri.css">
+<link rel="stylesheet" type="text/css" href="./original_files/layout.css">
+<link rel="stylesheet" type="text/css" href="./original_files/chromepopup.css">
+
+
+ <script type="text/javascript" charset="utf-8" src="./original_files/jsapi_en-us.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/svg.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/layout.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/widgets.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/utils.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/app.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/commonConfig.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/widgets_en-us.js"></script><script type="text/javascript" charset="utf-8" src="./original_files/LegendLayer.js"></script><script type="text/javascript">
+  var path_location = location.pathname.replace(/\/[^/]+$/, '');
+  var dojoConfig = {
+    parseOnLoad: true,
+    packages:[
+      {
+        name:"esriTemplate",
+        location: path_location
+      },
+      {
+        name:"utilities",
+        location: path_location + "/javascript" 
+      },
+      {
+       name: "templateConfig",
+        location: path_location 
+      }
+    ]
+  };
+</script>
+<script type="text/javascript" src="./original_files/saved_resource">    
+</script>
+
+<script type="text/javascript">
+dojo.require("esri.layout");
+
+</script>
+
+<script type="text/javascript" src="./original_files/layout(1).js">
+</script>
+<script type="text/javascript">      
+  dojo.require("utilities.app");
+  dojo.require("dojo.on");
+  dojo.require("templateConfig.commonConfig");
+
+function init(){
+
+
+var defaults = {
+  //The ID for the map from ArcGIS.com
+  //Basic Map ID
+  webmap : "043203a8ebcb49778649c85ba634cb2a", //"8a63712c19a8410082f3dc106118b7d1", //f5b13dbed07c46cdb783cf361833aa6b
+  //Enter a title, if no title is specified, the webmap's title is used.
+  title : "",
+  //Enter a subtitle, if not specified the ArcGIS.com web map's summary is used
+  subtitle : "",
+  //specify a proxy url if needed
+  proxyurl:"",
+ //Modify this to point to your sharing service URL if you are using the portal
+  sharingurl : document.location.protocol + "//www.arcgis.com",
+  //add default template options. This includes the bing key, sharing url, proxy url, 
+  //and any service urls (geometry, geocode, print) 
+  //that may be needed by the template.
+  bingmapskey: commonConfig.bingMapsKey,
+  helperServices:commonConfig.helperServices    
+};
+  var supportsLocalization = true;
+  var app = new utilities.App(defaults, supportsLocalization);
+  dojo.on(app, "ready", function(config){
+    initMap(config);
+  });
+
+
+}
+//show map on load 
+dojo.addOnLoad(init);
+</script>
+</head> 
+
+<body class="tundra">
+    <div id="mainWindow" data-dojo-type="dijit.layout.BorderContainer" data-dojo-props="design:&quot;headline&quot;,gutters:false" style="width: 100%; height: 100%; padding: 0px;" class="dijitBorderContainerNoGutter dijitContainer dijitLayoutContainer" widgetid="mainWindow">
+
+        <!-- Header Section-->
+        <div id="header" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:&quot;top&quot;" class="dijitContentPane dijitBorderContainerNoGutter-child dijitBorderContainerNoGutter-dijitContentPane dijitBorderContainerNoGutterPane dijitAlignTop" widgetid="header" style="left: 0px; top: 0px; position: absolute; width: 1253px;">
+          <div id="title"><table style="width:100%; height:100%;"><tbody><tr><th id="HeaderDist" align="center" style="width:33%;">Austin District</th><th align="center" style="width:33%;">Basic Map</th><th id="HeaderCnty" align="center" style="width:33%;">Travis County</th></tr></tbody></table></div>
+          <!--<div id="subtitle">
+          </div>-->
+        <div id="header_flourish"></div>
+
+        </div>
+
+        <!--Sidebar Section-->
+        <!--<div data-dojo-type="dijit.layout.ContentPane" id="leftPane" data-dojo-props='region:"left",gutters:false'>
+          <div id="leftPaneContent" dojotype="dijit.layout.BorderContainer" design="headline"
+          style="width:100%; height:100%;">-->
+           <!--Sidebar Header-->
+            <!--<div id="leftPaneHeader" data-dojo-type="dijit.layout.ContentPane" data-dojo-props='region:"top"'>
+              <span id='legendHeader'></span>
+            </div>-->
+            <!--Sidebar Content-->
+            <!--<div id="leftPaneBody" data-dojo-type="dijit.layout.StackContainer" data-dojo-props='region:"center"'>
+              <div id="panel1" class="panel_content" data-dojo-type="dijit.layout.ContentPane">
+                <div id="legendDiv">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>-->
+
+        <!-- Map Section -->
+        <div id="map" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:&quot;center&quot;" dir="ltr" class="dijitContentPane dijitBorderContainerNoGutter-child dijitBorderContainerNoGutter-dijitContentPane dijitBorderContainerNoGutterPane dijitAlignCenter map" widgetid="map" style="left: 0px; top: 52px; position: absolute; width: 1253px; height: 721px;" data-zoom="10" data-scale="577790.554289" data-loaded="">
+        <div id="map_root" class="container" style="width: 1253px; height: 721px; direction: ltr;"><div id="map_container" class="container" style="position: absolute; cursor: default;"><div id="map_layers" class="layersDiv" style="left: 0px; top: 0px;"><div id="map_World_Street_Map_6900" style="position: absolute; width: 1253px; height: 721px; overflow: visible; -webkit-transform: translate(356px, -560px); display: block;"><div style="position: absolute; width: 1253px; height: 721px; overflow: visible; -webkit-transition: -webkit-transform 500ms ease; transition: -webkit-transform 500ms ease;"><img id="map_World_Street_Map_6900_tile_10_0_0" class="layerTile" src="./original_files/231" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-507px, 476px);"><img id="map_World_Street_Map_6900_tile_10_1_0" class="layerTile" src="./original_files/231(1)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-507px, 732px);"><img id="map_World_Street_Map_6900_tile_10_2_0" class="layerTile" src="./original_files/231(2)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-507px, 988px);"><img id="map_World_Street_Map_6900_tile_10_3_0" class="layerTile" src="./original_files/231(3)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-507px, 1244px);"><img id="map_World_Street_Map_6900_tile_10_0_1" class="layerTile" src="./original_files/232" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-251px, 476px);"><img id="map_World_Street_Map_6900_tile_10_1_1" class="layerTile" src="./original_files/232(1)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-251px, 732px);"><img id="map_World_Street_Map_6900_tile_10_2_1" class="layerTile" src="./original_files/232(2)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-251px, 988px);"><img id="map_World_Street_Map_6900_tile_10_3_1" class="layerTile" src="./original_files/232(3)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(-251px, 1244px);"><img id="map_World_Street_Map_6900_tile_10_0_2" class="layerTile" src="./original_files/233" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(5px, 476px);"><img id="map_World_Street_Map_6900_tile_10_1_2" class="layerTile" src="./original_files/233(1)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(5px, 732px);"><img id="map_World_Street_Map_6900_tile_10_2_2" class="layerTile" src="./original_files/233(2)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(5px, 988px);"><img id="map_World_Street_Map_6900_tile_10_3_2" class="layerTile" src="./original_files/233(3)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(5px, 1244px);"><img id="map_World_Street_Map_6900_tile_10_0_3" class="layerTile" src="./original_files/234" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(261px, 476px);"><img id="map_World_Street_Map_6900_tile_10_1_3" class="layerTile" src="./original_files/234(1)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(261px, 732px);"><img id="map_World_Street_Map_6900_tile_10_2_3" class="layerTile" src="./original_files/234(2)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(261px, 988px);"><img id="map_World_Street_Map_6900_tile_10_3_3" class="layerTile" src="./original_files/234(3)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(261px, 1244px);"><img id="map_World_Street_Map_6900_tile_10_0_4" class="layerTile" src="./original_files/235" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(517px, 476px);"><img id="map_World_Street_Map_6900_tile_10_1_4" class="layerTile" src="./original_files/235(1)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(517px, 732px);"><img id="map_World_Street_Map_6900_tile_10_2_4" class="layerTile" src="./original_files/235(2)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(517px, 988px);"><img id="map_World_Street_Map_6900_tile_10_3_4" class="layerTile" src="./original_files/235(3)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(517px, 1244px);"><img id="map_World_Street_Map_6900_tile_10_0_5" class="layerTile" src="./original_files/236" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(773px, 476px);"><img id="map_World_Street_Map_6900_tile_10_1_5" class="layerTile" src="./original_files/236(1)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(773px, 732px);"><img id="map_World_Street_Map_6900_tile_10_2_5" class="layerTile" src="./original_files/236(2)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(773px, 988px);"><img id="map_World_Street_Map_6900_tile_10_3_5" class="layerTile" src="./original_files/236(3)" style="width: 256px; height: 256px; visibility: visible; -webkit-transform: translate(773px, 1244px);"></div></div><svg overflow="hidden" width="1253" height="721" id="map_gc" style="overflow: visible; position: absolute;"><defs></defs><g id="map_graphics_layer" transform="matrix(1.00000000,0.00000000,0.00000000,1.00000000,0.00000000,0.00000000)" style="display: block;"><g></g></g></svg></div></div><div class="esriControlsBR"><span class="esriAttribution" style="max-width: 563px; cursor: default;"><span class="esriAttributionList"><span class="esriAttributionLastItem" style="display: inline;">Esri, DeLorme, IFL, USGS<span class="esriAttributionDelim"> | </span></span></span></span><div class="logo-med"></div></div><div class="esriPopup chrome" style="visibility: hidden;"><div class="esriPopupWrapper" style="position: absolute;"><div class="sizer"><div class="titlePane" style="-webkit-user-select: none;"><div class="spinner hidden" title="Searching..."></div><div class="title">&nbsp;</div><div class="titleButton prev hidden" title="Previous feature"></div><div class="titleButton next hidden" title="Next feature"></div><div class="titleButton maximize" title="Maximize"></div><div class="titleButton close" title="Close"></div></div></div><div class="sizer content"><div class="contentPane"><div style="text-align: center;">No information available.</div></div></div><div class="sizer"><div class="actionsPane"><div class="actionList hidden"><a class="action zoomTo" href="javascript:void(0);">Zoom to</a></div></div></div><div class="pointer hidden"></div></div><div class="outerPointer hidden"></div></div><div id="map_zoom_slider" class="esriSimpleSlider esriSimpleSliderVertical esriSimpleSliderTL" style="z-index: 30;"><div class="esriSimpleSliderIncrementButton">+</div><div class="esriSimpleSliderDecrementButton">–</div></div></div></div>
+
+        <!-- Footer Section-->
+        <div id="footer" data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:&quot;bottom&quot;" class="dijitContentPane dijitBorderContainerNoGutter-child dijitBorderContainerNoGutter-dijitContentPane dijitBorderContainerNoGutterPane dijitAlignBottom" widgetid="footer" style="left: 0px; top: 773px; position: absolute; width: 1253px;">
+            <table style="width:100%; height:100%;" id="FooterTable">
+                <tbody><tr>
+                    <td style="width:10%;">
+                        <img src="./original_files/NorthArrow.png" style="width:60px; height:60px;">
+                    </td>
+
+                    <td style="width:20%;" id="ha">
+                        <!--<div style="background-color:Red; width:100%; height:75px; text-align:center;">-->
+                            <div id="ScalebarTD" style="position: relative; left: 62px;"><div class="esriScalebar"><div style="width: 122px;"><div class="esriScalebarRuler"><div class="esriScalebarRulerBlock upper_firstpiece"></div><div class="esriScalebarRulerBlock upper_secondpiece"></div><div class="esriScalebarRulerBlock lower_firstpiece"></div><div class="esriScalebarRulerBlock lower_secondpiece"></div></div><div class="scaleLabelDiv"><div class="esriScalebarLabel" style="left: -3%">0</div><div class="esriScalebarLabel esriScalebarFirstNumber">5</div><div class="esriScalebarLabel esriScalebarSecondNumber">10mi</div></div></div></div></div>
+                        <!--</div>-->
+                    </td>
+
+                    <td style="font-size:medium; width:40%;">
+                            Texas Department of Transportation<br>
+                            Transportation Planning and Programming Division<br>
+                            Data Analysis, Mapping and Reporting Branch<br>
+                            <label id="DateLabel">March 25, 2015</label>
+                    </td>
+
+                    <td style="font-size:9px; width:20%;">
+                            Copyright 2014<br>
+                            Texas Department of Transportation<br>
+                            Notice<br>
+                            This map was produced for internal use within the Texas Departemtn of Transportation. Accuracy is limited to the validity of available data as of December 31, 2013.
+                    </td>
+
+                    <td style="width:10%;">
+                        <img src="./original_files/TxDOT_Logo.jpg" style="width:75px; height:50px;">
+                    </td>
+                </tr>
+            </tbody></table>
+           <!--<span id="timeSliderLabel">
+          </span>
+          <div id="timeSliderDiv">
+          </div>-->
+        </div>
+
+    </div>
+
+
+
+</body></html>

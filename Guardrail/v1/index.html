@@ -1,0 +1,312 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html manifest="offlineCache.manifest">
+<head>
+<title>Asset Collection</title>
+<style type="text/css">
+body {
+	font-size:200%;
+        text-align:center;
+}
+#pointSTATUS{
+    font-size:200%;
+}
+label {
+  display:block;
+  font-size:200%;
+  text-align:center;
+}
+h4.loco {
+  display:block;
+  font-size:200%;
+  text-align:center;
+}
+button {
+	font-size:180%;
+        width: 95%;
+        height: 10%
+}
+#optionsL{
+    display: block;
+    float: left;
+    text-align: center;
+    height: 90%;
+    margin: 0 auto;
+    width: 50%;
+}
+#optionsR{
+    display: block;
+    text-align: center;
+    height: 90%;
+    margin: 0 auto;
+    float: right;
+    width: 50%;
+}
+section{
+    width: 95%;
+    margin: 0 auto;
+}
+.tempbutton {
+	display:block;
+	width: 80%;
+	height: 100px;
+	font-size:130%;
+	margin-left:auto;
+    margin-right:auto;
+} 
+button:ACTIVE {
+	background: red;
+}
+</style>
+<link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
+<script>
+    var user = "'working'";
+    var deviceinfo;
+    var latty=0;
+    var longy=0;
+    var accy;
+    var alty;
+    var altyaccy;
+    var heady;
+    var speedy;
+    var d;
+    var t;
+    var pos;		 
+    var logger;		 
+    var previewShow = false;
+    var totalpoints = 0;
+
+    function device(){
+                    if(navigator){
+                    deviceinfo = "'" + navigator.platform + ":::" + navigator.userAgent + "'";
+                    }
+                    else{
+                    deviceinfo = "NOT AVAILABLE";
+                    }
+    }
+
+    function startupGPS () {
+            if (navigator.geolocation) {
+                    navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+
+            }
+            else {
+                var x = document.getElementById("dbltestdisplay");
+                x.innerHTML="Geolocation is not supported by this browser.";	
+            }
+    }
+
+    function showPosition(position) {
+        d = new Date();
+        t = d.toJSON();
+        pos = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+        latty = position.coords.latitude;
+        longy = position.coords.longitude;
+        accy = position.coords.accuracy * 3.28084;
+        alty = position.coords.altitude * 3.28084;
+        altyaccy = position.coords.altitudeAccuracy * 3.28084;
+        heady = position.coords.heading;
+        speedy = position.coords.speed * 2.23694;
+    }
+
+    function collectPoint(value) {
+        var x = document.getElementById("outputLocation");
+        x.innerHTML="Latitude: " + latty + 
+        "<br>Longitude: " + longy +
+        "<br>Accuracy (ft): " + accy + 
+        "<br>Altitude (ft): " + alty + 
+        "<br>Alt. Accuracy (ft): " + altyaccy +
+        "<br>Heading: " + heady +
+        "<br>Speed (mph): " + speedy +
+        "<br>Timestamp: " + t;	
+        var y = document.getElementById("pointSTATUS");	
+
+        var intKEY =[value,t];
+        var type = value.substring(0,3);
+        var side = value.slice(-1);
+        var POD=[type,side,t,accy,alty,speedy,heady,altyaccy,user,deviceinfo,latty,longy];
+        if (accy < 40){
+                logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                totalpoints += 1;
+                y.innerHTML="Point Logged. Total: " + totalpoints;
+                if(previewShow === true){
+                        previewShow = false;
+                        previewData();
+                        }
+        }
+        else{
+                y.innerHTML="Point NOT logged... try again. Total: " + totalpoints;
+        }
+    }
+
+    function myStorage(){
+            localStorage.clear();
+            var y = document.getElementById("pointSTATUS");
+            y.innerHTML="";
+            var z = document.getElementById("outputLocation");
+            z.innerHTML="";
+            totalpoints = 0;
+            if(previewShow === true){
+                previewData();
+            }
+    }
+
+
+    function previewData() {
+            var x = document.getElementById("testdisplay");
+
+            if(previewShow === true){
+                previewShow = false;
+                document.getElementById("cmdpreviewData").innerText="Preview Collected Data";
+                x.innerHTML = "";
+            }
+            else{
+                previewShow = true;
+                document.getElementById("cmdpreviewData").innerText="Hide Collected Data";
+
+                var onhand = localStorage.length;
+                if(onhand === 0){
+                        var value = "No collected data currently recorded.";
+                }
+                else{
+                        var value = "--FEATURE TYPE, ROAD SIDE, DATE/TIME--<br>";
+                }
+                for (var i=0, len = localStorage.length; i  <  len; i++){
+                                var key = localStorage.key(i);
+                                //value.push(localStorage.getItem(key)); 
+                                var record = JSON.parse(localStorage.getItem(key));
+                                var recNum = i + 1;
+                                value = value + recNum + ") " + record[0] + ", " + record[1] + ", " + record[2] + "<br>";
+                }	
+                x.innerHTML = value;
+            }
+    }
+
+    var feature;
+    var featureArray;
+    // handles the click event for link 1, sends the query
+    function uploadStorage() {
+      var x = document.getElementById("dbltestdisplay");
+      x.innerHTML = 'Uploading data, please wait...';
+      featureArray = [];
+      for (var i=0, len = localStorage.length; i  <  len; i++){
+                            var key = localStorage.key(i);
+                            feature = localStorage.getItem(key);
+                            featureArray.push(feature);
+      }
+      if(featureArray.length > 0){
+              featureArray = JSON.stringify(featureArray);
+              getRequest(
+                                    'upload_Assets.php', // URL for the PHP file
+                                    drawOutput,  // handle successful request
+                                    drawError    // handle error
+                                    );
+              return false;
+            }
+            else{
+            x.innerHTML = 'No data collected. Please collect data and try to upload again.';
+            }
+    }
+
+    // handles drawing an error message
+    function drawError () {
+        var container = document.getElementById('dbltestdisplay');
+        container.innerHTML = 'Bummer: there was an error! Try again.';
+    }
+    // handles the response, adds the html
+    function drawOutput(responseText) {
+        var container = document.getElementById('dbltestdisplay');
+        container.innerHTML = responseText;
+            if (responseText.charAt(0) === "U"){
+            myStorage();
+            }
+    }
+    // helper function for cross-browser request object
+    function getRequest(url, success, error) {
+        var req = false;
+        try{
+            // most browsers
+            req = new XMLHttpRequest();
+        }
+            catch (e){
+            // IE
+            try{
+                req = new ActiveXObject('Msxml2.XMLHTTP');
+            }
+                    catch (e) {
+                // try an older version
+                try{
+                    req = new ActiveXObject('Microsoft.XMLHTTP');
+                }
+                            catch (e){
+                    return false;
+                }
+            }
+        }
+        if (!req) return false;
+        if (typeof success !== 'function') success = function () {};
+        if (typeof error !== 'function') error = function () {};
+        req.onreadystatechange = function(){
+            if(req .readyState === 4){
+                return req.status === 200 ? 
+                    success(req.responseText) : error(req.status);
+            }
+        };
+        req.open('POST', url, true);
+            req.setRequestHeader("Content-type","application/json");
+        req.send(featureArray);
+        return req;
+    }
+
+    function start() {
+      startupGPS();
+      device();
+    }
+    window.onload = start;
+</script>
+</head>
+
+<body>
+<h1 class="title" style="color:blue">Grab-a-Guardrail</h1>
+<hr width="80%">
+<section>
+    <div id="optionsL"><h1 class="title">LEFT</h1>
+        <button id="ET1L" value="ET1L" type="button" onclick="collectPoint(this.value);">ET1</button><br><br>
+        <button id="ET2L" value="ET2L" type="button" onclick="collectPoint(this.value);">ET2</button><br><br>
+        <button id="ET3L" value="ET3L" type="button" onclick="collectPoint(this.value);">ET3</button><br><br>
+        <button id="ET4L" value="ET4L" type="button" onclick="collectPoint(this.value);">ET4</button><br><br>
+        <button id="ET5L" value="ET5L" type="button" onclick="collectPoint(this.value);">ET5</button><br><br>
+        <button id="UNKNOWNL" value="UNKNOWNL" type="button" onclick="collectPoint(this.value);">UNKNOWN</button><br><br>
+    </div>
+    <div id="optionsR"><h1 class="title">RIGHT</h1>
+        <button id="ET1R" value="ET1R" type="button" onclick="collectPoint(this.value);">ET1</button><br><br>
+        <button id="ET2R" value="ET2R" type="button" onclick="collectPoint(this.value);">ET2</button><br><br>
+        <button id="ET3R" value="ET3R" type="button" onclick="collectPoint(this.value);">ET3</button><br><br>
+        <button id="ET4R" value="ET4R" type="button" onclick="collectPoint(this.value);">ET4</button><br><br>
+        <button id="ET5R" value="ET5R" type="button" onclick="collectPoint(this.value);">ET5</button><br><br>
+        <button id="UNKNOWNR" value="UNKNOWNR" type="button" onclick="collectPoint(this.value);">UNKNOWN</button><br><br>
+    </div>
+</section>
+<hr width="80%">
+<div id="pointSTATUS"></div>
+<h4 class="loco">Location Information:</h4>
+<div class="outputLocation" id="outputLocation"></div>
+
+<br>
+<button class="tempbutton" id="cmdClearMyStorage" value="Clear Local Storage" type="button" onclick="myStorage();">Clear Local Storage</button>
+<br>
+<button class="tempbutton" id="cmdpreviewData" value="Preview Collected Data" type="button" onclick="previewData();">Preview Collected Data</button>
+<br>
+<div class="testdisplay" id="testdisplay"></div>
+<button class="tempbutton" id="cmdUploadData" value="Upload Data" type="button" onclick="return uploadStorage();">Upload Data</button>
+<br>
+
+<div class="dbltestdisplay" id="dbltestdisplay"></div>
+
+
+
+<br><br><br>
+
+</body>
+</html>

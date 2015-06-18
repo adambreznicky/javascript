@@ -1,0 +1,244 @@
+<html>
+<head>
+<title>End Treatments Summary</title>
+<link rel="stylesheet" href="http://js.arcgis.com/3.12/dijit/themes/claro/claro.css">
+<link rel="stylesheet" href="http://js.arcgis.com/3.12/esri/css/esri.css">
+<style>
+#mapDiv{
+  border: 2px solid;
+  border-radius: 5px;
+  border-color: #F8F8F8;	 
+  height:99%;
+  position: absolute;
+  left: 205px;
+  bottom: 2px;
+  right: 2px;
+  top: 2px;
+  overflow: hidden;
+ }
+table {
+	border-style: solid;
+	border-width: 1px;
+	width: 350px;
+	padding: 5px;
+}
+td {
+	padding: 5px;
+}
+th {
+	padding: 5px;
+}
+.titleHeader {
+	color: black;	
+	font-size: 24px;
+	text-align: center;	
+}
+.alt {
+	background-color: #99CCFF;
+	color: white;
+}
+.norm {
+	background-color: #FFFFFF;
+	color: black;
+}
+.altHeader {
+	background-color: #3399FF;  
+	color: white;
+	font-size: 18px;
+	text-align: center;
+}
+</style>
+<script src="http://js.arcgis.com/3.12/"></script>
+<script>
+var map;
+var pOneLyr;
+var activeLayer;
+var theTotal = 0;
+
+	require(["esri/map",
+		"dojo/dom-construct",
+	    "esri/layers/LayerInfo",
+		"esri/dijit/Scalebar",
+		"dojo/on",
+		"esri/tasks/query", 
+		"esri/tasks/QueryTask",
+		"esri/arcgis/utils",
+		"esri/dijit/Legend",
+		"esri/geometry/webMercatorUtils",
+		"dojo/dom",
+		"esri/layers/KMLLayer",
+		"dojo/parser",
+		"esri/toolbars/draw",
+		"esri/geometry/geodesicUtils", 
+		"esri/units",
+		"esri/graphic",
+		"esri/graphicsUtils",
+		"esri/SpatialReference",
+		"esri/geometry/Extent",
+		"esri/layers/FeatureLayer",
+		"esri/symbols/SimpleLineSymbol",
+		"esri/symbols/CartographicLineSymbol",
+		"esri/renderers/UniqueValueRenderer",
+		"esri/symbols/SimpleMarkerSymbol",
+		"esri/symbols/SimpleFillSymbol",
+		"esri/symbols/TextSymbol",
+		"esri/renderers/SimpleRenderer",
+		"esri/layers/LabelLayer",
+		"esri/Color",
+		"esri/InfoTemplate",
+		"esri/layers/ArcGISTiledMapServiceLayer", "dojo/domReady!"], function(Map,domConstruct,LayerInfo,Scalebar,on,Query,QueryTask,arcgisUtils,Legend,webMercatorUtils,dom,KMLLayer,parser,Draw,geodesicUtils,Units,Graphic,graphicsUtils,SpatialReference,Extent,FeatureLayer,SimpleLineSymbol,CartographicLineSymbol,UniqueValueRenderer,SimpleMarkerSymbol,SimpleFillSymbol,TextSymbol,SimpleRenderer,LabelLayer,Color,InfoTemplate,Tiled) {
+			
+		parser.parse();
+				
+		// map = new Map("mapDiv", {minZoom:6, maxZoom:15});
+
+		// tiled = new Tiled("http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
+		// map.addLayer(tiled);
+		
+		// var theExtent = new esri.geometry.Extent(-107,25.27,-93,37.27, new esri.SpatialReference({ wkid: 4269 }));
+		// map.setExtent(esri.geometry.geographicToWebMercator(theExtent));		
+		
+		//Add project layer with definition query for selected record.
+		addEndTreatments();
+		getTotals();
+		getErrors();
+		
+		var dateObj = new Date();
+		var month = dateObj.getUTCMonth() + 1; //months from 1-12
+		var day = dateObj.getUTCDate();
+		var year = dateObj.getUTCFullYear();
+
+		newdate = year + "/" + month + "/" + day;
+		document.getElementById("dateTime").innerHTML = newdate;
+		
+	});	
+		
+	//Output fields from feature layers and tables
+	var theOutFields = ['TreatmentType','RoadbedSide','AccuracyFeet','Speed','Device','Latitude','Longitude','Date'];			
+		
+	//Info window data
+	var tableText = "";
+	tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+	tableText += "<tr><td>Treatment Type</td><td>${TreatmentType}</td></tr>";	
+	tableText += "<tr><td>Roadbed Side</td><td>${RoadbedSide}</td></tr>";
+	tableText += "<tr><td>Accuracy FT</td><td>${AccuracyFeet}</td></tr>";
+	tableText += "<tr><td>Speed</td><td>${Speed}</td></tr>";		
+	tableText += "<tr><td>Device</td><td>${Device}</td></tr>";
+	tableText += "<tr><td>Latitude</td><td>${Latitude}</td></tr>";	
+	tableText += "<tr><td>Longitude</td><td>${Longitude}</td></tr>";
+	tableText += "<tr><td>Date</td><td>${Date}</td></tr>";
+	tableText += "</table>";
+	
+	//Refresh counts
+	function getTotals() {
+		theTotal = 0;
+		queryAttributes("TreatmentType='ETPLUS'","ETPLUS");
+		queryAttributes("TreatmentType='ET2000'","ET2000");
+		queryAttributes("TreatmentType='SKT350'","ETSKT");
+		queryAttributes("TreatmentType='TURNDOWN'","ETTURN");
+		queryAttributes("TreatmentType='XLITE'","ETLITE");
+		queryAttributes("TreatmentType='SOFTSTOP'","ETSOFT");
+		queryAttributes("TreatmentType='OTHER'","ETOTHER");	
+	}
+	
+	function getErrors() {
+		queryAttributesErrors("AccuracyFeet>250","ETERROR");		
+		queryAttributesErrors("Speed=0","ETTOTALMPH");		
+	}
+	
+	function refreshData() {
+		getTotals();
+		getErrors();
+	}
+		
+	//Add Proposition One feature layer
+	function addEndTreatments() {
+		var infoTemplate = new esri.InfoTemplate("End Treatments:",tableText);	
+		var projectsUrl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0";	
+	
+		pOneLyr = new esri.layers.FeatureLayer(projectsUrl, {id:"Treatments",visible: true, outFields: theOutFields, infoTemplate: infoTemplate});	
+		activeLayer = pOneLyr;
+	}			
+
+	function queryAttributes(theQuery,theID) {						
+		var query = new esri.tasks.Query();
+		query.returnGeometry = false;
+		query.where = theQuery;	
+		activeLayer.queryIds(query, function (objectIds) {
+			theTotal = theTotal + objectIds.length;
+			document.getElementById(theID).innerHTML = addCommas(objectIds.length);
+			document.getElementById("ETTOTAL").innerHTML = addCommas(theTotal);
+		});
+	}
+	
+	function queryAttributesErrors(theQuery,theID) {						
+		var query = new esri.tasks.Query();
+		query.returnGeometry = false;
+		query.where = theQuery;	
+		activeLayer.queryIds(query, function (objectIds) {
+			document.getElementById(theID).innerHTML = addCommas(objectIds.length);
+		});
+	}	
+	
+	function addCommas(nStr) {
+	  nStr += '';
+	  x = nStr.split('.');
+	  x1 = x[0];
+	  x2 = x.length > 1 ? '.' + x[1] : '';
+	  var rgx = /(\d+)(\d{3})/;
+	  while (rgx.test(x1)) {
+		x1 = x1.replace(rgx, '$1' + ',' + '$2');
+	  }
+	  return x1 + x2;
+	}	
+</script>
+</head>
+<body>
+	<div id="container">
+		<table border=0>
+		<tr class="titleHeader">
+			<td colspan=2>End Treatment Project Summary</td>
+		</tr>				
+		<tr class="altHeader">
+			<th>Treatment Type</th><th>Count</th>
+		</tr>			
+		<tr class="norm">
+			<td>ET Plus</td><td id="ETPLUS" align="right"></td>
+		</tr>
+		<tr class="alt">
+			<td>ET 2000</td><td id="ET2000" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>SKT 350</td><td id="ETSKT" align="right"></td>
+		</tr>
+		<tr class="alt">
+			<td>Turndown</td><td id="ETTURN" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>X-Lite</td><td id="ETLITE" align="right"></td>
+		</tr>
+		<tr class="alt">
+			<td>Softstop</td><td id="ETSOFT" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>Other</td><td id="ETOTHER" align="right"></td>
+		</tr>	
+		<tr class="alt">
+			<td>Total</td><td id="ETTOTAL" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>Accuracy > 250 ft.</td><td id="ETERROR" align="right"></td>
+		</tr>
+		<tr class="norm">
+			<td>0 MPH</td><td id="ETTOTALMPH" align="right"></td>
+		</tr>		
+		<tr class="alt">
+			<td colspan=2 align="right" id="dateTime"></td>
+		</tr>		
+		</table>
+	</div>
+	<br>
+	<button onclick="refreshData()">Refresh the Data</button>
+	<!--<div id="mapDiv"></div>-->
+</body>
+</html>

@@ -38,7 +38,6 @@ htmlcov/
 .tox/
 .coverage
 .coverage.*
-.cache
 nosetests.xml
 coverage.xml
 *,cover
@@ -55,7 +54,31 @@ docs/_build/
 
 # PyBuilder
 target/
-
+#
+#
+#
+#
 #Brez
+#
+#
+#
+*.gdb
+*.mxd
+*.zip
+*.dir
+*.mdb
+*.ldb
+#shapefiles
+*.cpg
+*.dbf
+*.prj
+*.dbf.xml
+*.sbn
+*.sbx
+*.shp
+*.shp.xml
+*.shx
+*qpj
+
 INDICA/Data/
 .idea/

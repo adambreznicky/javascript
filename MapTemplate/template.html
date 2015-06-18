@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TPP WebMap Template</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+        <style type="text/css">
+            html, body {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+            #bcMain {
+                height: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            #cpCenter {
+                padding: 0;
+                margin: 0;
+            }
+            #cpTop, #cpBottom {
+                margin: 0;
+                padding: 0;
+                height: 75px;
+                background-color: rgb(20,56,92);
+                overflow: hidden;
+            }
+            #divMap {
+                padding: 0;
+                margin: 0;
+                height: 100%
+            }
+            .esriScalebarLabel {
+                color: white;
+                font-size: large;
+            }
+            .esriScalebarRulerBlock {
+                background-color: black;
+            }
+            #date {
+                position: relative;
+                left: -50%;
+                bottom: 6px;
+                color: white;
+                text-align: center;
+                font-size: small;
+            }
+            #copyright {
+                position: relative;
+                left: -50%;
+                bottom: 2px;
+                color: white;
+                text-align: center;
+                font-size: 50%;
+            }
+            #district, #county {
+                position: relative;
+                left: -50%;
+                bottom: 2px;
+                color: white;
+                text-align: center;
+                font-size: x-large;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.13/"></script>
+        <script>
+            var map;
+            var tiled;
+            var scaler;
+            var districts;
+            var districtsURL;
+            var counties;
+            var countiesURL;
+            
+            require(["esri/map",
+                "esri/geometry/Extent",
+                "esri/SpatialReference",
+                "esri/geometry/webMercatorUtils",
+                "esri/layers/ArcGISTiledMapServiceLayer",
+                
+                "esri/dijit/Scalebar",
+                "esri/layers/FeatureLayer",
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                
+                "dojo/on",
+                "dojo/dom",
+                "dojo/_base/array",
+                "esri/arcgis/utils",
+                "esri/geometry/webMercatorUtils",
+                
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/domReady!"],
+            function(Map, Extent, SpatialReference, webMercatorUtils, Tiled,
+                    Scalebar, FeatureLayer, Query, QueryTask,
+                    on, dom, array, arcgisUtils, webMercatorUtils,
+                    ready, parser) {
+                ready(function(){
+                    
+                    map = new Map("divMap", {
+                        minZoom:6,
+                        maxZoom:16,
+                        logo: false
+                    });
+                    
+                    tiled = new Tiled("http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
+                    map.addLayer(tiled);
+                    
+                    districtsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Districts/FeatureServer/0";
+                    districts = new FeatureLayer (districtsURL, {
+                        mode: FeatureLayer.MODE_ONDEMAND,
+                        visible: false,
+                        outFields: ["DIST_NM"]
+                    });
+                    
+                    countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";
+                    counties = new FeatureLayer(countiesURL,{
+                        mode: FeatureLayer.MODE_ONDEMAND,
+                        visible: false,
+                        outFields: ["CNTY_NM", "CNTY_NBR"]
+                    });
+                    
+                    map.addLayers([districts, counties]);
+                    
+                    var theExtent = new Extent(-107,25.27,-93,37.27, new esri.SpatialReference({ wkid: 4269 }));
+                    map.setExtent(esri.geometry.geographicToWebMercator(theExtent));
+                    
+                    scaler = new Scalebar({
+                        map: map,
+                        scalebarUnit: "english",
+                        scalebarStyle: "ruler"
+                    }, dojo.byId("scale"));
+                    
+                    map.on("load", function(){
+                        var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                        var text = document.getElementById("date").innerHTML;
+                        var today = new Date();
+                        var month = monthNames[today.getMonth()];
+                        var day = today.getDate();
+                        var year = today.getFullYear();
+                        var theDate = month + " " + day + ", " + year;
+                        
+                        document.getElementById("date").innerHTML = text + theDate;
+                        
+                        var text2 = document.getElementById("copyright").innerHTML;
+                        var lastYear = today.getFullYear()-1;
+                        
+                        document.getElementById("copyright").innerHTML = "Copyright " + year + text2 + lastYear + ".";
+                        
+                    });
+                    map.on("pan", updateHeader);
+                    map.on("zoom-end", updateHeader);
+                    function updateHeader(){
+                        var center = new esri.geometry.webMercatorToGeographic(map.extent.getCenter());
+                        var query = new Query();
+                        var queryTask = new QueryTask(countiesURL);
+                        query.outFields = ["CNTY_NM"];
+                        queryTask.execute(query, findExtent);
+
+                        function findExtent(results){
+
+                            var theCounty = array.map(results.features.attributes, function(result){
+                                    return result;
+                            });
+                            var text = theCounty[0];
+                            document.getElementById("county").innerHTML = text + " County";
+                        };
+                    }
+                
+                });
+            });
+        </script>
+    </head>
+    <body class="claro">
+        
+        <div id="bcMain" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline', gutters: false" >
+            <div id="cpTop" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+                <div style="position:absolute; left:15%;">
+                    <p id="district">District</p>
+                </div>
+                <div style="position:absolute; left:85%;">
+                    <p id="county">County</p>
+                </div>
+            </div>
+            <div id="cpCenter" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+                <div id="divMap">
+                    
+                </div>
+            </div>
+            <div id="cpBottom" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'bottom'">
+                <div style="position:absolute; left:14px; bottom:4px; z-Index:999;">
+                    <img src="./NorthArrow.png" alt="North" style="width:58px;height:58px">
+                </div>
+                <div id="scale" style="position:absolute; left:20%; bottom:40px; z-Index:999;"></div>
+                <div style="position:absolute; left:50%;">
+                    <p id="date">Texas Department of Transportation<br>
+                                Transportation Planning and Programming Division<br>
+                                Data Analysis, Mapping and Reporting Branch<br>
+                    </p>
+                </div>
+                <div style="position:absolute; left:75%;">
+                    <p id="copyright"><br>
+                                    Texas Department of Transportation<br>
+                                    Notice<br>
+                                    This map was produced for internal use<br>
+                                    within the Texas Department of Transportation.<br>
+                                    Accuracy is limited to the validity of available<br>
+                                    data as of December 31, 
+                    </p>
+                </div>
+                <div style="position:absolute; right:14px; bottom:4px; z-Index:999;">
+                    <img src="./Logo for Maps.png" alt="TxDOT Logo" style="width:84px;height:58px">
+                </div>
+            </div>
+        </div>
+        
+    </body>
+</html>
