@@ -78,7 +78,11 @@ target/
 *.shp
 *.shp.xml
 *.shx
-*qpj
+*.qpj
+*.pyc
 
-INDICA/Data/
+Shortcut*
 .idea/
+QC/Error Checks/
+OLD_CountyRoadInventoryMapBook_RefOnly/
+zugelder/PostCollectionQAQC/
