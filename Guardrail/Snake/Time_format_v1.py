@@ -6,6 +6,7 @@ import arcpy
 
 input = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\BACKUP\\GETdisplay.gdb\\GETdisplay"
 
+arcpy.AddField_management(input, "TIME", "TEXT", "", "", 50)
 cursor = arcpy.da.UpdateCursor(input, ["Date", "TIME"], "Date IS NOT NULL")
 for row in cursor:
     year = row[0].split("-")[0]
