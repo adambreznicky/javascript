@@ -1,6 +1,7 @@
 __file__ = 'Time_format_v1'
 __date__ = '6/22/2015'
 __author__ = 'ABREZNIC'
+
 import arcpy
 
 input = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\BACKUP\\GETdisplay.gdb\\GETdisplay"
