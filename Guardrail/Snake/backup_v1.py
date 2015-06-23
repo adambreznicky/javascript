@@ -7,7 +7,7 @@ import os
 import json
 import arcpy, datetime
 
-output = "C:\\TxDOT\\Scripts\\Guardrail\\Snake\\BACKUP"
+output = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\BACKUP"
 
 if __name__ == "__main__":
     username = "Adam.Breznicky_TXDOT"
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     arcpy.CreateFileGDB_management(output, "GET" + curYear + curMonth + curDay)
     werkspace = output + os.sep + "GET" + curYear + curMonth + curDay + ".gdb"
 
-    sample = "C:\\TxDOT\\Scripts\\Guardrail\\Data\\GuardrailPoints.gdb\\GuardrailPoints"
+    sample = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Data\\GuardrailPoints.gdb\\GuardrailPoints"
     sr = arcpy.SpatialReference(3857)
     arcpy.CreateFeatureclass_management(werkspace, "GuardrailEndTreatments", "POINT", sample, "DISABLED", "DISABLED", sr)
     fc = werkspace + os.sep + "GuardrailEndTreatments"
