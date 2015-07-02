@@ -3,8 +3,8 @@ __date__ = '6/16/2015'
 __author__ = 'ABREZNIC'
 import arcpy, datetime, os
 
-output = "C:\\TxDOT\\Scripts\\Guardrail\\Snake\\QC"
-GET = "C:\\TxDOT\\Scripts\\Guardrail\\Snake\\BACKUP\\GETdisplay.gdb\\GETdisplay"
+output = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\QC"
+GET = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\QC\\Analysis\\GET_20150629_QC.gdb\\GuardrailEndTreatments"
 roadways = "Database Connections\\Connection to Comanche.sde\\TPP_GIS.APP_TPP_GIS_ADMIN.Roadways\\TPP_GIS.APP_TPP_GIS_ADMIN.TXDOT_Roadways"
 offices = "Database Connections\\Connection to Comanche.sde\\TPP_GIS.APP_TPP_GIS_ADMIN.Facility\\TPP_GIS.APP_TPP_GIS_ADMIN.Office"
 
@@ -51,7 +51,7 @@ print "DupeLatLong feature class complete."
 
 ############txdot offices buffer############
 officeBuff = werkspace + os.sep + "TxdotOfficeBuffer"
-arcpy.Buffer_analysis(offices, officeBuff, ".25 Miles")
+arcpy.Buffer_analysis(offices, officeBuff, ".1 Miles")
 print "Office buffer created."
 
 officeGET = werkspace + os.sep + "GET_officeTests"
@@ -66,7 +66,7 @@ arcpy.Select_analysis(roadways, onsystem, query2)
 print "OnSystem roads isolated."
 
 onsysBuff = werkspace + os.sep + "OnSystemBuffer"
-arcpy.Buffer_analysis(onsystem, onsysBuff, "500 Feet")
+arcpy.Buffer_analysis(onsystem, onsysBuff, "125 Feet")
 print "Roads buffer created."
 
 onsysGET = werkspace + os.sep + "GET_offRoadways"

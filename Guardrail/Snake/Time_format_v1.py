@@ -4,7 +4,7 @@ __author__ = 'ABREZNIC'
 
 import arcpy
 
-input = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\BACKUP\\GETdisplay.gdb\\GETdisplay"
+input = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\QC\\Analysis\\GET_20150629_QC.gdb\\GuardrailEndTreatments"
 
 arcpy.AddField_management(input, "TIME", "TEXT", "", "", 50)
 cursor = arcpy.da.UpdateCursor(input, ["Date", "TIME"], "Date IS NOT NULL")
