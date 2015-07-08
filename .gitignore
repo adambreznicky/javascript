@@ -81,6 +81,11 @@ target/
 *.qpj
 *.pyc
 *.avi
+*.pdf
+*.xlsx
+*.xls
+*.jpg
+
 
 Shortcut*
 .idea/
