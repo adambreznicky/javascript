@@ -1,5 +1,5 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html manifest="offlineCache.manifest">
+<!-- <html manifest="offlineCache.manifest"> -->
 <head>
 <title>Asset Collection</title>
 <meta content='user-scalable=0' name='viewport'>
@@ -81,6 +81,7 @@
     }
     select {
         width: 90%;
+        line-height: 60px;
         padding: 10px;
         margin: 20 auto;
         font-size: 60px;
@@ -96,9 +97,9 @@
         -webkit-appearance: none;
         -webkit-border-radius: 0;
     }
-    option {
+/*    option {
         font-size:60px;
-    }
+    }*/
 </style>
 <link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
 <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
@@ -119,6 +120,10 @@
     var logger;		 
     var previewShow = false;
     var totalpoints = 0;
+    var logging = false;
+    var lineGeometry = [];
+    var lineAccy = [];
+    var lineSpeedy = [];
 
     function device(){
         if(navigator){
@@ -166,6 +171,13 @@
             var x = document.getElementById("outputLocation");
             x.style.color = "green";
             x.innerHTML = latty + "," + longy;
+
+            if (logging){
+                currentPosition = [latty, longy];
+                lineGeometry.push(currentPosition);
+                lineAccy.push(accy);
+                lineSpeedy.push(speedy);
+            }
         }
     }
     
@@ -177,26 +189,31 @@
     function dataSelected(value) {
         if (value === ""){
             document.getElementById("MKRcontainer").style.display = "none";
-            document.getElementById("UPLOADcontainer").style.display = "none";
+            document.getElementById("CRcontainer").style.display = "none";
         }
         else if (value === "MKR") {
             document.getElementById("MKRcontainer").style.display = "block";
-            document.getElementById("UPLOADcontainer").style.display = "block";
+            document.getElementById("CRcontainer").style.display = "none";
         }
         else if (value === "CR") {
             document.getElementById("MKRcontainer").style.display = "none";
-            document.getElementById("UPLOADcontainer").style.display = "block";
+            document.getElementById("CRcontainer").style.display = "block";
         }
     }
 
 
-    function collectPoint(value) {
+    function collectPoint() {
         beep();	
         var y = document.getElementById("pointStatus");	
-        var intKEY = totalpoints;
-        var type = value.substring(0, value.length-1);
-        var side = value.slice(-1);
-        var POD=[type,side,t,accy,speedy,latty,longy,deviceinfo];
+        var intKEY = "MK" + totalpoints.toString();
+        var routePrefix = document.getElementById("mkrPRFX").value;
+        var routeNumber = document.getElementById("mkrRTENBR").value;
+        routeNumber = String("0000" + routeNumber).slice(-4);
+        var routeSuffix = document.getElementById("mkrSFX").value;
+        var routeRoadbed = document.getElementById("mkrRDBD").value;
+        var markerNumber = document.getElementById("mkrNBR").value;
+        markerNumber = String("0000" + markerNumber).slice(-4);
+        var POD=[routePrefix,routeNumber,routeSuffix,routeRoadbed,markerNumber,t,accy,speedy,deviceinfo,latty,longy];
         
         if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
             logger = localStorage.setItem(intKEY,JSON.stringify(POD));
@@ -205,6 +222,57 @@
         }
         else {
             y.innerHTML=totalpoints + " point(s) logged."; 
+        }
+    }
+
+    function collectLine() {
+        beep(); 
+        if (logging) {
+            logging = false;
+            document.getElementById("crCOLLECT").innerText="Collect Line";
+            document.getElementById("crCOLLECT").style.backgroundColor= "initial";
+            document.getElementById("crSTATUS").innerHTML="";
+            
+            var y = document.getElementById("pointStatus"); 
+            var intKEY = "CR" + totalpoints.toString();;
+
+            var routeNumber = document.getElementById("crRTENBR").value;
+            if (routeNumber.length < 5){
+                routeNumber = String("0000" + routeNumber).slice(-4);
+            }
+            else {
+                routeNumber = String("00000" + routeNumber).slice(-5);
+            }
+            var countyNumber = document.getElementById("crNUM").value;
+            var surface = document.getElementById("crST").value;
+            var design = document.getElementById("crDSGN").value;
+            var name = document.getElementById("crNAME").value;
+            var comment = document.getElementById("crCMT").value;
+            var sumAccy = 0;
+            for( var i = 0; i < lineAccy.length; i++ ){
+                sumAccy += parseInt(lineAccy[i],10);
+            }
+            var avgAccy = sumAccy/lineAccy.length;
+            var sumSpeedy = 0;
+            for( var i = 0; i < lineSpeedy.length; i++ ){
+                sumSpeedy += parseInt(lineSpeedy[i],10);
+            }
+            var avgSpeedy = sumSpeedy/lineSpeedy.length;
+            var POD=[routeNumber,countyNumber,surface,design,name,comment,t,avgAccy,avgSpeedy,deviceinfo,lineGeometry];
+            
+            logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+            totalpoints += 1;
+            y.innerHTML=totalpoints + " point(s) logged.";    
+
+            lineGeometry = [];
+            lineAccy = [];
+            lineSpeedy = [];
+        }
+        else {
+            logging = true;
+            document.getElementById("crCOLLECT").innerText="Stop Logging Line";
+            document.getElementById("crCOLLECT").style.backgroundColor= "red";
+            document.getElementById("crSTATUS").innerHTML="Logging...";
         }
     }
 
@@ -271,25 +339,38 @@
                 }
             };
 
-            var featureArray = [];
+            var markerArray = [];
+            var countyroadArray = [];
+            var totalCount = 0;
             for (var i=0, len = localStorage.length; i  <  len; i++){
                 var key = localStorage.key(i);
                 feature = localStorage.getItem(key);
-                featureArray.push(feature);
+                var type = key.substring(0,2);
+                if (type == "MK"){
+                    markerArray.push(feature);
+                    totalCount += 1;
+                }
+                else if (type == "CR"){
+                    countyroadArray.push(feature);
+                    totalCount += 1;
+                }
             }
 
-            if(featureArray.length > 0){
+            if(markerArray.length > 0 || countyroadArray.length > 0){
                 //Service URL 
-                var serviceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0/addFeatures?f=json&features=";
-
+                var markerURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Markers/FeatureServer/0/addFeatures?f=json&features=";
+                var countyroadURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Field_CR/FeatureServer/0/addFeatures?f=json&features=";
                 //Build the String
                 var counter = 0;
                 var theText = "";
-                for (var i=0, len = featureArray.length; i  <  len; i++) {
-                    var pnt = JSON.parse(featureArray[i]);
-                    var newPT = esri.geometry.lngLatToXY(pnt[6],pnt[5]);
-                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'TreatmentType':'" + pnt[0] + "','RoadbedSide':'" + pnt[1] + "','Date':'" + pnt[2] + "','AccuracyFeet':'" + pnt[3] + "','Speed':'" + pnt[4] + "','Device':'" + pnt[7] + "','Latitude':'" + pnt[5] + "','Longitude':'" + pnt[6] + "'}}";           
-                    theText = serviceURL + "[" + theText + "]";
+                for (var i=0, len = markerArray.length; i  <  len; i++) {
+                    var pnt = JSON.parse(markerArray[i]);
+                    // routePrefix,routeNumer,routeSuffix,routeRoadbed,markerNumber,t,accy,speedy,deviceinfo,latty,longy
+                    var routeName = pnt[0] + pnt[1] + pnt[2];
+                    var routeID = routeName + "-" + pnt[3];
+                    var newPT = esri.geometry.lngLatToXY(pnt[10],pnt[9]);
+                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'RTE_PRFX':'" + pnt[0] + "','RTE_NBR':'" + pnt[1] + "','RTE_SFX':'" + pnt[2] + "','RDBD_TYPE':'" + pnt[3] + "','RTE_NM':'" + routeName + "','RTE_ID':'" + routeID + "','MKR_NBR':'" + pnt[4] + "','DATE':'" + pnt[5] + "','ACCURACY':'" + pnt[6] + "','SPEED':'" + pnt[7] + "','DEVICE':'" + pnt[8] + "','LATITUDE':'" + pnt[9] + "','LONGITUDE':'" + pnt[10] + "'}}";           
+                    theText = markerURL + "[" + theText + "]";
                     xmlhttp.open("POST",theText,false);
                     try {
                         xmlhttp.send();
@@ -316,7 +397,47 @@
                         alert("Upload Failed. Try again with an internet connection.");
                     }
                 }
-                if (counter === featureArray.length){
+                for (var i=0, len = countyroadArray.length; i  <  len; i++) {
+                    var pnt = JSON.parse(countyroadArray[i]);
+                    // routeNumber,countyNumber,surface,design,name,comment,t,avgAccy,avgSpeedy,deviceinfo,lineGeometry
+                    var fixedGeom = [];
+                    var lineGeom = pnt[10];
+                    for (var i = 0; i < lineGeom.length; i++){
+                        var point = lineGeom[i];
+                        var newPT = esri.geometry.lngLatToXY(point[1],point[0]);
+                        fixedGeom.push(newPT);
+                    }
+                    var stringGeom = JSON.stringify(fixedGeom);
+                    theText = "{'geometry':{'paths':[" + stringGeom + "]},'attributes':{'RTE_NBR':'" + pnt[0] + "','CNTY_NBR':'" + pnt[1] + "','SURFACE_TYPE':'" + pnt[2] + "','HWY_DSGN':'" + pnt[3] + "','ST_NAME':'" + pnt[4] + "','COMMENT':'" + pnt[5] + "','DATE':'" + pnt[6] + "','AVG_ACCY':'" + pnt[7] + "','AVG_SPD':'" + pnt[8] + "','DEVICE':'" + pnt[9] + "'}}";           
+                    theText = countyroadURL + "[" + theText + "]";
+                    xmlhttp.open("POST",theText,false);
+                    try {
+                        xmlhttp.send();
+                        if (xmlhttp.status >= 200 && xmlhttp.status < 304) {
+                            if (xmlhttp.responseText.slice(-7) === "true}]}"){
+                                counter += 1;
+                            }
+                        } else {
+                            document.getElementById('overlay').style.display='none';
+                            document.getElementById('wait').style.display='none';
+                            x.innerHTML = 'Upload Failed. Try again with an internet connection.';
+                            for (var i = 0; i < Buttons.length; i++) {
+                                Buttons[i].disabled = false;
+                            }
+                            alert("Upload Failed. Try again with an internet connection.");
+                        }
+                    } catch (e) {
+                        document.getElementById('overlay').style.display='none';
+                        document.getElementById('wait').style.display='none';
+                        x.innerHTML = 'Upload Failed. Try again with an internet connection.';
+                        for (var i = 0; i < Buttons.length; i++) {
+                            Buttons[i].disabled = false;
+                        }
+                        alert("Upload Failed. Try again with an internet connection.");
+                    }
+                }
+
+                if (counter === totalCount){
                     document.getElementById('overlay').style.display='none';
                     document.getElementById('wait').style.display='none';
                     localStorage.clear();
@@ -377,7 +498,9 @@
         </div>
         <div id="dropdown" class="styled-select">
                 <select style="font-size: large;" id="dataSelect" onchange="dataSelected(this.value)">
-                <option value="">Select Data to Collect</option>     <option value="MKR">Markers</option>   <option value="CR">County Roads</option>
+                    <option value="">Select Data to Collect</option>
+                    <option value="MKR">Markers</option>
+                    <option value="CR">County Roads</option>
                 </select>
         </div>
         <div id="MKRcontainer" style="display: none;" class="styled-select">
@@ -406,22 +529,60 @@
                             <option value="UA">UA</option>
                             <option value="UP">UP</option>
                             <option value="US">US</option>
-                    </select></td>
+                        </select></td>
                     <td><select style="font-size: large;" id="mkrSFX">
-                        <option value="">Route Suffix</option>    <option value='A'>A</option>	<option value='B'>B</option>	<option value='C'>C</option>	<option value='D'>D</option>	<option value='E'>E</option>	<option value='F'>F</option>	<option value='G'>G</option>	<option value='H'>H</option>	<option value='I'>I</option>	<option value='J'>J</option>	<option value='K'>K</option>	<option value='L'>L</option>	<option value='M'>M</option>	<option value='N'>N</option>	<option value='O'>O</option>	<option value='P'>P</option>	<option value='Q'>Q</option>	<option value='R'>R</option>	<option value='S'>S</option>	<option value='T'>T</option>	<option value='U'>U</option>	<option value='V'>V</option>	<option value='W'>W</option>	<option value='X'>X</option>	<option value='Y'>Y</option>	<option value='Z'>Z</option>
-                    </select></td>
+                            <option value="">Route Suffix</option>    <option value='A'>A</option>	<option value='B'>B</option>	<option value='C'>C</option>	<option value='D'>D</option>	<option value='E'>E</option>	<option value='F'>F</option>	<option value='G'>G</option>	<option value='H'>H</option>	<option value='I'>I</option>	<option value='J'>J</option>	<option value='K'>K</option>	<option value='L'>L</option>	<option value='M'>M</option>	<option value='N'>N</option>	<option value='O'>O</option>	<option value='P'>P</option>	<option value='Q'>Q</option>	<option value='R'>R</option>	<option value='S'>S</option>	<option value='T'>T</option>	<option value='U'>U</option>	<option value='V'>V</option>	<option value='W'>W</option>	<option value='X'>X</option>	<option value='Y'>Y</option>	<option value='Z'>Z</option>
+                        </select></td>
                 </tr>
                 <tr>
-                    <td><input id="mkrRTENBR" type="text" value="" maxlength="5" placeholder="Route Number (XXXX)"></td>
+                    <td><input id="mkrRTENBR" type="text" value="" maxlength="4" placeholder="Route Number (XXXX)"></td>
                     <td><select style="font-size: large;" id="mkrRDBD">
                             <option value="">Roadbed Type</option>  <option value='KG'>KG - Single Roadbed</option>	<option value='LG'>LG - Left Roadbed</option>	<option value='RG'>RG - Right Roadbed</option>	<option value='XG'>XG - Left Frontage</option>	<option value='AG'>AG - Right Frontage</option>	<option value='MG'>MG - Left Supplemental Main lane</option>	<option value='SG'>SG - Right Supplemental Main Lane</option>	<option value='PG'>PG - Left Supplemental Supplemental Main Lane</option>	<option value='TG'>TG - Right Supplemental Supplemental Main Lane</option>	<option value='YG'>YG - Left Supplemental Frontage Road</option>	<option value='BG'>BG - Right Supplemental Frontage Road</option>
-                    </select></td>
+                        </select>
+                    </td>
                 </tr>
                 <tr>
-                    <td colspan=2><input id="mkrNBR" type="text" value="" maxlength="5" placeholder="Marker Number (XXXX)"></td>
+                    <td colspan=2><input id="mkrNBR" type="text" value="" maxlength="4" placeholder="Marker Number (XXXX)"></td>
                 </tr>
                 <tr>
                     <td colspan=2><button id="mkrCOLLECT" type="button" onclick="collectPoint();">Collect Point</button></td>
+                </tr>
+            </table>
+        </div>
+        <div id="CRcontainer" style="display: none;" class="styled-select">
+            <table>
+                <tr>
+                    <td><input id="crRTENBR" type="text" value="" maxlength="5" placeholder="Route Number (XXXX)"></td>
+                    <td><select style="font-size: large;" id="crNUM">
+                            <option value="001">001 - Anderson</option> <option value="002">002 - Andrews</option>  <option value="003">003 - Angelina</option> <option value="004">004 - Aransas</option>  <option value="005">005 - Archer</option>   <option value="006">006 - Armstrong</option>    <option value="007">007 - Atascosa</option> <option value="008">008 - Austin</option>   <option value="009">009 - Bailey</option>   <option value="010">010 - Bandera</option>  <option value="011">011 - Bastrop</option>  <option value="012">012 - Baylor</option>   <option value="013">013 - Bee</option>  <option value="014">014 - Bell</option> <option value="015">015 - Bexar</option>    <option value="016">016 - Blanco</option>   <option value="017">017 - Borden</option>   <option value="018">018 - Bosque</option>   <option value="019">019 - Bowie</option>    <option value="020">020 - Brazoria</option> <option value="021">021 - Brazos</option>   <option value="022">022 - Brewster</option> <option value="023">023 - Briscoe</option>  <option value="024">024 - Brooks</option>   <option value="025">025 - Brown</option>    <option value="026">026 - Burleson</option> <option value="027">027 - Burnet</option>   <option value="028">028 - Caldwell</option> <option value="029">029 - Calhoun</option>  <option value="030">030 - Callahan</option> <option value="031">031 - Cameron</option>  <option value="032">032 - Camp</option> <option value="033">033 - Carson</option>   <option value="034">034 - Cass</option> <option value="035">035 - Castro</option>   <option value="036">036 - Chambers</option> <option value="037">037 - Cherokee</option> <option value="038">038 - Childress</option>    <option value="039">039 - Clay</option> <option value="040">040 - Cochran</option>  <option value="041">041 - Coke</option> <option value="042">042 - Coleman</option>  <option value="043">043 - Collin</option>   <option value="044">044 - Collingsworth</option>    <option value="045">045 - Colorado</option> <option value="046">046 - Comal</option>    <option value="047">047 - Comanche</option> <option value="048">048 - Concho</option>   <option value="049">049 - Cooke</option>    <option value="050">050 - Coryell</option>  <option value="051">051 - Cottle</option>   <option value="052">052 - Crane</option>    <option value="053">053 - Crockett</option> <option value="054">054 - Crosby</option>   <option value="055">055 - Culberson</option>    <option value="056">056 - Dallam</option>   <option value="057">057 - Dallas</option>   <option value="058">058 - Dawson</option>   <option value="059">059 - Deaf Smith</option>   <option value="060">060 - Delta</option>    <option value="061">061 - Denton</option>   <option value="062">062 - De Witt</option>  <option value="063">063 - Dickens</option>  <option value="064">064 - Dimmit</option>   <option value="065">065 - Donley</option>   <option value="066">066 - Kenedy</option>   <option value="067">067 - Duval</option>    <option value="068">068 - Eastland</option> <option value="069">069 - Ector</option>    <option value="070">070 - Edwards</option>  <option value="071">071 - Ellis</option>    <option value="072">072 - El Paso</option>  <option value="073">073 - Erath</option>    <option value="074">074 - Falls</option>    <option value="075">075 - Fannin</option>   <option value="076">076 - Fayette</option>  <option value="077">077 - Fisher</option>   <option value="078">078 - Floyd</option>    <option value="079">079 - Foard</option>    <option value="080">080 - Fort Bend</option>    <option value="081">081 - Franklin</option> <option value="082">082 - Freestone</option>    <option value="083">083 - Frio</option> <option value="084">084 - Gaines</option>   <option value="085">085 - Galveston</option>    <option value="086">086 - Garza</option>    <option value="087">087 - Gillespie</option>    <option value="088">088 - Glasscock</option>    <option value="089">089 - Goliad</option>   <option value="090">090 - Gonzales</option> <option value="091">091 - Gray</option> <option value="092">092 - Grayson</option>  <option value="093">093 - Gregg</option>    <option value="094">094 - Grimes</option>   <option value="095">095 - Guadalupe</option>    <option value="096">096 - Hale</option> <option value="097">097 - Hall</option> <option value="098">098 - Hamilton</option> <option value="099">099 - Hansford</option> <option value="100">100 - Hardeman</option> <option value="101">101 - Hardin</option>   <option value="102">102 - Harris</option>   <option value="103">103 - Harrison</option> <option value="104">104 - Hartley</option>  <option value="105">105 - Haskell</option>  <option value="106">106 - Hays</option> <option value="107">107 - Hemphill</option> <option value="108">108 - Henderson</option>    <option value="109">109 - Hidalgo</option>  <option value="110">110 - Hill</option> <option value="111">111 - Hockley</option>  <option value="112">112 - Hood</option> <option value="113">113 - Hopkins</option>  <option value="114">114 - Houston</option>  <option value="115">115 - Howard</option>   <option value="116">116 - Hudspeth</option> <option value="117">117 - Hunt</option> <option value="118">118 - Hutchinson</option>   <option value="119">119 - Irion</option>    <option value="120">120 - Jack</option> <option value="121">121 - Jackson</option>  <option value="122">122 - Jasper</option>   <option value="123">123 - Jeff Davis</option>   <option value="124">124 - Jefferson</option>    <option value="125">125 - Jim Hogg</option> <option value="126">126 - Jim Wells</option>    <option value="127">127 - Johnson</option>  <option value="128">128 - Jones</option>    <option value="129">129 - Karnes</option>   <option value="130">130 - Kaufman</option>  <option value="131">131 - Kendall</option>  <option value="132">132 - Kent</option> <option value="133">133 - Kerr</option> <option value="134">134 - Kimble</option>   <option value="135">135 - King</option> <option value="136">136 - Kinney</option>   <option value="137">137 - Kleberg</option>  <option value="138">138 - Knox</option> <option value="139">139 - Lamar</option>    <option value="140">140 - Lamb</option> <option value="141">141 - Lampasas</option> <option value="142">142 - La Salle</option> <option value="143">143 - Lavaca</option>   <option value="144">144 - Lee</option>  <option value="145">145 - Leon</option> <option value="146">146 - Liberty</option>  <option value="147">147 - Limestone</option>    <option value="148">148 - Lipscomb</option> <option value="149">149 - Live Oak</option> <option value="150">150 - Llano</option>    <option value="151">151 - Loving</option>   <option value="152">152 - Lubbock</option>  <option value="153">153 - Lynn</option> <option value="154">154 - Madison</option>  <option value="155">155 - Marion</option>   <option value="156">156 - Martin</option>   <option value="157">157 - Mason</option>    <option value="158">158 - Matagorda</option>    <option value="159">159 - Maverick</option> <option value="160">160 - McCulloch</option>    <option value="161">161 - McLennan</option> <option value="162">162 - McMullen</option> <option value="163">163 - Medina</option>   <option value="164">164 - Menard</option>   <option value="165">165 - Midland</option>  <option value="166">166 - Milam</option>    <option value="167">167 - Mills</option>    <option value="168">168 - Mitchell</option> <option value="169">169 - Montague</option> <option value="170">170 - Montgomery</option>   <option value="171">171 - Moore</option>    <option value="172">172 - Morris</option>   <option value="173">173 - Motley</option>   <option value="174">174 - Nacogdoches</option>  <option value="175">175 - Navarro</option>  <option value="176">176 - Newton</option>   <option value="177">177 - Nolan</option>    <option value="178">178 - Nueces</option>   <option value="179">179 - Ochiltree</option>    <option value="180">180 - Oldham</option>   <option value="181">181 - Orange</option>   <option value="182">182 - Palo Pinto</option>   <option value="183">183 - Panola</option>   <option value="184">184 - Parker</option>   <option value="185">185 - Parmer</option>   <option value="186">186 - Pecos</option>    <option value="187">187 - Polk</option> <option value="188">188 - Potter</option>   <option value="189">189 - Presidio</option> <option value="190">190 - Rains</option>    <option value="191">191 - Randall</option>  <option value="192">192 - Reagan</option>   <option value="193">193 - Real</option> <option value="194">194 - Red River</option>    <option value="195">195 - Reeves</option>   <option value="196">196 - Refugio</option>  <option value="197">197 - Roberts</option>  <option value="198">198 - Robertson</option>    <option value="199">199 - Rockwall</option> <option value="200">200 - Runnels</option>  <option value="201">201 - Rusk</option> <option value="202">202 - Sabine</option>   <option value="203">203 - San Augustine</option>    <option value="204">204 - San Jacinto</option>  <option value="205">205 - San Patricio</option> <option value="206">206 - San Saba</option> <option value="207">207 - Schleicher</option>   <option value="208">208 - Scurry</option>   <option value="209">209 - Shackelford</option>  <option value="210">210 - Shelby</option>   <option value="211">211 - Sherman</option>  <option value="212">212 - Smith</option>    <option value="213">213 - Somervell</option>    <option value="214">214 - Starr</option>    <option value="215">215 - Stephens</option> <option value="216">216 - Sterling</option> <option value="217">217 - Stonewall</option>    <option value="218">218 - Sutton</option>   <option value="219">219 - Swisher</option>  <option value="220">220 - Tarrant</option>  <option value="221">221 - Taylor</option>   <option value="222">222 - Terrell</option>  <option value="223">223 - Terry</option>    <option value="224">224 - Throckmorton</option> <option value="225">225 - Titus</option>    <option value="226">226 - Tom Green</option>    <option value="227">227 - Travis</option>   <option value="228">228 - Trinity</option>  <option value="229">229 - Tyler</option>    <option value="230">230 - Upshur</option>   <option value="231">231 - Upton</option>    <option value="232">232 - Uvalde</option>   <option value="233">233 - Val Verde</option>    <option value="234">234 - Van Zandt</option>    <option value="235">235 - Victoria</option> <option value="236">236 - Walker</option>   <option value="237">237 - Waller</option>   <option value="238">238 - Ward</option> <option value="239">239 - Washington</option>   <option value="240">240 - Webb</option> <option value="241">241 - Wharton</option>  <option value="242">242 - Wheeler</option>  <option value="243">243 - Wichita</option>  <option value="244">244 - Wilbarger</option>    <option value="245">245 - Willacy</option>  <option value="246">246 - Williamson</option>   <option value="247">247 - Wilson</option>   <option value="248">248 - Winkler</option>  <option value="249">249 - Wise</option> <option value="250">250 - Wood</option> <option value="251">251 - Yoakum</option>   <option value="252">252 - Young</option>    <option value="253">253 - Zapata</option>   <option value="254">254 - Zavala</option>
+                        </select></td>
+                </tr>
+                <tr>
+                    <td><select style="font-size: large;" id="crST">
+                            <option value="10">Dirt/Natural</option>
+                            <option value="32">Gravel</option>
+                            <option value="52" selected>Paved</option>
+                            <option value="61">Concrete</option>
+                        </select>
+                    </td>
+                    <td><select style="font-size: large;" id="crDSGN">
+                            <option value="1">One Way</option>
+                            <option value="2" selected>Two Way</option>
+                            <option value="3">Boulevard</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan=2><input id="crNAME" type="text" maxlength="50" value="" placeholder="Street Name"></td>
+                </tr>
+                <tr>
+                    <td colspan=2><input id="crCMT" type="text" maxlength="150" value="" placeholder="Comment"></td>
+                </tr>
+                <tr>
+                    <td colspan=2><button id="crCOLLECT" type="button" onclick="collectLine();">Collect Line</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><div id="crSTATUS"></td>
                 </tr>
             </table>
         </div>

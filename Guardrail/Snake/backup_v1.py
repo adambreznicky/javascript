@@ -11,7 +11,7 @@ output = "C:\\TxDOT\\Scripts\\javascript\\Guardrail\\Snake\\BACKUP"
 
 if __name__ == "__main__":
     username = "Adam.Breznicky_TXDOT"
-    password = ""
+    password = "Tuesday123"
     url = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0"
     proxy_port = None
     proxy_url = None
