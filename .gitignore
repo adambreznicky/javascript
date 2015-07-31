@@ -85,7 +85,7 @@ target/
 *.xlsx
 *.xls
 *.jpg
-
+*mohawk.py
 
 Shortcut*
 .idea/
