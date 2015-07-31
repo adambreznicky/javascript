@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TxDOT County Road Inventory</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css">
+        <style type="text/css">
+            html, body, #divMap {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            }
+            body {
+              background-color: rgb(20,56,92);
+              overflow: hidden;
+              font-family: "Trebuchet MS";
+            }
+            #bcMain, #cpCenter {
+              width: 100%;
+              height: 100%;
+            }
+            #cpCenter, #openWindowCP {
+              margin: 0;
+              padding: 0;
+            }
+            #cpTop {
+              height:60px;
+              margin: 0;
+              padding: 0;
+            }
+            #cpLeft {
+              width: 200px;
+              text-align: center;
+              margin: 0;
+              padding: 0;
+            }
+            #cpLeftTopTitle {
+              margin: 0;
+              padding: 0;
+              border: none;
+              font-size: medium;
+              text-align: center;
+              font-weight: bold;
+              color: rgb(20,56,92);
+            }
+            #cpLeftTop, #cpLeftCenter, #cpLeftBottom {
+                border: none;
+                display: block;
+            }
+            #cpTopRight {
+              overflow: hidden;
+              margin: 0;
+              padding: 0;
+            }
+            #resources, #legend {
+               text-align: left;
+               width: 90%;
+               margin: 0 auto;
+            }
+            #info{
+             position: absolute;
+             bottom: 3px;
+             left: 22px;
+             z-index: 50;
+             color: #303030;
+             font-weight: bold;
+             text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.12/"></script>
+        <script>
+            var map;
+            var countiesURL;
+            var counties;
+            var updatesURL;
+            var updatesLyr;
+            var countyNumber;
+            var crURL;
+            var countyroads;
+            var geomServ;
+            var widgetEditor;
+            var tpCustom;
+            var selectorLabel;
+            
+             require(["esri/map",
+                "esri/layers/FeatureLayer",
+                "esri/geometry/Extent",
+                "esri/dijit/BasemapGallery",
+                "esri/dijit/Basemap",
+                "esri/dijit/BasemapLayer",
+                "esri/dijit/Legend",
+                
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                "esri/graphic",
+                "esri/renderers/UniqueValueRenderer",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/Color",
+                "esri/renderers/SimpleRenderer",
+                "esri/symbols/SimpleFillSymbol",
+                
+                "esri/tasks/GeometryService",
+                "esri/dijit/editing/Editor",
+                "esri/dijit/editing/TemplatePicker",
+                "esri/tasks/LengthsParameters",
+                "esri/geometry/geodesicUtils",
+                "esri/config",
+                
+                "esri/geometry/Geometry",
+                "esri/units",
+                "dojo/ready", 
+                "dojo/parser", 
+                "dojo/on",
+                "dojo/dom",
+                "dojo/_base/array",
+                "esri/arcgis/utils",
+                "esri/layers/ArcGISTiledMapServiceLayer",
+
+                "esri/SpatialReference",
+                "esri/geometry/webMercatorUtils",
+                "esri/dijit/Scalebar",
+                "esri/symbols/TextSymbol",
+                "esri/layers/LabelLayer",
+
+                "dijit/form/Select",
+                "dijit/layout/BorderContainer", 
+                "dijit/layout/ContentPane",
+                
+                
+                "dojo/domReady!"], 
+            function(Map, FeatureLayer, Extent, BasemapGallery, Basemap, BasemapLayer, Legend,
+                    Query, QueryTask, Graphic, UniqueValueRenderer, SimpleLineSymbol, Color, SimpleRenderer, SimpleFillSymbol,
+                    GeometryService, Editor, TemplatePicker, LengthsParameters, geodesicUtils, config,
+                    Geometry, Units, ready, parser, on, dom, array, arcgisUtils, Tiled,
+                    SpatialReference, webMercatorUtils, Scalebar, TextSymbol, LabelLayer) {
+                ready(function(){
+                
+                config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
+                
+                geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+                
+                
+                map = new Map("divMap", {
+                    minZoom:6,
+                    maxZoom:16,
+                    showlabels: true,
+                    logo: false
+                });
+                map.on("load", function() {
+		        map.on("mouse-move", showCoordinates);
+                map.on("mouse-drag", showCoordinates);
+                });
+                map.on("zoom-end", function() {
+                    var current = document.getElementById("info").innerHTML;
+                    var coords = ", " + current.split(",")[1] + ", " + current.split(",")[2];
+                    document.getElementById("info").innerHTML = "Level: " + map.getZoom() + coords;
+                    
+                    var lvl = map.getZoom();
+                    var selector = dijit.byId("selectCounty");
+                    var current = selector.value;
+                    if (current !== "" && lvl < 11){
+                        counties.show();
+                    }
+                    else {
+                        counties.hide();
+                    }
+                    
+                });
+
+		tiled = new Tiled("http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
+		map.addLayer(tiled);
+                
+                var theExtent = new Extent(-107,25.27,-93,37.27, new esri.SpatialReference({ wkid: 4269 }));
+		map.setExtent(esri.geometry.geographicToWebMercator(theExtent));
+                
+                var base_maps = [];
+                base_maps.push(new Basemap({
+                    title: "TxDOT Planning Map",
+                    thumbnailUrl: "./statewideplanningmap.png",
+                    layers:[tiled]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Imagery",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-D644D704-818F-48EA-BB2F-449A3059634C-web.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Streets",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-9DC2852F-C635-402B-B830-1E1CB83C11FA-web.png",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Topographic",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-67355224-9211-470F-99A0-8C28528F0D62-web.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Imagery Hybrid",
+                    thumbnailUrl: "http://www.arcgis.com/sharing/rest/content/items/86265e5a4bbb4187a59719cf134e0018/info/thumbnail/imagery_hybrid.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"}),
+                    new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer"}),
+                    new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "USA Topo Maps",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-2AA64FB1-DC8C-4C20-897C-A689F59A3356-web.png",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Open Street Map",
+                    thumbnailUrl: "http://www.arcgis.com/sharing/rest/content/items/b834a68d7a484c5fb473d4ba90d35e71/info/thumbnail/osm.jpg",
+                    layers:[new BasemapLayer({type: "OpenStreetMap"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "National Geographic",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-F453D2C4-279B-4A04-AB3D-3A4FB290D896-web.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer"})]
+                }));
+                
+                var basemaps = new BasemapGallery({
+                    showArcGISBasemaps: false,
+                    basemaps: base_maps,
+                    map: map
+                }, "basemapGallery");
+                basemaps.startup();
+                
+                var scalebar = new Scalebar({
+                    map: map,
+                    scalebarUnit: "english",
+                    attachTo: "bottom-left"
+                });
+                
+                var countyRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
+                countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";
+                counties = new FeatureLayer(countiesURL,{
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    opacity: .5,
+                    showLabels: false,
+                    outFields: ["CNTY_NM", "CNTY_NBR"]
+                });
+                counties.setRenderer(countyRr);
+
+                updatesURL = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/Bike_Routes/FeatureServer/0";
+                updatesLyr = new FeatureLayer(updatesURL,{
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    showLabels: true,
+                    outFields: ['*']
+                });
+                updatesLyr.on("click", function(){
+                    map.graphics.clear();
+                    dijit.byId("openWindow").set('open', false);
+                    dijit.byId("openWindow").set('title', "Attributes");
+                    document.getElementById("attributeWindow").innerHTML = "";
+                });
+                updatesLyr.on("mouse-over", function(){
+                    map.setMapCursor("pointer");
+                });
+                updatesLyr.on("mouse-out", function(){
+                    map.setMapCursor("default");
+                });
+
+                crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";
+                countyroads = new FeatureLayer(crURL,{
+                    id: "CR",
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    showLabels: true,
+                    outFields: ["*"]
+                });
+                countyroads.setDefinitionExpression("COUNTY = 0");
+                var selectCR = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0,255,255]), 2);
+                
+                countyroads.on("click", function(evt){
+                    map.graphics.clear();
+                    var selected = new Graphic(evt.graphic.geometry, selectCR);
+                    map.graphics.add(selected);
+
+                    var desLabel;
+                    var surLabel;
+                    var graphic = evt.graphic;
+                    var attr = graphic.attributes;
+                    var cnty = attr.COUNTY;
+                    var len = attr.LEN_OF_SECTION;
+                    var surf = attr.SURFACE_TYPE;
+                    if (surf === 10) {
+                        surLabel = " - Dirt/Natural";
+                    } else if (surf === 32) {
+                        surLabel = " - Gravel";
+                    } else if (surf === 51) {
+                        surLabel = " - Paved";
+                    } else {
+                        surLabel = " - Concrete";
+                    }
+                    var lanes = attr.NUMBER_OF_LANES;
+                    var desg = attr.HIGHWAY_DESIGN;
+                    if (desg === 1){
+                        desLabel = " - One Way";
+                    } else if (desg === 2) {
+                        desLabel = " - Two Way";
+                    } else {
+                        desLabel = " - Boulevard";
+                    }
+                    var nm = attr.FULL_NAME;
+                    var content = "<b>County Number:</b> "+cnty+
+                            "<br><b>Length (Miles):</b> "+len+
+                            "<br><b>Surface Type:</b> "+surf+surLabel+
+                            "<br><b>Number of Lanes:</b> "+lanes+
+                            "<br><b>Highway Design:</b> "+desg+desLabel+
+                            "<br><b>Full Street Name:</b> "+nm;
+
+                    dijit.byId("openWindow").set('open', true);
+                    dijit.byId("openWindow").set('title', nm);
+                    document.getElementById("attributeWindow").innerHTML = content;
+                });
+                map.on("click", function(evt){
+                    if (!('graphic' in evt)){
+                        map.graphics.clear();
+                        dijit.byId("openWindow").set('open', false);
+                        dijit.byId("openWindow").set('title', "Attributes");
+                        document.getElementById("attributeWindow").innerHTML = "";
+                    }
+                });
+                countyroads.on("mouse-over", function(){
+                    map.setMapCursor("pointer");
+                });
+                countyroads.on("mouse-out", function(){
+                    map.setMapCursor("default");
+                });
+           
+                map.on("layers-add-result", initEditor);
+                map.addLayers([counties, countyroads, updatesLyr]);
+
+                var labelField = "FULL_NAME";
+                var crLabel = new TextSymbol().setColor(new Color("black"));
+                crLabel.font.setSize("10pt");
+                crLabel.font.setFamily("Trebuchet MS");
+                var crLabelRenderer = new SimpleRenderer(crLabel);
+                var labels = new LabelLayer({id: "LBL"});
+                labels.addFeatureLayer(countyroads, crLabelRenderer, "{" + labelField + "}");
+                labels.addFeatureLayer(updatesLyr, crLabelRenderer, "{" + labelField + "}");
+                map.addLayer(labels);
+                
+                var selector = dijit.byId("selectCounty");
+                selector.on('change', function (){
+                    countyNumber = selector.value;
+                    selectorLabel = selector.attr('displayedValue');
+                    if (countyNumber !== ""){
+                        var expression = "CNTY_NBR = " + countyNumber;
+                        
+                        var query = new Query();
+                        var queryTask = new QueryTask(countiesURL);
+                        query.where = expression;
+                        query.returnGeometry = true;
+                        queryTask.execute(query, findExtent);
+
+                        function findExtent(results){
+
+                            var theCounty = array.map(results.features, function(result){
+                                    return result;
+                            });
+                            var ext = theCounty[0].geometry.getExtent().expand(1.15);
+                            map.setExtent(ext);
+
+                        };
+                        updatesLyr.setDefinitionExpression("COUNTY = " + countyNumber);
+                        updatesLyr.show();
+                        updatesLyr.redraw();
+                        counties.setDefinitionExpression(expression);
+                        counties.redraw();
+                        countyroads.setDefinitionExpression("COUNTY = " + countyNumber);
+                        countyroads.show();
+                        countyroads.redraw();
+                        
+                        updatesLyr.on("before-apply-edits", function(g){
+                                    if (map.getZoom() > 10){
+                                        var features = g.adds;
+                                        var featurettes = g.updates;
+                                        array.forEach(features, function(i){
+                                            var numb = parseInt(countyNumber);
+                                            i.attributes.COUNTY = numb;
+
+                                            var fixed = esri.geometry.webMercatorToGeographic(i.geometry);
+                                            var lengther = esri.geometry.geodesicLengths([fixed], esri.Units.MILES);
+                                            i.attributes.LENGTH = parseFloat(lengther);
+                                        });
+                                        array.forEach(featurettes, function(i){
+                                            var fixed = esri.geometry.webMercatorToGeographic(i.geometry);
+                                            var lengther = esri.geometry.geodesicLengths([fixed], esri.Units.MILES);
+                                            i.attributes.LENGTH = parseFloat(lengther);
+
+                                        }); 
+                                    }
+                                    else {
+                                        var features = g.adds;
+                                        array.forEach(features, function(i){
+                                            i.attributes.COUNTY = 0;
+                                        });
+                                    }
+
+                        });
+                        var pieces = selectorLabel.split(" - ");
+                        var theName = pieces[0];
+                        var caps = theName.toUpperCase();
+                        document.getElementById("FTPlink").href = "ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps +"_2015.zip";
+                        document.getElementById("cpLeftCenter").style.display = "block";
+                    } else {
+                        var expression = "";
+                        counties.setDefinitionExpression(expression);
+                        counties.redraw();
+                        countyroads.setDefinitionExpression("COUNTY = 0");
+                        countyroads.hide();
+                        countyroads.redraw();
+                        updatesLyr.hide();
+                        
+                        var ext = counties.fullExtent.expand(1.25);
+                        map.setExtent(ext);
+                        
+                        document.getElementById("FTPlink").href = "ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/";
+                        document.getElementById("cpLeftCenter").style.display = "none";
+                    }
+                });
+                selector.on('click', function (){
+                    countyNumber = selector.value;
+                    selectorLabel = selector.attr('displayedValue');
+                    if (countyNumber !== ""){
+                        var expression = "CNTY_NBR = " + countyNumber;
+                        
+                        var query = new Query();
+                        var queryTask = new QueryTask(countiesURL);
+                        query.where = expression;
+                        query.returnGeometry = true;
+                        queryTask.execute(query, findExtent);
+
+                        function findExtent(results){
+
+                            var theCounty = array.map(results.features, function(result){
+                                    return result;
+                            });
+                            var ext = theCounty[0].geometry.getExtent().expand(1.15);
+                            map.setExtent(ext);
+
+                        };
+                    };
+                });
+                
+                function initEditor (results){
+
+                    var legend = new Legend({
+                        map: map,
+                        layerInfos: [{
+                                layer: countyroads,
+                                defaultSymbol: false,
+                                title: "Surface Type"}],
+                                respectCurrentMapScale: true
+                    }, "legend");
+                    legend.startup();
+                    
+                    tpCustom = new TemplatePicker({
+                        featureLayers: [updatesLyr],
+                        grouping: false,
+                        columns: 1
+                    }, "editTemplate");
+                    tpCustom.startup();
+
+                    var editorSettings = {
+                        map: map,
+                        geometryService: geomServ,
+                        layerInfos: [{
+                                featureLayer:updatesLyr,
+                                fieldInfos: [{
+                                    fieldName: "DISTRICT",
+                                    label: "District",
+                                    isEditable: false
+                                },{
+                                    fieldName: "SEGMENT_LENGTH",
+                                    label: "Length (Miles)",
+                                    isEditable: false
+                                },{
+                                    fieldName: "BIKEWAY_TYPE",
+                                    label: "Bikeway Type"
+                                },{
+                                    fieldName: "RTE_ID",
+                                    label: "Route ID"
+                                },{
+                                    fieldName: "RTE_STATUS",
+                                    label: "Route Status"
+                                },{
+                                    fieldName: "BIKEWAY_WIDTH",
+                                    label: "Width (Feet)"
+                                },{
+                                    fieldName: "OWNERSHIP",
+                                    label: "Ownership"
+                                },{
+                                    fieldName: "SOURCE",
+                                    label: "Source"
+                                },{
+                                    fieldName: "DATE_INVENTORY_COMPLETED",
+                                    label: "Date Completed"
+                                },{
+                                    fieldName: "COMPLETED_BY_NAME",
+                                    label: "Completed By:"
+                                }]
+                            }],
+                        toolbarVisible: true,
+                        templatePicker: tpCustom,
+                        createOptions:{
+                            polylineDrawTools: [Editor.CREATE_TOOL_POLYLINE, Editor.CREATE_TOOL_FREEHAND_POLYLINE]
+                        }
+                    };
+                    
+                    var editorParams = {
+                        settings: editorSettings
+                    };
+                    
+                    widgetEditor = new Editor(editorParams, "editBar");
+                    widgetEditor.startup();
+                    
+                    document.getElementById("cpLeftCenter").style.display = "none";
+                }
+                
+                function showCoordinates(evt) {
+                    var mp = new esri.geometry.webMercatorToGeographic(evt.mapPoint);
+                    globalX = mp.x.toFixed(6);
+                    globalY = mp.y.toFixed(6);
+                    document.getElementById("info").innerHTML = "Level: " + map.getZoom() + ", " + mp.x.toFixed(6) + ", " + mp.y.toFixed(6);
+                }
+                
+                });
+            });
+            
+            
+            
+        </script>
+        
+    </head>
+    <body class="claro">
+      <div id="bcMain" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar'" >
+            
+        <div id="cpLeft" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'left'">
+            <div id="bcLeft" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar'" >
+                <div id="cpLeftTopTitle" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">County Road Updates
+                </div>
+                <div id="cpLeftTop" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'" style="font-size: small">
+                    Select County to Begin:
+                    <br><br>
+                    <select id="selectCounty" data-dojo-type="dijit/form/Select" name="selectCounty"  style="font-size: medium; width: 150px">
+                        <option value="" selected="selected">Select a County</option> <option value='001'>Anderson - 001</option>	<option value='002'>Andrews - 002</option>	<option value='003'>Angelina - 003</option>	<option value='004'>Aransas - 004</option>	<option value='005'>Archer - 005</option>	<option value='006'>Armstrong - 006</option>	<option value='007'>Atascosa - 007</option>	<option value='008'>Austin - 008</option>	<option value='009'>Bailey - 009</option>	<option value='010'>Bandera - 010</option>	<option value='011'>Bastrop - 011</option>	<option value='012'>Baylor - 012</option>	<option value='013'>Bee - 013</option>	<option value='014'>Bell - 014</option>	<option value='015'>Bexar - 015</option>	<option value='016'>Blanco - 016</option>	<option value='017'>Borden - 017</option>	<option value='018'>Bosque - 018</option>	<option value='019'>Bowie - 019</option>	<option value='020'>Brazoria - 020</option>	<option value='021'>Brazos - 021</option>	<option value='022'>Brewster - 022</option>	<option value='023'>Briscoe - 023</option>	<option value='024'>Brooks - 024</option>	<option value='025'>Brown - 025</option>	<option value='026'>Burleson - 026</option>	<option value='027'>Burnet - 027</option>	<option value='028'>Caldwell - 028</option>	<option value='029'>Calhoun - 029</option>	<option value='030'>Callahan - 030</option>	<option value='031'>Cameron - 031</option>	<option value='032'>Camp - 032</option>	<option value='033'>Carson - 033</option>	<option value='034'>Cass - 034</option>	<option value='035'>Castro - 035</option>	<option value='036'>Chambers - 036</option>	<option value='037'>Cherokee - 037</option>	<option value='038'>Childress - 038</option>	<option value='039'>Clay - 039</option>	<option value='040'>Cochran - 040</option>	<option value='041'>Coke - 041</option>	<option value='042'>Coleman - 042</option>	<option value='043'>Collin - 043</option>	<option value='044'>Collingsworth - 044</option>	<option value='045'>Colorado - 045</option>	<option value='046'>Comal - 046</option>	<option value='047'>Comanche - 047</option>	<option value='048'>Concho - 048</option>	<option value='049'>Cooke - 049</option>	<option value='050'>Coryell - 050</option>	<option value='051'>Cottle - 051</option>	<option value='052'>Crane - 052</option>	<option value='053'>Crockett - 053</option>	<option value='054'>Crosby - 054</option>	<option value='055'>Culberson - 055</option>	<option value='056'>Dallam - 056</option>	<option value='057'>Dallas - 057</option>	<option value='058'>Dawson - 058</option>	<option value='062'>De Witt - 062</option>	<option value='059'>Deaf Smith - 059</option>	<option value='060'>Delta - 060</option>	<option value='061'>Denton - 061</option>	<option value='063'>Dickens - 063</option>	<option value='064'>Dimmit - 064</option>	<option value='065'>Donley - 065</option>	<option value='067'>Duval - 067</option>	<option value='068'>Eastland - 068</option>	<option value='069'>Ector - 069</option>	<option value='070'>Edwards - 070</option>	<option value='072'>El Paso - 072</option>	<option value='071'>Ellis - 071</option>	<option value='073'>Erath - 073</option>	<option value='074'>Falls - 074</option>	<option value='075'>Fannin - 075</option>	<option value='076'>Fayette - 076</option>	<option value='077'>Fisher - 077</option>	<option value='078'>Floyd - 078</option>	<option value='079'>Foard - 079</option>	<option value='080'>Fort Bend - 080</option>	<option value='081'>Franklin - 081</option>	<option value='082'>Freestone - 082</option>	<option value='083'>Frio - 083</option>	<option value='084'>Gaines - 084</option>	<option value='085'>Galveston - 085</option>	<option value='086'>Garza - 086</option>	<option value='087'>Gillespie - 087</option>	<option value='088'>Glasscock - 088</option>	<option value='089'>Goliad - 089</option>	<option value='090'>Gonzales - 090</option>	<option value='091'>Gray - 091</option>	<option value='092'>Grayson - 092</option>	<option value='093'>Gregg - 093</option>	<option value='094'>Grimes - 094</option>	<option value='095'>Guadalupe - 095</option>	<option value='096'>Hale - 096</option>	<option value='097'>Hall - 097</option>	<option value='098'>Hamilton - 098</option>	<option value='099'>Hansford - 099</option>	<option value='100'>Hardeman - 100</option>	<option value='101'>Hardin - 101</option>	<option value='102'>Harris - 102</option>	<option value='103'>Harrison - 103</option>	<option value='104'>Hartley - 104</option>	<option value='105'>Haskell - 105</option>	<option value='106'>Hays - 106</option>	<option value='107'>Hemphill - 107</option>	<option value='108'>Henderson - 108</option>	<option value='109'>Hidalgo - 109</option>	<option value='110'>Hill - 110</option>	<option value='111'>Hockley - 111</option>	<option value='112'>Hood - 112</option>	<option value='113'>Hopkins - 113</option>	<option value='114'>Houston - 114</option>	<option value='115'>Howard - 115</option>	<option value='116'>Hudspeth - 116</option>	<option value='117'>Hunt - 117</option>	<option value='118'>Hutchinson - 118</option>	<option value='119'>Irion - 119</option>	<option value='120'>Jack - 120</option>	<option value='121'>Jackson - 121</option>	<option value='122'>Jasper - 122</option>	<option value='123'>Jeff Davis - 123</option>	<option value='124'>Jefferson - 124</option>	<option value='125'>Jim Hogg - 125</option>	<option value='126'>Jim Wells - 126</option>	<option value='127'>Johnson - 127</option>	<option value='128'>Jones - 128</option>	<option value='129'>Karnes - 129</option>	<option value='130'>Kaufman - 130</option>	<option value='131'>Kendall - 131</option>	<option value='66'>Kenedy - 66</option>	<option value='132'>Kent - 132</option>	<option value='133'>Kerr - 133</option>	<option value='134'>Kimble - 134</option>	<option value='135'>King - 135</option>	<option value='136'>Kinney - 136</option>	<option value='137'>Kleberg - 137</option>	<option value='138'>Knox - 138</option>	<option value='142'>La Salle - 142</option>	<option value='139'>Lamar - 139</option>	<option value='140'>Lamb - 140</option>	<option value='141'>Lampasas - 141</option>	<option value='143'>Lavaca - 143</option>	<option value='144'>Lee - 144</option>	<option value='145'>Leon - 145</option>	<option value='146'>Liberty - 146</option>	<option value='147'>Limestone - 147</option>	<option value='148'>Lipscomb - 148</option>	<option value='149'>Live Oak - 149</option>	<option value='150'>Llano - 150</option>	<option value='151'>Loving - 151</option>	<option value='152'>Lubbock - 152</option>	<option value='153'>Lynn - 153</option>	<option value='154'>Madison - 154</option>	<option value='155'>Marion - 155</option>	<option value='156'>Martin - 156</option>	<option value='157'>Mason - 157</option>	<option value='158'>Matagorda - 158</option>	<option value='159'>Maverick - 159</option>	<option value='160'>McCulloch - 160</option>	<option value='161'>McLennan - 161</option>	<option value='162'>McMullen - 162</option>	<option value='163'>Medina - 163</option>	<option value='164'>Menard - 164</option>	<option value='165'>Midland - 165</option>	<option value='166'>Milam - 166</option>	<option value='167'>Mills - 167</option>	<option value='168'>Mitchell - 168</option>	<option value='169'>Montague - 169</option>	<option value='170'>Montgomery - 170</option>	<option value='171'>Moore - 171</option>	<option value='172'>Morris - 172</option>	<option value='173'>Motley - 173</option>	<option value='174'>Nacogdoches - 174</option>	<option value='175'>Navarro - 175</option>	<option value='176'>Newton - 176</option>	<option value='177'>Nolan - 177</option>	<option value='178'>Nueces - 178</option>	<option value='179'>Ochiltree - 179</option>	<option value='180'>Oldham - 180</option>	<option value='181'>Orange - 181</option>	<option value='182'>Palo Pinto - 182</option>	<option value='183'>Panola - 183</option>	<option value='184'>Parker - 184</option>	<option value='185'>Parmer - 185</option>	<option value='186'>Pecos - 186</option>	<option value='187'>Polk - 187</option>	<option value='188'>Potter - 188</option>	<option value='189'>Presidio - 189</option>	<option value='190'>Rains - 190</option>	<option value='191'>Randall - 191</option>	<option value='192'>Reagan - 192</option>	<option value='193'>Real - 193</option>	<option value='194'>Red River - 194</option>	<option value='195'>Reeves - 195</option>	<option value='196'>Refugio - 196</option>	<option value='197'>Roberts - 197</option>	<option value='198'>Robertson - 198</option>	<option value='199'>Rockwall - 199</option>	<option value='200'>Runnels - 200</option>	<option value='201'>Rusk - 201</option>	<option value='202'>Sabine - 202</option>	<option value='203'>San Augustine - 203</option>	<option value='204'>San Jacinto - 204</option>	<option value='205'>San Patricio - 205</option>	<option value='206'>San Saba - 206</option>	<option value='207'>Schleicher - 207</option>	<option value='208'>Scurry - 208</option>	<option value='209'>Shackelford - 209</option>	<option value='210'>Shelby - 210</option>	<option value='211'>Sherman - 211</option>	<option value='212'>Smith - 212</option>	<option value='213'>Somervell - 213</option>	<option value='214'>Starr - 214</option>	<option value='215'>Stephens - 215</option>	<option value='216'>Sterling - 216</option>	<option value='217'>Stonewall - 217</option>	<option value='218'>Sutton - 218</option>	<option value='219'>Swisher - 219</option>	<option value='220'>Tarrant - 220</option>	<option value='221'>Taylor - 221</option>	<option value='222'>Terrell - 222</option>	<option value='223'>Terry - 223</option>	<option value='224'>Throckmorton - 224</option>	<option value='225'>Titus - 225</option>	<option value='226'>Tom Green - 226</option>	<option value='227'>Travis - 227</option>	<option value='228'>Trinity - 228</option>	<option value='229'>Tyler - 229</option>	<option value='230'>Upshur - 230</option>	<option value='231'>Upton - 231</option>	<option value='232'>Uvalde - 232</option>	<option value='233'>Val Verde - 233</option>	<option value='234'>Van Zandt - 234</option>	<option value='235'>Victoria - 235</option>	<option value='236'>Walker - 236</option>	<option value='237'>Waller - 237</option>	<option value='238'>Ward - 238</option>	<option value='239'>Washington - 239</option>	<option value='240'>Webb - 240</option>	<option value='241'>Wharton - 241</option>	<option value='242'>Wheeler - 242</option>	<option value='243'>Wichita - 243</option>	<option value='244'>Wilbarger - 244</option>	<option value='245'>Willacy - 245</option>	<option value='246'>Williamson - 246</option>	<option value='247'>Wilson - 247</option>	<option value='248'>Winkler - 248</option>	<option value='249'>Wise - 249</option>	<option value='250'>Wood - 250</option>	<option value='251'>Yoakum - 251</option>	<option value='252'>Young - 252</option>	<option value='253'>Zapata - 253</option>	<option value='254'>Zavala - 254</option>
+                    </select>
+                </div>
+                <div id="cpLeftCenter" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+                    <div id="editBar"></div>
+                    <div id="editTemplate"></div>
+                    <br>
+                    <div id="legend"></div>
+                    <div id="tester"></div>
+                    
+                    
+                </div>
+                <div id="cpLeftBottom" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'bottom'">
+                    <div id="resources">Resources:
+                        <br><a>&bull; </a><a href="./ApplicationInstructions.pdf" target="Instructions" title="How to use this Webmap">Instructions</a>
+                        <br><a>&bull; </a><a href="./COUNTY_ROAD_CRITERIA.pdf" target="CRI Criteria" title="TxDOT Definition of a County Road">Criteria</a>
+                        <br><a>&bull; </a><a href="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" id="FTPlink" target="Download" title="Download CRI Zipfile Packet for Selected County">Download Packet</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="cpCenter" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+            <div id="divMap">
+                <div style="position:absolute; right:14px; top:7px; z-Index:999;">
+                  <div data-dojo-type="dijit/TitlePane" 
+                       data-dojo-props="title:'Switch Basemap', closable:false, open:false">
+                    <div data-dojo-type="dijit/layout/ContentPane" style="width:380px; height:280px; overflow:auto;">
+                      <div id="basemapGallery"></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="position:absolute; right:14px; bottom:7px; z-Index:999;">
+                  <div id="openWindow" data-dojo-type="dijit/TitlePane" 
+                       data-dojo-props="title:'Attributes', closable:false, open:false">
+                    <div id="openWindowCP" data-dojo-type="dijit/layout/ContentPane" style="width:300px; height:115px; overflow:auto;">
+                      <div id="attributeWindow"></div>
+                    </div>
+                  </div>
+                </div>
+                <span id="info"></span>
+            </div>
+        </div>
+      </div>
+    </body>
+</html>
