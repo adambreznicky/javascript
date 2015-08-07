@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- <html manifest="offlineCache.manifest"> -->
+<html>
+	<head>
+		<script src="http://js.arcgis.com/3.12/"></script>
+		<script type="text/javascript">
+		    require(["esri/geometry/Point","esri/SpatialReference","esri/geometry/webMercatorUtils"], function(Point, SpatialReference, webMercatorUtils) {});
+		    var totalpoints = 0;
+
+		    function latitude(){
+		    	return Math.random() * (36.5 - 25.8) + 25.8;
+		    }
+
+		    function longitude(){
+				var longy = Math.random() * (107 - 93) + 93;
+				var negLong = longy * -1
+				return negLong;
+		    }
+
+		    function generate() {
+		    		document.getElementById("output").innerHTML = "Started";
+		            var xmlhttp;
+		            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+		                xmlhttp=new XMLHttpRequest();
+		            }
+		            else {// code for IE6, IE5
+		                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		            }
+		            xmlhttp.onreadystatechange = function() {
+		                if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+		                   document.getElementById("http").innerHTML = xmlhttp.responseText;
+		                }
+		            };
+
+
+		            while (totalpoints < 10000){
+		            	
+		                //Service URL 
+		                var serviceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/ApplyEditsTest/FeatureServer/0/applyEdits?f=json&adds=";
+
+		                //Build the String
+		                var theText = "";
+	                    var lat = latitude();
+	                    var lon = longitude();
+	                    var newPT = esri.geometry.lngLatToXY(lon,lat);
+	                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'TreatmentType':'ETPLUS','RoadbedSide':'R','Date':'Today','Latitude':'" + lat + "','Longitude':'" + lon + "'}}";           
+	                    theText = serviceURL + "[" + theText + "]";
+	                    xmlhttp.open("POST",theText,false);
+	                    
+
+	                    xmlhttp.send();
+	                    totalpoints += 1;
+	                    document.getElementById("output").innerHTML = totalpoints;
+	                        
+		            }
+
+		            if (totalpoints == 10000){
+		            	document.getElementById("http").innerHTML = "That's all folks!";
+		            }
+		    }
+		</script>
+	</head>
+	<body>
+		<div id = "display">
+			<button onclick="generate()">Generate</button>
+			<div id="output"></div>
+			<div id="http"></div>
+		</div>
+	</body>
+</html>
