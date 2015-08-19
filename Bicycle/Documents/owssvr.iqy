@@ -1,0 +1,16 @@
+WEB
+1
+https://txdot.sharepoint.com/sites/division-tpp/bicycle/_vti_bin/owssvr.dll?XMLDATA=1&List={A487E391-0E2C-48C1-9E79-9F03F7C95B63}&View={12F0359C-7042-4FEE-9EEE-EFF296B7C74A}&RowLimit=0&RootFolder=%2fsites%2fdivision%2dtpp%2fbicycle%2fLists%2fDistrict%20Status
+
+Selection={A487E391-0E2C-48C1-9E79-9F03F7C95B63}-{12F0359C-7042-4FEE-9EEE-EFF296B7C74A}
+EditWebPage=
+Formatting=None
+PreFormattedTextToColumns=True
+ConsecutiveDelimitersAsOne=True
+SingleBlockTextImport=False
+DisableDateRecognition=False
+DisableRedirections=False
+SharePointApplication=https://txdot.sharepoint.com/sites/division-tpp/bicycle/_vti_bin
+SharePointListView={12F0359C-7042-4FEE-9EEE-EFF296B7C74A}
+SharePointListName={A487E391-0E2C-48C1-9E79-9F03F7C95B63}
+RootFolder=/sites/division-tpp/bicycle/Lists/District Status
