@@ -1,0 +1,633 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- <html manifest="offlineCache.manifest"> -->
+<head>
+<title>Asset Collection</title>
+<meta content='user-scalable=0' name='viewport'>
+<style type="text/css">
+    body {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -o-user-select: none;
+    }
+    #overlay {
+        display: none;
+        width: 100%;
+        height: 200%;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        background-color:#000;
+        opacity: .75
+    }
+    #wait {
+        z-index:1001;
+        width: 100%;
+        position: absolute;
+        
+        top: 50%;
+        display: none;
+        color: white;
+        text-align: center;
+    }
+    div {
+        border-style: solid;
+        border-width: 0px;
+        text-align: center;
+        font-size: 40px;
+    }
+    button {
+        display: block;
+        font-size:60px;
+        width: 90%;
+        padding: 10px;
+        margin: 20 auto;
+        -webkit-appearance: none;
+        -webkit-border-radius: 0;
+    }
+    td {
+        width: 50%;
+    }
+    table {
+        border-style: solid;
+        border-width: 0px;
+        text-align: center;
+        margin-left:auto; 
+        margin-right:auto;
+        width: 95%;
+    }
+    button:ACTIVE {
+        background: red;
+    }
+    #header {
+        width: 100%;
+    }
+    #outputLocation {
+        float:left;
+        position: relative;
+        left: 30px;
+    }
+    #pointStatus {
+        float:right;
+        position: relative;
+        right: 30px;
+    }
+    #dropdown {
+        width: 100%;
+        margin: auto;
+    }
+    select {
+        display: block;
+        width: 90%;
+        /*line-height: 60px;*/
+        padding: 10px;
+        margin: 20 auto;
+        font-size: 60px;
+        -webkit-appearance: none;
+        -webkit-border-radius: 0;
+    }
+    input {
+        width: 90%;
+        padding: 10px;
+        margin: 20 auto;
+        font-size:60px;
+        -webkit-appearance: none;
+        -webkit-border-radius: 0;
+    }
+    option {
+        font-size:60px;
+    }
+</style>
+<link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
+<script src="http://js.arcgis.com/3.12/"></script>
+<script type="text/javascript">
+    require(["esri/geometry/Point",
+        "esri/SpatialReference",
+        "esri/geometry/webMercatorUtils",
+        "esri/arcgis/OAuthInfo",
+        "esri/IdentityManager",
+        "esri/arcgis/Portal",
+        "esri/request",
+        "dojo/dom-attr",
+        "dojo/dom",
+        "dojo/on",
+        "dojo/domReady!"
+        ], function (Point, SpatialReference, webMercatorUtils, OAuthInfo, IdentityManager, arcgisPortal, esriRequest, domAttr, dom, on) {
+
+            var deviceinfo;
+            var latty=0;
+            var longy=0;
+            var accy;
+            var alty;
+            var heady;
+            var speedy;
+            var d;
+            var t;
+            var pos;		 
+            var logger;		 
+            var previewShow = false;
+            var totalpoints = 0;
+            var logging = false;
+            var lineGeometry = [];
+            var lineAccy = [];
+            var lineSpeedy = [];
+
+            function device(){
+                if(navigator){
+                deviceinfo = navigator.platform;
+                deviceinfo = deviceinfo.replace(' ', '');
+                }
+                else{
+                deviceinfo = "NOT AVAILABLE";
+                }
+            }
+
+            function startupGPS () {
+                if (navigator.geolocation) {
+                        navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+
+                }
+                else {
+                    var x = document.getElementById("outputLocation");
+                    x.style.color = "red";
+                    x.innerHTML="Geolocation is not supported by this browser.";	
+                }
+            }
+
+            function showPosition(position) {
+                d = new Date();
+                var m = d.getMonth() + 1;
+                var day = d.getDate();
+                var yr = d.getFullYear();
+                var hr = d.getHours();
+                var min = d.getMinutes();
+                var sec = d.getSeconds();
+                t = yr.toString() + "-" + m.toString() + "-" + day.toString() + "-" + hr.toString() + "-" + min.toString() + "-" + sec;
+                
+                pos = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+                latt = position.coords.latitude;
+                long = position.coords.longitude;
+                latty = latt.toFixed(5);
+                longy = long.toFixed(5);
+                accy = position.coords.accuracy * 3.28084;
+                alty = position.coords.altitude * 3.28084;
+                heady = position.coords.heading;
+                var spd = position.coords.speed * 2.23694;
+                speedy = Math.round(spd);
+                if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                    var x = document.getElementById("outputLocation");
+                    x.style.color = "green";
+                    x.innerHTML = latty + "," + longy;
+
+                    if (logging){
+                        currentPosition = [latty, longy];
+                        lineGeometry.push(currentPosition);
+                        lineAccy.push(accy);
+                        lineSpeedy.push(speedy);
+                    }
+                }
+            }
+            
+            function beep() {
+                var snd = new  Audio("data:audio/wav;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7xA4Tvh9Rz/y8QADBwMWgQAZG/ILNAARQ4GLTcDeIIIhxGOBAuD7hOfBB3/94gcJ3w+o5/5eIAIAAAVwWgQAVQ2ORaIQwEMAJiDg95G4nQL7mQVWI6GwRcfsZAcsKkJvxgxEjzFUgfHoSQ9Qq7KNwqHwuB13MA4a1q/DmBrHgPcmjiGoh//EwC5nGPEmS4RcfkVKOhJf+WOgoxJclFz3kgn//dBA+ya1GhurNn8zb//9NNutNuhz31f////9vt///z+IdAEAAAK4LQIAKobHItEIYCGAExBwe8jcToF9zIKrEdDYIuP2MgOWFSE34wYiR5iqQPj0JIeoVdlG4VD4XA67mAcNa1fhzA1jwHuTRxDUQ//iYBczjHiTJcIuPyKlHQkv/LHQUYkuSi57yQT//uggfZNajQ3Vmz+Zt//+mm3Wm3Q576v////+32///5/EOgAAADVghQAAAAA//uQZAUAB1WI0PZugAAAAAoQwAAAEk3nRd2qAAAAACiDgAAAAAAABCqEEQRLCgwpBGMlJkIz8jKhGvj4k6jzRnqasNKIeoh5gI7BJaC1A1AoNBjJgbyApVS4IDlZgDU5WUAxEKDNmmALHzZp0Fkz1FMTmGFl1FMEyodIavcCAUHDWrKAIA4aa2oCgILEBupZgHvAhEBcZ6joQBxS76AgccrFlczBvKLC0QI2cBoCFvfTDAo7eoOQInqDPBtvrDEZBNYN5xwNwxQRfw8ZQ5wQVLvO8OYU+mHvFLlDh05Mdg7BT6YrRPpCBznMB2r//xKJjyyOh+cImr2/4doscwD6neZjuZR4AgAABYAAAABy1xcdQtxYBYYZdifkUDgzzXaXn98Z0oi9ILU5mBjFANmRwlVJ3/6jYDAmxaiDG3/6xjQQCCKkRb/6kg/wW+kSJ5//rLobkLSiKmqP/0ikJuDaSaSf/6JiLYLEYnW/+kXg1WRVJL/9EmQ1YZIsv/6Qzwy5qk7/+tEU0nkls3/zIUMPKNX/6yZLf+kFgAfgGyLFAUwY//uQZAUABcd5UiNPVXAAAApAAAAAE0VZQKw9ISAAACgAAAAAVQIygIElVrFkBS+Jhi+EAuu+lKAkYUEIsmEAEoMeDmCETMvfSHTGkF5RWH7kz/ESHWPAq/kcCRhqBtMdokPdM7vil7RG98A2sc7zO6ZvTdM7pmOUAZTnJW+NXxqmd41dqJ6mLTXxrPpnV8avaIf5SvL7pndPvPpndJR9Kuu8fePvuiuhorgWjp7Mf/PRjxcFCPDkW31srioCExivv9lcwKEaHsf/7ow2Fl1T/9RkXgEhYElAoCLFtMArxwivDJJ+bR1HTKJdlEoTELCIqgEwVGSQ+hIm0NbK8WXcTEI0UPoa2NbG4y2K00JEWbZavJXkYaqo9CRHS55FcZTjKEk3NKoCYUnSQ0rWxrZbFKbKIhOKPZe1cJKzZSaQrIyULHDZmV5K4xySsDRKWOruanGtjLJXFEmwaIbDLX0hIPBUQPVFVkQkDoUNfSoDgQGKPekoxeGzA4DUvnn4bxzcZrtJyipKfPNy5w+9lnXwgqsiyHNeSVpemw4bWb9psYeq//uQZBoABQt4yMVxYAIAAAkQoAAAHvYpL5m6AAgAACXDAAAAD59jblTirQe9upFsmZbpMudy7Lz1X1DYsxOOSWpfPqNX2WqktK0DMvuGwlbNj44TleLPQ+Gsfb+GOWOKJoIrWb3cIMeeON6lz2umTqMXV8Mj30yWPpjoSa9ujK8SyeJP5y5mOW1D6hvLepeveEAEDo0mgCRClOEgANv3B9a6fikgUSu/DmAMATrGx7nng5p5iimPNZsfQLYB2sDLIkzRKZOHGAaUyDcpFBSLG9MCQALgAIgQs2YunOszLSAyQYPVC2YdGGeHD2dTdJk1pAHGAWDjnkcLKFymS3RQZTInzySoBwMG0QueC3gMsCEYxUqlrcxK6k1LQQcsmyYeQPdC2YfuGPASCBkcVMQQqpVJshui1tkXQJQV0OXGAZMXSOEEBRirXbVRQW7ugq7IM7rPWSZyDlM3IuNEkxzCOJ0ny2ThNkyRai1b6ev//3dzNGzNb//4uAvHT5sURcZCFcuKLhOFs8mLAAEAt4UWAAIABAAAAAB4qbHo0tIjVkUU//uQZAwABfSFz3ZqQAAAAAngwAAAE1HjMp2qAAAAACZDgAAAD5UkTE1UgZEUExqYynN1qZvqIOREEFmBcJQkwdxiFtw0qEOkGYfRDifBui9MQg4QAHAqWtAWHoCxu1Yf4VfWLPIM2mHDFsbQEVGwyqQoQcwnfHeIkNt9YnkiaS1oizycqJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");  
+                snd.play();
+            }
+            
+            on(dom.byId("dataSelect"), "change", function dataSelected() {
+                    var value = dom.byId("dataSelect").value;
+                    if (value === ""){
+                        document.getElementById("MKRcontainer").style.display = "none";
+                        document.getElementById("CRcontainer").style.display = "none";
+                    }
+                    else if (value === "MKR") {
+                        document.getElementById("MKRcontainer").style.display = "block";
+                        document.getElementById("CRcontainer").style.display = "none";
+                    }
+                    else if (value === "CR") {
+                        document.getElementById("MKRcontainer").style.display = "none";
+                        document.getElementById("CRcontainer").style.display = "block";
+                    }
+                }
+            );
+
+            on(dom.byId("mkrCOLLECT"), "click", collectPoint());
+            function collectPoint() {
+                beep();	
+                var y = document.getElementById("pointStatus");	
+                var intKEY = "MK" + totalpoints.toString();
+                var routePrefix = document.getElementById("mkrPRFX").value;
+                var routeNumber = document.getElementById("mkrRTENBR").value;
+                routeNumber = String("0000" + routeNumber).slice(-4);
+                var routeSuffix = document.getElementById("mkrSFX").value;
+                var routeRoadbed = document.getElementById("mkrRDBD").value;
+                var markerNumber = document.getElementById("mkrNBR").value;
+                markerNumber = String("0000" + markerNumber).slice(-4);
+                var POD=[routePrefix,routeNumber,routeSuffix,routeRoadbed,markerNumber,t,accy,speedy,deviceinfo,latty,longy];
+                
+                if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                    logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                    totalpoints += 1;
+                    y.innerHTML=totalpoints + " point(s) logged.";    
+                }
+                else {
+                    y.innerHTML=totalpoints + " point(s) logged."; 
+                }
+            }
+
+            on(dom.byId("crCOLLECT"), "click", collectLine());
+            function collectLine() {
+                beep(); 
+                if (logging) {
+                    logging = false;
+                    document.getElementById("crCOLLECT").innerText="Collect Line";
+                    document.getElementById("crCOLLECT").style.backgroundColor= "initial";
+                    document.getElementById("crSTATUS").innerHTML="";
+                    if (lineGeometry.length > 2){
+                        var y = document.getElementById("pointStatus");
+                        var intKEY = "CR" + totalpoints.toString();
+
+                        var routeNumber = document.getElementById("crRTENBR").value;
+                        if (routeNumber.length < 5){
+                            routeNumber = String("0000" + routeNumber).slice(-4);
+                        }
+                        else {
+                            routeNumber = String("00000" + routeNumber).slice(-5);
+                        }
+                        var countyNumber = document.getElementById("crNUM").value;
+                        var surface = document.getElementById("crST").value;
+                        var design = document.getElementById("crDSGN").value;
+                        var name = document.getElementById("crNAME").value;
+                        var comment = document.getElementById("crCMT").value;
+                        var sumAccy = 0;
+                        for( var i = 0; i < lineAccy.length; i++ ){
+                            sumAccy += parseInt(lineAccy[i],10);
+                        }
+                        var avgAccy = sumAccy/lineAccy.length;
+                        var sumSpeedy = 0;
+                        for( var i = 0; i < lineSpeedy.length; i++ ){
+                            sumSpeedy += parseInt(lineSpeedy[i],10);
+                        }
+                        var avgSpeedy = sumSpeedy/lineSpeedy.length;
+                        var POD=[routeNumber,countyNumber,surface,design,name,comment,t,avgAccy,avgSpeedy,deviceinfo,JSON.stringify(lineGeometry)];
+                        
+                        logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                        totalpoints += 1;
+                        y.innerHTML=totalpoints + " point(s) logged.";    
+                    }
+                    else {
+                        alert("Line not saved: Not enough verticies. Minimum 3 locations required.");
+                    }
+
+                    lineGeometry = [];
+                    lineAccy = [];
+                    lineSpeedy = [];
+                }
+                else {
+                    logging = true;
+                    document.getElementById("crCOLLECT").innerText="Stop Logging Line";
+                    document.getElementById("crCOLLECT").style.backgroundColor= "red";
+                    document.getElementById("crSTATUS").innerHTML="Logging...";
+                }
+            }
+
+            on(dom.byId("cmdClearMyStorage"), "click", function clearStorage(){
+                    var yes = confirm("Discard all logged points?");
+                    if (yes === true) {
+                        if (totalpoints > 0) {
+                            localStorage.clear();
+                            totalpoints = 0;
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                            beep();
+                        }
+                        else {
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                        }
+                    }
+                }
+            );
+
+            on(dom.byId("cmdDeleteLast"), "click", function DeleteLast() {
+                    var yes = confirm("Delete last logged point?");
+                    if (yes === true) {
+                        var last = localStorage.length;
+                        last = last - 1;
+                        var key = localStorage.key(last);
+                        localStorage.removeItem(key);
+                        if (totalpoints > 0) {
+                            totalpoints = totalpoints - 1;
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                            beep();
+                        }
+                        else {
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                        }
+                    }
+                }
+            );
+
+            on(dom.byId("cmdUploadData"), "click", function uploadStorage() {
+                    beep();
+                    var x = document.getElementById("uploadStatus");
+                    var Buttons = document.getElementsByTagName("button");
+                    for (var i = 0; i < Buttons.length; i++) {
+                        Buttons[i].disabled = true;
+                    }
+                    if (localStorage.length > 0) {
+                        x.innerHTML = 'Uploading Data, please wait...';
+                        document.getElementById('overlay').style.display='block';
+                        document.getElementById('wait').style.display='block';
+                    }
+                    
+                    setTimeout(function(){
+                        if(localStorage.length > 0){
+                            //Service URL 
+                            var markerURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/InDICA/FeatureServer/0/addFeatures?f=json&features=";
+                            var countyroadURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/InDICA/FeatureServer/1/addFeatures?f=json&features=";
+                            //Build the String
+                            var counter = 0;
+                            for (var i=0, len = localStorage.length; i  <  len; i++) {
+
+                                var pnt;
+                                var theText = "";
+
+                                var key = localStorage.key(i);
+                                var feature = localStorage.getItem(key);
+                                var type = key.substring(0,2);
+
+                                if (type == "MK"){
+                                    pnt = JSON.parse(feature);
+                                    // routePrefix,routeNumer,routeSuffix,routeRoadbed,markerNumber,t,accy,speedy,deviceinfo,latty,longy
+                                    var routeName = pnt[0] + pnt[1] + pnt[2];
+                                    var routeID = routeName + "-" + pnt[3];
+                                    var newPT = webMercatorUtils.lngLatToXY(pnt[10],pnt[9]);
+                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'RTE_PRFX':'" + pnt[0] + "','RTE_NBR':'" + pnt[1] + "','RTE_SFX':'" + pnt[2] + "','RDBD_TYPE':'" + pnt[3] + "','RTE_NM':'" + routeName + "','RTE_ID':'" + routeID + "','MKR_NBR':'" + pnt[4] + "','DATE':'" + pnt[5] + "','ACCURACY':'" + pnt[6] + "','SPEED':'" + pnt[7] + "','DEVICE':'" + pnt[8] + "','LATITUDE':'" + pnt[9] + "','LONGITUDE':'" + pnt[10] + "'}}";           
+                                    theText = markerURL + "[" + theText + "]";
+                                }
+                                else if (type == "CR"){
+                                    pnt = JSON.parse(feature);
+                                    // routeNumber,countyNumber,surface,design,name,comment,t,avgAccy,avgSpeedy,deviceinfo,lineGeometry
+                                    var fixedGeom = [];
+                                    var lineGeom = JSON.parse(pnt[10]);
+                                    for (var n = 0; n < lineGeom.length; n++){
+                                        var point = lineGeom[n];
+                                        var newPT = webMercatorUtils.lngLatToXY(point[1],point[0]);
+                                        fixedGeom.push(newPT);
+                                    }
+                                    var stringGeom = JSON.stringify(fixedGeom);
+                                    theText = "{'geometry':{'paths':[" + stringGeom + "]},'attributes':{'RTE_NBR':'" + pnt[0] + "','CNTY_NBR':'" + pnt[1] + "','SURFACE_TYPE':'" + pnt[2] + "','HWY_DSGN':'" + pnt[3] + "','ST_NAME':'" + pnt[4] + "','COMMENT':'" + pnt[5] + "','DATE':'" + pnt[6] + "','AVG_ACCY':'" + pnt[7] + "','AVG_SPD':'" + pnt[8] + "','DEVICE':'" + pnt[9] + "'}}";           
+                                    theText = countyroadURL + "[" + theText + "]";
+                                }
+                                try {
+                                    var layersRequest = esriRequest({
+                                        url: theText
+                                        },{
+                                        usePost: true
+                                    });
+                                    layersRequest.then(
+                                        function(response) {
+                                            var res = response.addResults[0]["success"];
+                                            if (res) {
+                                                counter += 1;
+                                                if (counter === featureArray.length){
+                                                    document.getElementById('overlay').style.display='none';
+                                                    document.getElementById('wait').style.display='none';
+                                                    localStorage.clear();
+                                                    totalpoints = 0;
+                                                    var y = document.getElementById("pointStatus");
+                                                    y.innerHTML=totalpoints + " point(s) logged.";
+                                                    beep();
+                                                    x.style.color = "green";
+                                                    x.innerHTML = 'Data uploaded successfully!';
+                                                    for (var i = 0; i < Buttons.length; i++) {
+                                                        Buttons[i].disabled = false;
+                                                    }
+                                                    alert("Data uploaded successfully");
+                                                    setTimeout(function(){
+                                                        x.style.color = "initial";
+                                                        x.innerHTML = '';
+                                                    }, 5000);
+                                                }
+                                                console.log("Success: ", response.layers);
+                                            } else {
+                                                document.getElementById('overlay').style.display='none';
+                                                document.getElementById('wait').style.display='none';
+                                                x.innerHTML = 'Upload Failed. Try again with an internet connection. (1)';
+                                                for (var i = 0; i < Buttons.length; i++) {
+                                                    Buttons[i].disabled = false;
+                                                }
+                                                alert("Upload Failed. Try again with an internet connection. (1)");
+                                        }
+                                        }, function(error) {
+                                            document.getElementById('overlay').style.display='none';
+                                            document.getElementById('wait').style.display='none';
+                                            x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
+                                            for (var i = 0; i < Buttons.length; i++) {
+                                                Buttons[i].disabled = false;
+                                            }
+                                            alert("Upload Failed. Try again with an internet connection. (2)");
+                                            console.log("Error: ", error.message);
+                                    });
+                                    
+                                } catch (e) {
+                                    document.getElementById('overlay').style.display='none';
+                                    document.getElementById('wait').style.display='none';
+                                    x.innerHTML = 'Upload Failed. Try again with an internet connection. (3)';
+                                    for (var i = 0; i < Buttons.length; i++) {
+                                        Buttons[i].disabled = false;
+                                    }
+                                    alert("Upload Failed. Server connection failure. Try again with an internet connection. (3)");
+                                }
+                            }
+                        }
+                        else{
+                            document.getElementById('overlay').style.display='none';
+                            document.getElementById('wait').style.display='none';
+                            for (var i = 0; i < Buttons.length; i++) {
+                                Buttons[i].disabled = false;
+                            }
+                            x.style.color = "initial";
+                            x.innerHTML = 'No data collected. Please collect data and try to upload again.';
+                            setTimeout(function(){
+                                x.innerHTML = '';
+                            }, 5000);
+                        }  
+                    }, 1);
+                }
+            );
+            
+            function start() {
+              startupGPS();
+              device();
+              totalpoints = localStorage.length;
+              var y = document.getElementById("pointStatus");
+              y.innerHTML=totalpoints + " point(s) logged.";
+              try {
+                    localStorage.setItem('mod', 'mod');
+                    localStorage.removeItem('mod');
+                }
+                catch (e) {
+                    alert('You are in Private Browsing mode. Please turn off Private Browsing to use this application.');
+                }
+            }
+
+            var info = new OAuthInfo({
+                    appId: "iWj6V7GhXqdovSN4",
+                    portalUrl: "https://txdot.maps.arcgis.com",
+                    popup: false
+                });
+            IdentityManager.registerOAuthInfos([info]);
+            IdentityManager.getCredential(info.portalUrl + "/sharing");
+
+            new arcgisPortal.Portal(info.portalUrl).signIn().then(
+                function (portalUser){
+                        username = portalUser.fullName;
+                        domAttr.set("user", "innerHTML", portalUser.fullName);
+                    }
+            )
+            on(dom.byId("user"), "click", function (){
+                var yes = confirm("Would you like to sign out?");
+                if (yes === true) {
+                    IdentityManager.destroyCredentials();
+                    window.location.reload();
+                }
+            });
+
+            window.onload = start;
+
+        });
+</script>
+</head>
+    <body ontouchstart="">
+        <div>
+            <table>
+                <tr>
+                    <td style="border: 2px solid #0A1B2B;"><span id="user" style="display:block;"></span></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+        <div>
+        <div id="wait">Uploading Data, please wait...</div>
+        <div id="overlay"></div>
+        <div id="header">
+            <div id="outputLocation"></div>
+            <div id="pointStatus"></div>
+        </div>
+        <br><br>
+        <div id="dropdown" class="styled-select">
+                <select id="dataSelect">
+                    <option value="">Select Data to Collect</option>
+                    <option value="MKR">Markers</option>
+                    <option value="CR">County Roads</option>
+                </select>
+        </div>
+        <div id="MKRcontainer" style="display: none;" class="styled-select">
+            <table>
+                <tr>
+                    <td><select id="mkrPRFX">
+                            <option value="">Route Prefix</option>
+                            <option value="BF">BF</option>
+                            <option value="BI">BI</option>
+                            <option value="BS">BS</option>
+                            <option value="BU">BU</option>
+                            <option value="FC">FC</option>
+                            <option value="FM">FM</option>
+                            <option value="FS">FS</option>
+                            <option value="IH">IH</option>
+                            <option value="PA">PA</option>
+                            <option value="PR">PR</option>
+                            <option value="RE">RE</option>
+                            <option value="RM">RM</option>
+                            <option value="RR">RR</option>
+                            <option value="RS">RS</option>
+                            <option value="SH">SH</option>
+                            <option value="SL">SL</option>
+                            <option value="SS">SS</option>
+                            <option value="TL">TL</option>
+                            <option value="UA">UA</option>
+                            <option value="UP">UP</option>
+                            <option value="US">US</option>
+                        </select></td>
+                    <td><select id="mkrSFX">
+                            <option value="">Route Suffix</option>    <option value='A'>A</option>	<option value='B'>B</option>	<option value='C'>C</option>	<option value='D'>D</option>	<option value='E'>E</option>	<option value='F'>F</option>	<option value='G'>G</option>	<option value='H'>H</option>	<option value='I'>I</option>	<option value='J'>J</option>	<option value='K'>K</option>	<option value='L'>L</option>	<option value='M'>M</option>	<option value='N'>N</option>	<option value='O'>O</option>	<option value='P'>P</option>	<option value='Q'>Q</option>	<option value='R'>R</option>	<option value='S'>S</option>	<option value='T'>T</option>	<option value='U'>U</option>	<option value='V'>V</option>	<option value='W'>W</option>	<option value='X'>X</option>	<option value='Y'>Y</option>	<option value='Z'>Z</option>
+                        </select></td>
+                </tr>
+                <tr>
+                    <td><input id="mkrRTENBR" type="text" value="" maxlength="4" placeholder="Route Number"></td>
+                    <td><select id="mkrRDBD">
+                            <option value="">Roadbed Type</option>  <option value='KG'>KG - Single Roadbed</option>	<option value='LG'>LG - Left Roadbed</option>	<option value='RG'>RG - Right Roadbed</option>	<option value='XG'>XG - Left Frontage</option>	<option value='AG'>AG - Right Frontage</option>	<option value='MG'>MG - Left Supplemental Main lane</option>	<option value='SG'>SG - Right Supplemental Main Lane</option>	<option value='PG'>PG - Left Supplemental Supplemental Main Lane</option>	<option value='TG'>TG - Right Supplemental Supplemental Main Lane</option>	<option value='YG'>YG - Left Supplemental Frontage Road</option>	<option value='BG'>BG - Right Supplemental Frontage Road</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan=2><input id="mkrNBR" type="text" value="" maxlength="4" placeholder="Marker Number"></td>
+                </tr>
+                <tr>
+                    <td colspan=2><button id="mkrCOLLECT" type="button">Collect Point</button></td>
+                </tr>
+            </table>
+        </div>
+        <div id="CRcontainer" style="display: none;" class="styled-select">
+            <table>
+                <tr>
+                    <td><input id="crRTENBR" type="text" value="" maxlength="5" placeholder="Route Number"></td>
+                    <td><select id="crNUM">
+                            <option value="001">001 - Anderson</option> <option value="002">002 - Andrews</option>  <option value="003">003 - Angelina</option> <option value="004">004 - Aransas</option>  <option value="005">005 - Archer</option>   <option value="006">006 - Armstrong</option>    <option value="007">007 - Atascosa</option> <option value="008">008 - Austin</option>   <option value="009">009 - Bailey</option>   <option value="010">010 - Bandera</option>  <option value="011">011 - Bastrop</option>  <option value="012">012 - Baylor</option>   <option value="013">013 - Bee</option>  <option value="014">014 - Bell</option> <option value="015">015 - Bexar</option>    <option value="016">016 - Blanco</option>   <option value="017">017 - Borden</option>   <option value="018">018 - Bosque</option>   <option value="019">019 - Bowie</option>    <option value="020">020 - Brazoria</option> <option value="021">021 - Brazos</option>   <option value="022">022 - Brewster</option> <option value="023">023 - Briscoe</option>  <option value="024">024 - Brooks</option>   <option value="025">025 - Brown</option>    <option value="026">026 - Burleson</option> <option value="027">027 - Burnet</option>   <option value="028">028 - Caldwell</option> <option value="029">029 - Calhoun</option>  <option value="030">030 - Callahan</option> <option value="031">031 - Cameron</option>  <option value="032">032 - Camp</option> <option value="033">033 - Carson</option>   <option value="034">034 - Cass</option> <option value="035">035 - Castro</option>   <option value="036">036 - Chambers</option> <option value="037">037 - Cherokee</option> <option value="038">038 - Childress</option>    <option value="039">039 - Clay</option> <option value="040">040 - Cochran</option>  <option value="041">041 - Coke</option> <option value="042">042 - Coleman</option>  <option value="043">043 - Collin</option>   <option value="044">044 - Collingsworth</option>    <option value="045">045 - Colorado</option> <option value="046">046 - Comal</option>    <option value="047">047 - Comanche</option> <option value="048">048 - Concho</option>   <option value="049">049 - Cooke</option>    <option value="050">050 - Coryell</option>  <option value="051">051 - Cottle</option>   <option value="052">052 - Crane</option>    <option value="053">053 - Crockett</option> <option value="054">054 - Crosby</option>   <option value="055">055 - Culberson</option>    <option value="056">056 - Dallam</option>   <option value="057">057 - Dallas</option>   <option value="058">058 - Dawson</option>   <option value="059">059 - Deaf Smith</option>   <option value="060">060 - Delta</option>    <option value="061">061 - Denton</option>   <option value="062">062 - De Witt</option>  <option value="063">063 - Dickens</option>  <option value="064">064 - Dimmit</option>   <option value="065">065 - Donley</option>   <option value="066">066 - Kenedy</option>   <option value="067">067 - Duval</option>    <option value="068">068 - Eastland</option> <option value="069">069 - Ector</option>    <option value="070">070 - Edwards</option>  <option value="071">071 - Ellis</option>    <option value="072">072 - El Paso</option>  <option value="073">073 - Erath</option>    <option value="074">074 - Falls</option>    <option value="075">075 - Fannin</option>   <option value="076">076 - Fayette</option>  <option value="077">077 - Fisher</option>   <option value="078">078 - Floyd</option>    <option value="079">079 - Foard</option>    <option value="080">080 - Fort Bend</option>    <option value="081">081 - Franklin</option> <option value="082">082 - Freestone</option>    <option value="083">083 - Frio</option> <option value="084">084 - Gaines</option>   <option value="085">085 - Galveston</option>    <option value="086">086 - Garza</option>    <option value="087">087 - Gillespie</option>    <option value="088">088 - Glasscock</option>    <option value="089">089 - Goliad</option>   <option value="090">090 - Gonzales</option> <option value="091">091 - Gray</option> <option value="092">092 - Grayson</option>  <option value="093">093 - Gregg</option>    <option value="094">094 - Grimes</option>   <option value="095">095 - Guadalupe</option>    <option value="096">096 - Hale</option> <option value="097">097 - Hall</option> <option value="098">098 - Hamilton</option> <option value="099">099 - Hansford</option> <option value="100">100 - Hardeman</option> <option value="101">101 - Hardin</option>   <option value="102">102 - Harris</option>   <option value="103">103 - Harrison</option> <option value="104">104 - Hartley</option>  <option value="105">105 - Haskell</option>  <option value="106">106 - Hays</option> <option value="107">107 - Hemphill</option> <option value="108">108 - Henderson</option>    <option value="109">109 - Hidalgo</option>  <option value="110">110 - Hill</option> <option value="111">111 - Hockley</option>  <option value="112">112 - Hood</option> <option value="113">113 - Hopkins</option>  <option value="114">114 - Houston</option>  <option value="115">115 - Howard</option>   <option value="116">116 - Hudspeth</option> <option value="117">117 - Hunt</option> <option value="118">118 - Hutchinson</option>   <option value="119">119 - Irion</option>    <option value="120">120 - Jack</option> <option value="121">121 - Jackson</option>  <option value="122">122 - Jasper</option>   <option value="123">123 - Jeff Davis</option>   <option value="124">124 - Jefferson</option>    <option value="125">125 - Jim Hogg</option> <option value="126">126 - Jim Wells</option>    <option value="127">127 - Johnson</option>  <option value="128">128 - Jones</option>    <option value="129">129 - Karnes</option>   <option value="130">130 - Kaufman</option>  <option value="131">131 - Kendall</option>  <option value="132">132 - Kent</option> <option value="133">133 - Kerr</option> <option value="134">134 - Kimble</option>   <option value="135">135 - King</option> <option value="136">136 - Kinney</option>   <option value="137">137 - Kleberg</option>  <option value="138">138 - Knox</option> <option value="139">139 - Lamar</option>    <option value="140">140 - Lamb</option> <option value="141">141 - Lampasas</option> <option value="142">142 - La Salle</option> <option value="143">143 - Lavaca</option>   <option value="144">144 - Lee</option>  <option value="145">145 - Leon</option> <option value="146">146 - Liberty</option>  <option value="147">147 - Limestone</option>    <option value="148">148 - Lipscomb</option> <option value="149">149 - Live Oak</option> <option value="150">150 - Llano</option>    <option value="151">151 - Loving</option>   <option value="152">152 - Lubbock</option>  <option value="153">153 - Lynn</option> <option value="154">154 - Madison</option>  <option value="155">155 - Marion</option>   <option value="156">156 - Martin</option>   <option value="157">157 - Mason</option>    <option value="158">158 - Matagorda</option>    <option value="159">159 - Maverick</option> <option value="160">160 - McCulloch</option>    <option value="161">161 - McLennan</option> <option value="162">162 - McMullen</option> <option value="163">163 - Medina</option>   <option value="164">164 - Menard</option>   <option value="165">165 - Midland</option>  <option value="166">166 - Milam</option>    <option value="167">167 - Mills</option>    <option value="168">168 - Mitchell</option> <option value="169">169 - Montague</option> <option value="170">170 - Montgomery</option>   <option value="171">171 - Moore</option>    <option value="172">172 - Morris</option>   <option value="173">173 - Motley</option>   <option value="174">174 - Nacogdoches</option>  <option value="175">175 - Navarro</option>  <option value="176">176 - Newton</option>   <option value="177">177 - Nolan</option>    <option value="178">178 - Nueces</option>   <option value="179">179 - Ochiltree</option>    <option value="180">180 - Oldham</option>   <option value="181">181 - Orange</option>   <option value="182">182 - Palo Pinto</option>   <option value="183">183 - Panola</option>   <option value="184">184 - Parker</option>   <option value="185">185 - Parmer</option>   <option value="186">186 - Pecos</option>    <option value="187">187 - Polk</option> <option value="188">188 - Potter</option>   <option value="189">189 - Presidio</option> <option value="190">190 - Rains</option>    <option value="191">191 - Randall</option>  <option value="192">192 - Reagan</option>   <option value="193">193 - Real</option> <option value="194">194 - Red River</option>    <option value="195">195 - Reeves</option>   <option value="196">196 - Refugio</option>  <option value="197">197 - Roberts</option>  <option value="198">198 - Robertson</option>    <option value="199">199 - Rockwall</option> <option value="200">200 - Runnels</option>  <option value="201">201 - Rusk</option> <option value="202">202 - Sabine</option>   <option value="203">203 - San Augustine</option>    <option value="204">204 - San Jacinto</option>  <option value="205">205 - San Patricio</option> <option value="206">206 - San Saba</option> <option value="207">207 - Schleicher</option>   <option value="208">208 - Scurry</option>   <option value="209">209 - Shackelford</option>  <option value="210">210 - Shelby</option>   <option value="211">211 - Sherman</option>  <option value="212">212 - Smith</option>    <option value="213">213 - Somervell</option>    <option value="214">214 - Starr</option>    <option value="215">215 - Stephens</option> <option value="216">216 - Sterling</option> <option value="217">217 - Stonewall</option>    <option value="218">218 - Sutton</option>   <option value="219">219 - Swisher</option>  <option value="220">220 - Tarrant</option>  <option value="221">221 - Taylor</option>   <option value="222">222 - Terrell</option>  <option value="223">223 - Terry</option>    <option value="224">224 - Throckmorton</option> <option value="225">225 - Titus</option>    <option value="226">226 - Tom Green</option>    <option value="227">227 - Travis</option>   <option value="228">228 - Trinity</option>  <option value="229">229 - Tyler</option>    <option value="230">230 - Upshur</option>   <option value="231">231 - Upton</option>    <option value="232">232 - Uvalde</option>   <option value="233">233 - Val Verde</option>    <option value="234">234 - Van Zandt</option>    <option value="235">235 - Victoria</option> <option value="236">236 - Walker</option>   <option value="237">237 - Waller</option>   <option value="238">238 - Ward</option> <option value="239">239 - Washington</option>   <option value="240">240 - Webb</option> <option value="241">241 - Wharton</option>  <option value="242">242 - Wheeler</option>  <option value="243">243 - Wichita</option>  <option value="244">244 - Wilbarger</option>    <option value="245">245 - Willacy</option>  <option value="246">246 - Williamson</option>   <option value="247">247 - Wilson</option>   <option value="248">248 - Winkler</option>  <option value="249">249 - Wise</option> <option value="250">250 - Wood</option> <option value="251">251 - Yoakum</option>   <option value="252">252 - Young</option>    <option value="253">253 - Zapata</option>   <option value="254">254 - Zavala</option>
+                        </select></td>
+                </tr>
+                <tr>
+                    <td><select id="crST">
+                            <option value="10">Dirt/Natural</option>
+                            <option value="32">Gravel</option>
+                            <option value="52" selected>Paved</option>
+                            <option value="61">Concrete</option>
+                        </select>
+                    </td>
+                    <td><select id="crDSGN">
+                            <option value="1">One Way</option>
+                            <option value="2" selected>Two Way</option>
+                            <option value="3">Boulevard</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan=2><input id="crNAME" type="text" maxlength="50" value="" placeholder="Street Name"></td>
+                </tr>
+                <tr>
+                    <td colspan=2><input id="crCMT" type="text" maxlength="150" value="" placeholder="Comment"></td>
+                </tr>
+                <tr>
+                    <td colspan=2><button id="crCOLLECT" type="button">Collect Line</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><div id="crSTATUS"></td>
+                </tr>
+            </table>
+        </div>
+        <div id="UPLOADcontainer">
+            <table>
+                <tr>
+                    <td colspan=2><div style="font-weight: bold;"><hr width="35%" style="display: inline-block; vertical-align:middle;">  Options  <hr width="35%" style="display: inline-block; vertical-align:middle;"></div></td>
+                </tr>
+                <tr>
+                    <td><button id="cmdClearMyStorage" value="Clear Local Storage" type="button">Start Over</button></td>
+                    <td><button id="cmdDeleteLast" value="Delete Last Point" type="button">Delete Last Point</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><button id="cmdUploadData" value="Upload Data" type="button">Upload Collected Data</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><div id="uploadStatus"></div></td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

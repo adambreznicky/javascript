@@ -88,13 +88,20 @@ cursor = arcpy.da.UpdateCursor(projected, ["UNIQUE_ID", "COUNTY", "AREA_OFFICE",
 for row in cursor:
     UID = row[0]
     arcpy.AddMessage(UID)
-    values = bundle[UID]
-    row[1] = values[0]
-    row[2] = values[1]
-    measures = values[2]
-    row[3] = measures[0]
-    row[4] = measures[1]
-    cursor.updateRow(row)
+    try:
+        values = bundle[UID]
+        row[1] = values[0]
+        row[2] = values[1]
+        measures = values[2]
+        if measures[0] < measures[1]:
+            row[3] = measures[0]
+            row[4] = measures[1]
+        else:
+            row[3] = measures[1]
+            row[4] = measures[0]
+        cursor.updateRow(row)
+    except:
+        arcpy.AddMessage("issue:" + str(UID))
 del cursor
 arcpy.AddMessage("Populated.")
 
