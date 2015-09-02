@@ -214,7 +214,7 @@
                 }
             );
 
-            on(dom.byId("mkrCOLLECT"), "click", collectPoint());
+            on(dom.byId("mkrCOLLECT"), "click", collectPoint);
             function collectPoint() {
                 beep();	
                 var y = document.getElementById("pointStatus");	
@@ -238,7 +238,7 @@
                 }
             }
 
-            on(dom.byId("crCOLLECT"), "click", collectLine());
+            on(dom.byId("crCOLLECT"), "click", collectLine);
             function collectLine() {
                 beep(); 
                 if (logging) {
@@ -294,7 +294,7 @@
                 }
             }
 
-            on(dom.byId("cmdClearMyStorage"), "click", function clearStorage(){
+            on(dom.byId("cmdClearMyStorage"), "click", function clearStorage() {
                     var yes = confirm("Discard all logged points?");
                     if (yes === true) {
                         if (totalpoints > 0) {
@@ -428,7 +428,8 @@
                                         }, function(error) {
                                             document.getElementById('overlay').style.display='none';
                                             document.getElementById('wait').style.display='none';
-                                            x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
+                                            // x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
+                                            x.innerHTML = error.message;
                                             for (var i = 0; i < Buttons.length; i++) {
                                                 Buttons[i].disabled = false;
                                             }
