@@ -349,8 +349,8 @@
                     setTimeout(function(){
                         if(localStorage.length > 0){
                             //Service URL 
-                            var markerURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/InDICA/FeatureServer/0/addFeatures?f=json&features=";
-                            var countyroadURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/InDICA/FeatureServer/1/addFeatures?f=json&features=";
+                            var markerURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InDICA_Reference_Markers/FeatureServer/0/addFeatures?f=json&features=";
+                            var countyroadURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InDICA_County_Roads/FeatureServer/0/addFeatures?f=json&features=";
                             //Build the String
                             var counter = 0;
                             for (var i=0, len = localStorage.length; i  <  len; i++) {
@@ -396,7 +396,7 @@
                                             var res = response.addResults[0]["success"];
                                             if (res) {
                                                 counter += 1;
-                                                if (counter === featureArray.length){
+                                                if (counter === localStorage.length){
                                                     document.getElementById('overlay').style.display='none';
                                                     document.getElementById('wait').style.display='none';
                                                     localStorage.clear();
@@ -428,8 +428,7 @@
                                         }, function(error) {
                                             document.getElementById('overlay').style.display='none';
                                             document.getElementById('wait').style.display='none';
-                                            // x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
-                                            x.innerHTML = error.message;
+                                            x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
                                             for (var i = 0; i < Buttons.length; i++) {
                                                 Buttons[i].disabled = false;
                                             }

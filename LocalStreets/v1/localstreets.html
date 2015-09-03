@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Local Streets TEST</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <style type="text/css">
+            html, body, #divMap {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            }
+            body {
+              background-color: rgb(20,56,92);
+              overflow: hidden;
+              font-family: "Trebuchet MS";
+            }
+            #bcMain, #cpCenter {
+              width: 100%;
+              height: 100%;
+            }
+            #cpCenter, #openWindowCP {
+              margin: 0;
+              padding: 0;
+            }
+            #cpTop {
+              height:60px;
+              margin: 0;
+              padding: 0;
+            }
+            #cpLeft {
+              width: 200px;
+              text-align: center;
+              margin: 0;
+              padding: 0;
+            }
+            #cpLeftTopTitle {
+              margin: 0;
+              padding: 0;
+              border: none;
+              font-size: medium;
+              text-align: center;
+              font-weight: bold;
+              color: rgb(20,56,92);
+            }
+            #cpLeftTop, #cpLeftCenter, #cpLeftBottom {
+                border: none;
+                display: block;
+            }
+            #cpTopRight {
+              overflow: hidden;
+              margin: 0;
+              padding: 0;
+            }
+            #resources, #legend {
+               text-align: left;
+               width: 90%;
+               margin: 0 auto;
+            }
+            #info{
+             position: absolute;
+             bottom: 3px;
+             left: 22px;
+             z-index: 50;
+             color: #303030;
+             font-weight: bold;
+             text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+            }
+        </style>
+        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script src="http://js.arcgis.com/3.14/"></script>
+        <script>
+            var map;
+            var districtsURL;
+            var districts;
+            var updatesURL;
+            var updatesLyr;
+            var districtNumber;
+            var onsysURL;
+            var onsystemRoads;
+            var rampURL;
+            var rampRoads;
+            var aoURL;
+            var areaOffices;
+            var geomServ;
+            var widgetEditor;
+            var tpCustom;
+            var selectorLabel;
+            var previousBasemap;
+            
+             require(["esri/map",
+                "esri/layers/FeatureLayer",
+                "esri/geometry/Extent",
+                "esri/dijit/BasemapGallery",
+                "esri/dijit/Basemap",
+                "esri/dijit/BasemapLayer",
+                "esri/dijit/Legend",
+                
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                "esri/graphic",
+                "esri/renderers/UniqueValueRenderer",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/Color",
+                "esri/renderers/SimpleRenderer",
+                "esri/symbols/SimpleFillSymbol",
+                
+                "esri/tasks/GeometryService",
+                // "esri/dijit/editing/Editor",
+                // "esri/dijit/editing/TemplatePicker",
+                "esri/tasks/LengthsParameters",
+                "esri/geometry/geodesicUtils",
+                "esri/config",
+                
+                "esri/geometry/Geometry",
+                "esri/units",
+                "dojo/ready", 
+                "dojo/parser", 
+                "dojo/on",
+                "dojo/dom",
+                "dojo/_base/array",
+                "esri/arcgis/utils",
+                "esri/layers/ArcGISTiledMapServiceLayer",
+
+                "esri/SpatialReference",
+                "esri/geometry/webMercatorUtils",
+                "esri/dijit/Scalebar",
+                "esri/symbols/TextSymbol",
+                "esri/layers/LabelLayer",
+
+                "dojo/sniff",
+                "dojo/json",
+                "esri/InfoTemplate",
+                "esri/geometry/scaleUtils",
+                "esri/request",
+                "dojo/_base/lang",
+
+                "dijit/form/Select",
+                "dijit/layout/BorderContainer", 
+                "dijit/layout/ContentPane",
+                
+                
+                "dojo/domReady!"], 
+            function(Map, FeatureLayer, Extent, BasemapGallery, Basemap, BasemapLayer, Legend,
+                    Query, QueryTask, Graphic, UniqueValueRenderer, SimpleLineSymbol, Color, SimpleRenderer, SimpleFillSymbol,
+                    GeometryService, 
+                    // Editor, TemplatePicker, 
+                    LengthsParameters, geodesicUtils, config,
+                    Geometry, Units, ready, parser, on, dom, array, arcgisUtils, Tiled,
+                    SpatialReference, webMercatorUtils, Scalebar, TextSymbol, LabelLayer,
+                    sniff, JSON, InfoTemplate, scaleUtils, request, lang) {
+                ready(function(){
+                
+                config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
+                
+                geomServ = new GeometryService("http://maps.dot.state.tx.us/arcgis/rest/services/Utilities/Geometry/GeometryServer");
+                AGOgeomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+                
+                
+                map = new Map("divMap", {
+                    minZoom:6,
+                    maxZoom:18,
+                    showlabels: true,
+                    logo: false
+                });
+                map.on("load", function() {
+		        map.on("mouse-move", showCoordinates);
+                map.on("mouse-drag", showCoordinates);
+                });
+                map.on("zoom-end", function() {
+                    var current = document.getElementById("info").innerHTML;
+                    var coords = ", " + current.split(",")[1] + ", " + current.split(",")[2];
+                    document.getElementById("info").innerHTML = "Level: " + map.getZoom() + coords;
+                    
+                    var lvl = map.getZoom();
+                    var selector = dijit.byId("selectDistrict");
+                    var current = selector.value;
+                    
+                    if (current == ""){
+                        onsystemRoads.hide();
+                        rampRoads.hide();
+                        updatesLyr.hide();
+                        districts.hide();
+                    }
+                    else if (current !== "" && lvl < 12){
+                        onsystemRoads.hide();
+                        rampRoads.hide();
+                        updatesLyr.hide();
+                        districts.show();
+                    }
+                    else {
+                        onsystemRoads.show();
+                        rampRoads.show();
+                        updatesLyr.show();
+                        districts.hide();
+                    }
+                    var currentBasemap = basemaps.getSelected();
+                    if ((currentBasemap == null||currentBasemap.title == "TxDOT Planning Map") && lvl > 16) {
+                        basemaps.select("ImageryBM");
+                        previousBasemap = "TxDOT Planning Map";
+                    }
+                    
+                });
+
+        		tiled = new Tiled("http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
+        		map.addLayer(tiled);
+                        
+                        var theExtent = new Extent(-107,25.27,-93,37.27, new esri.SpatialReference({ wkid: 4269 }));
+        		map.setExtent(esri.geometry.geographicToWebMercator(theExtent));
+                
+                var base_maps = [];
+                base_maps.push(new Basemap({
+                    title: "TxDOT Planning Map",
+                    thumbnailUrl: "./statewideplanningmap.png",
+                    layers:[tiled]
+                }));
+                base_maps.push(new Basemap({
+                    id: "ImageryBM",
+                    title: "Imagery",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-D644D704-818F-48EA-BB2F-449A3059634C-web.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Streets",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-9DC2852F-C635-402B-B830-1E1CB83C11FA-web.png",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Topographic",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-67355224-9211-470F-99A0-8C28528F0D62-web.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Imagery Hybrid",
+                    thumbnailUrl: "http://www.arcgis.com/sharing/rest/content/items/86265e5a4bbb4187a59719cf134e0018/info/thumbnail/imagery_hybrid.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"}),
+                    new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer"}),
+                    new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "USA Topo Maps",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-2AA64FB1-DC8C-4C20-897C-A689F59A3356-web.png",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "Open Street Map",
+                    thumbnailUrl: "http://www.arcgis.com/sharing/rest/content/items/b834a68d7a484c5fb473d4ba90d35e71/info/thumbnail/osm.jpg",
+                    layers:[new BasemapLayer({type: "OpenStreetMap"})]
+                }));
+                base_maps.push(new Basemap({
+                    title: "National Geographic",
+                    thumbnailUrl: "http://resources.arcgis.com/en/help/arcgis-rest-api/02r3/GUID-F453D2C4-279B-4A04-AB3D-3A4FB290D896-web.jpg",
+                    layers:[new BasemapLayer({url: "http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer"})]
+                }));
+                
+                var basemaps = new BasemapGallery({
+                    showArcGISBasemaps: false,
+                    basemaps: base_maps,
+                    map: map
+                }, "basemapGallery");
+                basemaps.startup();
+                
+                var scalebar = new Scalebar({
+                    map: map,
+                    scalebarUnit: "english",
+                    attachTo: "bottom-left"
+                });
+                
+                var districtsRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
+                districtsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Districts/FeatureServer/0";
+                districts = new FeatureLayer(districtsURL,{
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    opacity: .1,
+                    showLabels: false,
+                    outFields: ["DIST_NM", "DIST_NBR"]
+                });
+                districts.setRenderer(districtsRr);
+
+                // updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/BikeEdits/FeatureServer/0";
+                updatesURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/Bicycle_Routes/FeatureServer/0";
+                updatesLyr = new FeatureLayer(updatesURL,{
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    showLabels: true,
+                    outFields: ['*']
+                });
+                updatesLyr.on("click", function(){
+                    map.graphics.clear();
+                    dijit.byId("openWindow").set('open', false);
+                    dijit.byId("openWindow").set('title', "Attributes");
+                    document.getElementById("attributeWindow").innerHTML = "";
+                });
+                updatesLyr.on("mouse-over", function(){
+                    map.setMapCursor("pointer");
+                });
+                updatesLyr.on("mouse-out", function(){
+                    map.setMapCursor("default");
+                });
+
+                onsysURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/Bicycle_Routes/MapServer/1";
+                onsystemRoads = new FeatureLayer(onsysURL,{
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    showLabels: true,
+                    outFields: ["*"]
+                });
+                onsystemRoads.on("mouse-over", function(){
+                    map.setMapCursor("pointer");
+                });
+                onsystemRoads.on("mouse-out", function(){
+                    map.setMapCursor("default");
+                });
+                var selectedRoad = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0,255,255]), 2);
+                
+                rampURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/Bicycle_Routes/MapServer/2";
+                rampRoads = new FeatureLayer(rampURL,{
+                    mode: FeatureLayer.MODE_ONDEMAND,
+                    visible: false,
+                    showLabels: false,
+                    outFields: ["*"]
+                });
+
+                onsystemRoads.on("click", function(evt){
+                    map.graphics.clear();
+                    var selected = new Graphic(evt.graphic.geometry, selectedRoad);
+                    map.graphics.add(selected);
+
+                    var desLabel;
+                    var surLabel;
+                    var graphic = evt.graphic;
+                    var attr = graphic.attributes;
+                    var rteID = attr.RTE_ID;
+                    var name = attr.FULL_ST_NM;
+                    
+                    var content = "<b>Route ID:</b> "+rteID+
+                            "<br><b>Full Street Name:</b> "+name;
+
+                    dijit.byId("openWindow").set('open', true);
+                    dijit.byId("openWindow").set('title', name);
+                    document.getElementById("attributeWindow").innerHTML = content;
+                });
+                map.on("click", function(evt){
+                    if (!('graphic' in evt)){
+                        map.graphics.clear();
+                        dijit.byId("openWindow").set('open', false);
+                        dijit.byId("openWindow").set('title', "Attributes");
+                        document.getElementById("attributeWindow").innerHTML = "";
+                    }
+                });
+           
+                // map.on("layers-add-result", initEditor);
+                map.addLayers([districts, rampRoads, onsystemRoads, updatesLyr]);
+
+                var onsysLabel = new TextSymbol().setColor(new Color("black"));
+                onsysLabel.font.setSize("10pt");
+                onsysLabel.font.setFamily("Trebuchet MS");
+                var onsysLabelRenderer = new SimpleRenderer(onsysLabel);
+                var labels = new LabelLayer({id: "LBL"});
+                labels.addFeatureLayer(onsystemRoads, onsysLabelRenderer, "{RTE_ID}");
+                labels.addFeatureLayer(updatesLyr, onsysLabelRenderer, "{RTE_NAME}");
+                map.addLayer(labels);
+                
+                var selector = dijit.byId("selectDistrict");
+                selector.on('change', function (){
+                    districtNumber = selector.value;
+                    selectorLabel = selector.attr('displayedValue');
+                    if (districtNumber !== ""){
+                        var expression = "DIST_NBR = " + districtNumber;
+                        
+                        var query = new Query();
+                        var queryTask = new QueryTask(districtsURL);
+                        query.where = expression;
+                        query.returnGeometry = true;
+                        queryTask.execute(query, findExtent);
+
+                        function findExtent(results){
+
+                            var theDistrict = array.map(results.features, function(result){
+                                    return result;
+                            });
+                            var ext = theDistrict[0].geometry.getExtent().expand(1.15);
+                            map.setExtent(ext);
+
+                        };
+                        var pieces = selectorLabel.split(" - ");
+                        var theName = pieces[0];
+                        updatesLyr.setDefinitionExpression("DISTRICT = '" + theName + "'");
+                        updatesLyr.show();
+                        updatesLyr.redraw();
+                        districts.setDefinitionExpression(expression);
+                        districts.redraw();
+                        onsystemRoads.setDefinitionExpression(expression);
+                        onsystemRoads.show();
+                        onsystemRoads.redraw();
+                        rampRoads.setDefinitionExpression(expression);
+                        rampRoads.show();
+                        
+                        var lvl = map.getZoom();
+                        if (lvl < 12){
+                            onsystemRoads.hide();
+                            rampRoads.hide();
+                            updatesLyr.hide();
+                        }
+                        else {
+                            onsystemRoads.show();
+                            rampRoads.show();
+                            updatesLyr.show();
+                        }
+                        updatesLyr.on("before-apply-edits", function(g){
+                                    if (map.getZoom() > 11){
+                                        var features = g.adds;
+                                        var featurettes = g.updates;
+                                        array.forEach(features, function(i){
+                                            i.attributes.DISTRICT = theName;
+
+                                            var fixed = esri.geometry.webMercatorToGeographic(i.geometry);
+                                            var lengther = esri.geometry.geodesicLengths([fixed], esri.Units.MILES);
+                                            i.attributes.SEGMENT_LENGTH = parseFloat(lengther);
+                                        });
+                                        array.forEach(featurettes, function(i){
+                                            var fixed = esri.geometry.webMercatorToGeographic(i.geometry);
+                                            var lengther = esri.geometry.geodesicLengths([fixed], esri.Units.MILES);
+                                            i.attributes.SEGMENT_LENGTH = parseFloat(lengther);
+
+                                        }); 
+                                    }
+                                    else {
+                                        var features = g.adds;
+                                        array.forEach(features, function(i){
+                                            i.attributes.DISTRICT = "0";
+                                        });
+                                    }
+
+                        });
+                        
+                        document.getElementById("cpLeftCenter").style.display = "block";
+                    } else {
+                        var expression = "";
+                        districts.setDefinitionExpression(expression);
+                        districts.redraw();
+                        onsystemRoads.setDefinitionExpression(expression);
+                        onsystemRoads.hide();
+                        rampRoads.setDefinitionExpression(expression);
+                        rampRoads.hide();
+                        updatesLyr.hide();
+                        
+                        var ext = districts.fullExtent.expand(1.25);
+                        map.setExtent(ext);
+                        
+                        document.getElementById("cpLeftCenter").style.display = "none";
+                    }
+                });
+                selector.on('click', function (){
+                    districtNumber = selector.value;
+                    selectorLabel = selector.attr('displayedValue');
+                    if (districtNumber !== ""){
+                        var expression = "DIST_NBR = " + districtNumber;
+                        
+                        var query = new Query();
+                        var queryTask = new QueryTask(districtsURL);
+                        query.where = expression;
+                        query.returnGeometry = true;
+                        queryTask.execute(query, findExtent);
+
+                        function findExtent(results){
+
+                            var theDistrict = array.map(results.features, function(result){
+                                    return result;
+                            });
+                            var ext = theDistrict[0].geometry.getExtent().expand(1.15);
+                            map.setExtent(ext);
+
+                        };
+                    };
+                });
+                
+                // function initEditor (results){
+
+                //     var legend = new Legend({
+                //         map: map,
+                //         layerInfos: [{
+                //                 layer: onsystemRoads,
+                //                 defaultSymbol: false,
+                //                 title: "On System Roads"}],
+                //                 respectCurrentMapScale: true
+                //     }, "legend");
+                //     legend.startup();
+                    
+                //     tpCustom = new TemplatePicker({
+                //         featureLayers: [updatesLyr],
+                //         grouping: false,
+                //         columns: 1
+                //     }, "editTemplate");
+                //     tpCustom.startup();
+
+                //     var editorSettings = {
+                //         map: map,
+                //         geometryService: geomServ,
+                //         layerInfos: [{
+                //                 featureLayer:updatesLyr,
+                //                 fieldInfos: [{
+                //                     fieldName: "DISTRICT",
+                //                     label: "District",
+                //                     isEditable: false
+                //                 },{
+                //                     fieldName: "SEGMENT_LENGTH",
+                //                     label: "Length (Miles)",
+                //                     isEditable: false
+                //                 },{
+                //                     fieldName: "RTE_STATUS",
+                //                     label: "Route Status"
+                //                 },{
+                //                     fieldName: "BIKEWAY_TYPE",
+                //                     label: "Bikeway Type"
+                //                 },{
+                //                     fieldName: "RTE_ID",
+                //                     label: "Route ID",
+                //                     tooltip: "The highway designation and roadbed identifier.<br>Can be found in the 'Attributes' window by clicking the associated roadbed.<br>Example: FM0152-KG"
+                //                 },{
+                //                     fieldName: "RTE_NAME",
+                //                     label: "Route Name",
+                //                     tooltip: "Name of the associated road or the trail name."
+                //                 },{
+                //                     fieldName: "BIKEWAY_WIDTH",
+                //                     label: "Width (Feet)",
+                //                     tooltip: "Value '999' is the default and represents an unknown width."
+                //                 },{
+                //                     fieldName: "OWNERSHIP",
+                //                     label: "ROW Ownership"
+                //                 },{
+                //                     fieldName: "MAINT_RESPONSIBILITY",
+                //                     label: "Maintenance Responsibility"
+                //                 },{
+                //                     fieldName: "SOURCE",
+                //                     label: "Data Source"
+                //                 },{
+                //                     fieldName: "DATE_CONSTRUCTED",
+                //                     label: "Date of Construction"
+                //                 },{
+                //                     fieldName: "DATE_CONST_EST",
+                //                     label: "Estimated Construction Date?",
+                //                     tooltip: "Choose 'Yes' if the 'Date of Construction' is an estimated date."
+                //                 },{
+                //                     fieldName: "COMPLETED_BY_NAME",
+                //                     label: "Completed By:"
+                //                 },{
+                //                     fieldName: "FROM_DESCRIPTION",
+                //                     label: "From Decscription"
+                //                 },{
+                //                     fieldName: "TO_DESCRIPTION",
+                //                     label: "To Decscription"
+                //                 },{
+                //                     fieldName: "SURFACE_TYPE",
+                //                     label: "Surface Type"
+                //                 },{
+                //                     fieldName: "COMMENTS",
+                //                     label: "Comments"
+                //                 }]
+                //             }],
+                //         toolbarVisible: false,
+                //         templatePicker: tpCustom,
+                //         createOptions:{
+                //             polylineDrawTools: [Editor.CREATE_TOOL_POLYLINE, Editor.CREATE_TOOL_FREEHAND_POLYLINE]
+                //         }
+                //     };
+                    
+                //     var editorParams = {
+                //         settings: editorSettings
+                //     };
+                    
+                //     widgetEditor = new Editor(editorParams, "editBar");
+                //     widgetEditor.startup();
+                    
+                //     document.getElementById("cpLeftCenter").style.display = "none";
+                // }
+                
+                function showCoordinates(evt) {
+                    var mp = new esri.geometry.webMercatorToGeographic(evt.mapPoint);
+                    globalX = mp.x.toFixed(6);
+                    globalY = mp.y.toFixed(6);
+                    document.getElementById("info").innerHTML = "Level: " + map.getZoom() + ", " + mp.x.toFixed(6) + ", " + mp.y.toFixed(6);
+                }
+                
+                // **********ADDED JS BELOW***************
+                on(dom.byId("uploadForm"), "change", function (event) {
+                    var fileName = event.target.value.toLowerCase();
+
+                    if (sniff("ie")) { //filename is full path in IE so extract the file name
+                      var arr = fileName.split("\\");
+                      fileName = arr[arr.length - 1];
+                    }
+                    if (fileName.indexOf(".zip") !== -1) {//is file a zip - if not notify user
+                      generateFeatureCollection(fileName);
+                    }
+                    else {
+                      dom.byId('upload-status').innerHTML = '<p style="color:red">Add shapefile as .zip file</p>';
+                    }
+                  });
+
+                function generateFeatureCollection (fileName) {
+                    var name = fileName.split(".");
+                    //Chrome and IE add c:\fakepath to the value - we need to remove it
+                    //See this link for more info: http://davidwalsh.name/fakepath
+                    name = name[0].replace("c:\\fakepath\\", "");
+
+                    dom.byId('upload-status').innerHTML = '<b>Loading </b>' + name;
+
+                    //Define the input params for generate see the rest doc for details
+                    //http://www.arcgis.com/apidocs/rest/index.html?generate.html
+                    var params = {
+                      'name': name,
+                      'targetSR': map.spatialReference,
+                      'maxRecordCount': 1000,
+                      'enforceInputFileSizeLimit': true,
+                      'enforceOutputJsonSizeLimit': true
+                    };
+
+                    //generalize features for display Here we generalize at 1:40,000 which is approx 10 meters
+                    //This should work well when using web mercator.
+                    var extent = scaleUtils.getExtentForScale(map, 40000);
+                    var resolution = extent.getWidth() / map.width;
+                    params.generalize = true;
+                    params.maxAllowableOffset = resolution;
+                    params.reducePrecision = true;
+                    params.numberOfDigitsAfterDecimal = 0;
+
+                    var myContent = {
+                      'filetype': 'shapefile',
+                      'publishParameters': JSON.stringify(params),
+                      'f': 'json',
+                      'callback.html': 'textarea'
+                    };
+
+                    //use the rest generate operation to generate a feature collection from the zipped shapefile
+                    var portalUrl = "http://www.arcgis.com";
+                    request({
+                      url: portalUrl + '/sharing/rest/content/features/generate',
+                      content: myContent,
+                      form: dom.byId('uploadForm'),
+                      handleAs: 'json',
+                      load: lang.hitch(this, function (response) {
+                        if (response.error) {
+                          errorHandler(response.error);
+                          return;
+                        }
+                        var layerName = response.featureCollection.layers[0].layerDefinition.name;
+                        dom.byId('upload-status').innerHTML = '<b>Loaded: </b>' + layerName;
+                        verifySchema(response.featureCollection);
+                      }),
+                      error: lang.hitch(this, errorHandler)
+                    });
+                  }
+
+                function errorHandler (error) {
+                    dom.byId('upload-status').innerHTML =
+                    "<p style='color:red'>" + error.message + "</p>";
+                  }
+
+                function addShapefileToMap (featureCollection) {
+                    //add the shapefile to the map and zoom to the feature collection extent
+                    //If you want to persist the feature collection when you reload browser you could store the collection in
+                    //local storage by serializing the layer using featureLayer.toJson()  see the 'Feature Collection in Local Storage' sample
+                    //for an example of how to work with local storage.
+                    var fullExtent;
+                    var layers = [];
+
+                    array.forEach(featureCollection.layers, function (layer) {
+                      var infoTemplate = new InfoTemplate("Details", "${*}");
+                      var featureLayer = new FeatureLayer(layer, {
+                        infoTemplate: infoTemplate
+                      });
+                      //associate the feature with the popup on click to enable highlight and zoom to
+                      featureLayer.on('click', function (event) {
+                        map.infoWindow.setFeatures([event.graphic]);
+                      });
+                      fullExtent = fullExtent ?
+                        fullExtent.union(featureLayer.fullExtent) : featureLayer.fullExtent;
+                      layers.push(featureLayer);
+                    });
+                    map.addLayers(layers);
+                    map.setExtent(fullExtent.expand(1.25), true);
+
+                    dom.byId('upload-status').innerHTML = "";
+                }
+
+                function verifySchema (featureCollection) {
+
+                    var fields = ["RTE_ID", "COMMENT"];
+
+                    array.forEach(featureCollection.layers, function (layer) {
+
+                        array.forEach(layer.featureSet.features, function (feature) {
+                            array.forEach(fields, function (field) {
+                                if (field in feature.attributes) {
+                                    var att = feature.attributes[field];
+                                    if (att == undefined || att == null) {
+                                        alert(field + " has a Null value which must be populated.");
+                                        return;
+                                    }
+                                }
+                                else {
+                                    alert("Shapefile does not contain all required fields.");
+                                    return;
+                                }
+                            });
+                        });
+
+                    });
+
+
+
+                    addShapefileToMap(featureCollection);
+
+                }
+
+                // **********ADDED JS ABOVE***************
+
+
+
+                });
+            });
+            
+            
+            
+        </script>
+        
+    </head>
+    <body class="claro">
+      <div id="bcMain" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar'" >
+            
+        <div id="cpLeft" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'left'">
+            <div id="bcLeft" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'sidebar'" >
+                <div id="cpLeftTopTitle" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">Local Streets TEST
+                </div>
+                <div id="cpLeftTop" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'" style="font-size: small">
+                    Select District to Begin:
+                    <br><br>
+                    <select id="selectDistrict" data-dojo-type="dijit/form/Select" name="selectCounty"  style="font-size: medium; width: 150px">
+                        <option value="" selected="selected">Select a District</option> <option value='8'>Abilene - 8</option>  <option value='4'>Amarillo - 4</option> <option value='19'>Atlanta - 19</option>    <option value='14'>Austin - 14</option> <option value='20'>Beaumont - 20</option>   <option value='23'>Brownwood - 23</option>  <option value='17'>Bryan - 17</option>  <option value='25'>Childress - 25</option>  <option value='16'>Corpus Christi - 16</option> <option value='18'>Dallas - 18</option> <option value='24'>El Paso - 24</option>    <option value='2'>Fort Worth - 2</option>   <option value='12'>Houston - 12</option>    <option value='22'>Laredo - 22</option> <option value='5'>Lubbock - 5</option>  <option value='11'>Lufkin - 11</option> <option value='6'>Odessa - 6</option>   <option value='1'>Paris - 1</option>    <option value='21'>Pharr - 21</option>  <option value='7'>San Angelo - 7</option>   <option value='15'>San Antonio - 15</option>    <option value='10'>Tyler - 10</option>  <option value='9'>Waco - 9</option> <option value='3'>Wichita Falls - 3</option>    <option value='13'>Yoakum - 13</option>
+                    </select>
+                </div>
+                <div id="cpLeftCenter" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+                    <div id="editBar"></div>
+                    <div id="editTemplate"></div>
+                    <br>
+                    <div id="legend"></div>
+                    <div id="tester"></div>
+                </div>
+                <div id="cpLeftBottom" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'bottom'">
+                    
+                    <!-- /////////////////////ADDED HTML BELOW///////////////////////// -->
+                    <div style='padding-left:4px;'>
+                      <p>
+                        Add a zipped shapefile to the map.</p><p>Visit the
+                        <a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a> help topic for information and limitations.</p>
+                          <form enctype="multipart/form-data" method="post" id="uploadForm">
+                              <div class="field">
+                                  <label class="file-upload">
+                                      <span><strong>Add File</strong></span>
+                                      <input type="file" name="file" id="inFile" />
+                                  </label>
+                              </div>
+                          </form>
+                          <span class="file-upload-status" style="opacity:1;" id="upload-status"></span>
+                          <div id="fileInfo"> </div>
+                    </div>
+                    <!-- //////////////////////ADDED HTML ABOVE//////////////////////// -->
+
+                    <!-- <div id="resources">Resources:
+                        <br><a>&bull; </a><a href="./BikeRoute_Instructions.pdf" target="Instructions" title="How to use this Webmap">Instructions</a>
+                        <br><a>&bull; </a><a href="./BikewayTypes.pdf" target="BikewayTypes" title="Bikeway Types">Bikeway Types</a>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="cpCenter" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'">
+            <div id="divMap">
+                <div style="position:absolute; right:14px; top:7px; z-Index:999;">
+                  <div data-dojo-type="dijit/TitlePane" 
+                       data-dojo-props="title:'Switch Basemap', closable:false, open:false">
+                    <div data-dojo-type="dijit/layout/ContentPane" style="width:380px; height:280px; overflow:auto;">
+                      <div id="basemapGallery"></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="position:absolute; right:14px; bottom:7px; z-Index:999;">
+                  <div id="openWindow" data-dojo-type="dijit/TitlePane" 
+                       data-dojo-props="title:'Attributes', closable:false, open:false">
+                    <div id="openWindowCP" data-dojo-type="dijit/layout/ContentPane" style="width:300px; height:60px; overflow:auto;">
+                      <div id="attributeWindow"></div>
+                    </div>
+                  </div>
+                </div>
+                <span id="info"></span>
+            </div>
+        </div>
+      </div>
+    </body>
+</html>
