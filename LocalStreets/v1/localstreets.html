@@ -690,30 +690,78 @@
 
                     var fields = ["RTE_ID", "COMMENT"];
 
+                    var fieldFlag = false;
+                    var attFlag = false;
+                    var badField;
+
                     array.forEach(featureCollection.layers, function (layer) {
 
                         array.forEach(layer.featureSet.features, function (feature) {
                             array.forEach(fields, function (field) {
                                 if (field in feature.attributes) {
                                     var att = feature.attributes[field];
-                                    if (att == undefined || att == null) {
-                                        alert(field + " has a Null value which must be populated.");
-                                        return;
+                                    if (att == undefined || att == null || att == " " || att == "") {
+                                        attFlag = true;
+                                        badField = field;
                                     }
                                 }
                                 else {
-                                    alert("Shapefile does not contain all required fields.");
-                                    return;
+                                    fieldFlag = true;
                                 }
                             });
                         });
 
                     });
 
+                    if(fieldFlag) {
+                        alert("Shapefile does not contain all required fields.");
+                    }
+                    else {
+                        if (attFlag) {
+                            alert(badField + " has a NULL or blank value which must be populated.");
+                        }
+                        else {
+                            addShapefileToMap(featureCollection);
+                            dom.byId('marquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
+                            serviceLoad(featureCollection);
+                        }
+                    }
+                }
 
+                function serviceLoad (featureCollection) {
+                    var serviceURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";
+                    array.forEach(featureCollection.layers, function (layer) {
+                        var total = layer.featureSet.features.length;
+                        var counter = 0;
+                        array.forEach(layer.featureSet.features, function (feature) {
+                            var geom = feature.geometry;
+                            var paths = JSON.stringify(geom.paths);
+                            theText = "{'geometry':{'paths':" + paths + "},'attributes':{'RTE_ID':" + feature.attributes["RTE_ID"] + ", 'COMMENT':" + feature.attributes["COMMENT"] + "}}";
+                            theText = serviceURL + "[" + theText + "]";
 
-                    addShapefileToMap(featureCollection);
-
+                            var layersRequest = request({
+                                url: theText
+                                },{
+                                usePost: true
+                            });
+                            layersRequest.then(
+                                function(response) {
+                                    var res = response.addResults[0]["success"];
+                                    if (res) {
+                                        counter += 1;
+                                        if (counter === total){
+                                            dom.byId('marquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
+                                        }
+                                        console.log("Success: ", response.layers);
+                                    } else {
+                                        dom.byId('marquee').innerHTML = "Upload Failed. Try again with an internet connection.";
+                                        alert("Upload Failed. Try again with an internet connection. (1)");
+                                    }
+                                }, function(error) {
+                                    console.log("Error: ", error.message);
+                            });
+                        });
+                    });
                 }
 
                 // **********ADDED JS ABOVE***************
@@ -752,6 +800,7 @@
                 <div id="cpLeftBottom" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'bottom'">
                     
                     <!-- /////////////////////ADDED HTML BELOW///////////////////////// -->
+                    <div id="marquee"></div>
                     <div style='padding-left:4px;'>
                       <p>
                         Add a zipped shapefile to the map.</p><p>Visit the
