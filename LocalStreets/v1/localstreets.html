@@ -136,6 +136,7 @@
                 "esri/geometry/scaleUtils",
                 "esri/request",
                 "dojo/_base/lang",
+                "esri/tasks/Geoprocessor",
 
                 "dijit/form/Select",
                 "dijit/layout/BorderContainer", 
@@ -150,7 +151,7 @@
                     LengthsParameters, geodesicUtils, config,
                     Geometry, Units, ready, parser, on, dom, array, arcgisUtils, Tiled,
                     SpatialReference, webMercatorUtils, Scalebar, TextSymbol, LabelLayer,
-                    sniff, JSON, InfoTemplate, scaleUtils, request, lang) {
+                    sniff, JSON, InfoTemplate, scaleUtils, request, lang, Geoprocessor) {
                 ready(function(){
                 
                 config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
@@ -585,6 +586,7 @@
                 }
                 
                 // **********ADDED JS BELOW***************
+
                 on(dom.byId("uploadForm"), "change", function (event) {
                     var fileName = event.target.value.toLowerCase();
 
@@ -764,6 +766,40 @@
                     });
                 }
 
+                on(dom.byId("download"), "click", function () {
+                    var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");
+                    var params = {
+                        "RTE_ID": dijit.byId("selectFeatures").value,
+                        "OUTPUT": "%scratchFolder%\\" + dijit.byId("selectFeatures").value + ".zip"
+                      };
+                    dom.byId('marquee').innerHTML = "Started...";
+                    gp.submitJob(params, completeCallback , statusCallback, function(error){
+                        alert(error);
+                        dom.byId('marquee').innerHTML = "There was an error.";
+                    });
+                    function completeCallback(jobInfo){
+                      if ( jobInfo.jobStatus !== "esriJobFailed" ) {
+                        gp.getResultData(jobInfo.jobId, "OUTPUT", downloadFile);
+                      }
+                    }
+                    function statusCallback(jobInfo) {
+                      var status = jobInfo.jobStatus;
+                      dom.byId('marquee').innerHTML = status;
+                      if ( status === "esriJobFailed" ) {
+                        alert(status);
+                        dom.byId('marquee').innerHTML = "ESRI Job failed.";
+                      }
+                      else if (status === "esriJobSucceeded"){
+                        dom.byId('marquee').innerHTML = "Success!";
+                      }
+                    }
+                    function downloadFile(outputFile){
+                      map.graphics.clear();
+                      var theurl = outputFile.value.url;  
+                      window.location = theurl;
+                    }
+                });
+
                 // **********ADDED JS ABOVE***************
 
 
@@ -800,6 +836,10 @@
                 <div id="cpLeftBottom" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'bottom'">
                     
                     <!-- /////////////////////ADDED HTML BELOW///////////////////////// -->
+                    <select id="selectFeatures" data-dojo-type="dijit/form/Select" style="font-size: medium; width: 150px">
+                        <option value="A123456">A123456</option> <option value="P542456">P542456</option> <option value="WWF999">WWF999</option>  
+                    </select>
+                    <button id="download">Download!</button>
                     <div id="marquee"></div>
                     <div style='padding-left:4px;'>
                       <p>
