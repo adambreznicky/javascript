@@ -148,6 +148,7 @@
 	var labelLayerAADT;	
 	var areaOfficeLyr;
 	var COGLyr;
+	var COGLyr2;
 	var FCLyr;
 	var FreightLyr;
 	var NHSLyr;	
@@ -223,13 +224,14 @@
 		"esri/geometry/Point",
 		"esri/symbols/Font",
 		"esri/dijit/PopupTemplate",
+		"esri/layers/ArcGISDynamicMapServiceLayer",
 
 		"dojo/domReady!"], function (Map, Renderer, domConstruct, LayerInfo, Scalebar, on,
 			Query, QueryTask, arcgisUtils, Legend, webMercatorUtils, dom, KMLLayer, parser, Draw,
 			geodesicUtils, Units, Graphic, graphicsUtils, SpatialReference, Extent, FeatureLayer,
 			SimpleLineSymbol, CartographicLineSymbol, UniqueValueRenderer, SimpleMarkerSymbol,
 			SimpleFillSymbol, TextSymbol, SimpleRenderer, LabelLayer, Color, InfoTemplate, Tiled,
-			Polyline, Point, Font, PopupTemplate) {
+			Polyline, Point, Font, PopupTemplate, ArcGISDynamicMapServiceLayer) {
 			
 		parser.parse();
 		
@@ -671,6 +673,7 @@
 			if (aadtLyr) {aadtLyr.hide(); labelLayerAADT.hide()}			
 			if (areaOfficeLyr) {areaOfficeLyr.hide();}
 			if (COGLyr) {COGLyr.hide();}
+			if (COGLyr2) {COGLyr2.hide();}
 			if (FCLyr) {FCLyr.hide();}
 			if (FreightLyr) {FreightLyr.hide();}		
 			if (maintOfficeLyr) {maintOfficeLyr.hide();}		
@@ -1290,6 +1293,7 @@
 			if (theLayer=="COG") {
 				if (COGLyr) {
 					COGLyr.show();
+					COGLyr2.show();
 				}
 				else {		
 					tableText = "";
@@ -1299,9 +1303,14 @@
 					tableText += "</table>";		
 					
 					var infoTemplate = new InfoTemplate("COG:",tableText);		
-					var projectsUrl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/9";	
+					// var projectsUrl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/9";	
+					var projectsUrl = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/Texas_Councils_Of_Government/MapServer";
+					var projectsUrl2 = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/Texas_Councils_Of_Government/MapServer/1";	
 					
-					COGLyr = new FeatureLayer(projectsUrl, {id:"COG",visible: true,outFields:["COG_NM","COG_ABRVN"], infoTemplate: infoTemplate});		
+					COGLyr = new ArcGISDynamicMapServiceLayer(projectsUrl, {id:"COG",visible: true,outFields:["COG_NM","COG_ABRVN"], infoTemplate: infoTemplate});	
+					// COGLyr = new FeatureLayer(projectsUrl, {id:"COG",visible: true,outFields:["COG_NM","COG_ABRVN"], infoTemplate: infoTemplate});
+					COGLyr2 = new FeatureLayer(projectsUrl2, {id:"COG2",visible: true});	
+					// map.addLayers([COGLyr, COGLyr2]);
 					map.addLayer(COGLyr);
 				}	
 				activeOverlay = COGLyr;

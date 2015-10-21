@@ -64,7 +64,6 @@ target/
 #
 #
 *.gdb
-*.mxd
 *.zip
 *.dir
 *.mdb
