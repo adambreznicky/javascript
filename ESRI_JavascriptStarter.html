@@ -17,7 +17,7 @@ and open the template in the editor.
                 height: 100%;
             }
         </style>
-        <script> var dojoConfig = {async: true, parseOnLoad: true};</script>
+        <script> var dojoConfig = {async: true};</script>
         <script src="http://js.arcgis.com/3.14/"></script>
         <script>
             require(["esri/map",
@@ -26,6 +26,7 @@ and open the template in the editor.
                 "dojo/domReady!"],
             function(Map, ready, parser) {
                 ready(function(){
+                    parser.parse();
                     var map = new Map("divMap", {
                       center: [-100, 32],
                       zoom: 7,
