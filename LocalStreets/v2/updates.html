@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Road Inventory Updates</title>
+
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+        <style type="text/css">
+            html, body, #divMap {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+            #info {
+                position: absolute;
+                bottom: 1px;
+                left: 20px;
+                z-index: 50;
+                color: #303030;
+                text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+            }
+            #basemapCarousel {
+                position: absolute;
+                bottom: 0;
+                width: 100%;
+                height: 1px;
+                z-index: 51;
+            }
+            #basemapPanel {
+                position:absolute;
+                bottom:0;
+                display:none;
+                padding:10px;
+                margin:0;
+                background: rgb(0, 0, 0);
+                background: rgba(0, 0, 0, 0.5);
+                width: 100%;
+                height: 110px;
+                z-index: 50;
+                overflow: auto;
+            }
+            
+
+            /* Menu */
+            #menuBtn {
+                position: absolute;
+                top: 90px;
+                left: 20px;
+                width: 33px;
+                z-index: 50;
+                padding-left: 3px;
+                padding-right: 3px;
+                padding-top: 6px;
+                padding-bottom: 4px;
+                margin: 0;
+                /*border-color: black;*/
+            }
+            #menuContainer {
+                position: absolute;
+                top: 120px;
+                left: 15px;
+                z-index: 50;
+                padding: 0;
+                margin: 0;
+                width: 200px;
+            }
+            #menuPanel {
+                position:absolute;
+                display:none;
+                padding:5px;
+                margin:5px;
+                background: rgb(0, 0, 0);
+                background: rgba(0, 0, 0, 0.5);
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+            #accordion {
+                margin-bottom: 0;
+            }
+            .panel-default > .panel-heading {
+                cursor: pointer;
+                background-color: #75A262;
+                color:#FFFFFF;
+                border-radius: 4px 4px 0px 0px;
+            }
+            .panel-heading.collapsed {
+                background-color: #C2C4C5;
+                border-color: #C2C4C5;
+            }
+            
+        </style>
+
+        <script data-dojo-config="async:true, aliases: [
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">
+        </script>
+
+        <script>
+            require([
+                "jquery",
+                "jqueryui",
+
+                "esri/map",
+                "esri/request",
+                "esri/geometry/scaleUtils",
+                "esri/geometry/webMercatorUtils",
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+
+                "esri/tasks/Geoprocessor",
+                "esri/InfoTemplate",
+                "esri/layers/FeatureLayer",
+                "esri/dijit/BasemapGallery",
+
+                "esri/renderers/SimpleRenderer",
+                "esri/symbols/SimpleFillSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/Color",
+       
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/require",
+                "dojo/sniff",
+                "dojo/dom",
+                "dojo/on",
+                "dojo/_base/array",
+                "dojo/_base/lang",
+                "dojo/domReady!"],
+            function($, $ui,
+                    Map, request, scaleUtils, webMercatorUtils, Query, QueryTask,
+                    Geoprocessor, InfoTemplate, FeatureLayer, BasemapGallery,
+                    SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
+                    ready, parser, require, sniff, dom, on, array, lang) {
+
+                ready(function(){
+                    dojo.require("bootstrap");
+                    var updateClass;
+                    var org;
+
+                    parser.parse();
+
+                    var map = new Map("divMap", {
+                      center: [-100, 32],
+                      zoom: 7,
+                      basemap: "topo",
+                      logo: false
+                    });
+
+                    var basemapGallery = new BasemapGallery({
+                        showArcGISBasemaps: true,
+                        map: map
+                    }, "basemapGallery");
+                    basemapGallery.startup();
+
+                    ////CRI FEATURE LAYERS & EVENTS
+                    var countyRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
+                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";
+                    var counties = new FeatureLayer(countiesURL,{
+                        mode: FeatureLayer.MODE_ONDEMAND,
+                        visible: false,
+                        opacity: .5,
+                        showLabels: false,
+                        outFields: ["CNTY_NM", "CNTY_NBR"]
+                    });
+                    counties.setRenderer(countyRr);
+
+                    var updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";
+                    var updatesLyr = new FeatureLayer(updatesURL,{
+                        mode: FeatureLayer.MODE_ONDEMAND,
+                        showLabels: true,
+                        outFields: ['*']
+                    });
+
+                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";
+                    var countyroads = new FeatureLayer(crURL,{
+                        id: "CR",
+                        mode: FeatureLayer.MODE_ONDEMAND,
+                        showLabels: true,
+                        outFields: ["*"]
+                    });
+
+                    ////MAP EVENTS & FUNCTIONS
+                    map.on("load", function() {
+                            map.on("mouse-move", showCoordinates);
+                            map.on("mouse-drag", showCoordinates);
+                        });
+                    map.on("zoom-end", function() {
+                        var current = $("#info").html();
+                        var coords = ", " + current.split(",")[1] + ", " + current.split(",")[2];
+                        $("#info").html("Level: " + map.getZoom() + coords);
+                    });
+
+                    function showCoordinates(evt) {
+                        var mp = new webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
+                        globalX = mp.x.toFixed(6);
+                        globalY = mp.y.toFixed(6);
+                        document.getElementById("info").innerHTML = "Level: " + map.getZoom() + ", " + mp.x.toFixed(6) + ", " + mp.y.toFixed(6);
+                    }
+
+                    function presentData() {
+                        var expression;
+                        var query = new Query();
+
+                        function findExtent(results){
+                            var orgBoundary = array.map(results.features, function(result){
+                                    return result;
+                            });
+                            var ext = orgBoundary[0].geometry.getExtent().expand(1.15);
+                            map.setExtent(ext);
+
+                        };
+
+                        if (updateClass == "CR") {
+                            expression = "CNTY_NBR = " + org;
+
+                            updatesLyr.setDefinitionExpression("COUNTY = " + org);
+                            counties.setDefinitionExpression(expression);
+                            countyroads.setDefinitionExpression("COUNTY = " + org);
+
+                            map.addLayers([counties, countyroads, updatesLyr]);
+                        
+                            var queryTask = new QueryTask(countiesURL);
+                            query.where = expression;
+                            query.returnGeometry = true;
+                            queryTask.execute(query, findExtent);
+
+                            
+                        }
+                            
+
+                    }
+                
+
+
+                    ////DOWNLOAD FUNCTIONS
+                    on(dom.byId("download"), "click", function () {
+                        var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");
+                        var params = {
+                            "RTE_ID": dijit.byId("selectFeatures").value,
+                            "OUTPUT": "%scratchFolder%\\" + dijit.byId("selectFeatures").value + ".zip"
+                          };
+                        dom.byId('downloadMarquee').innerHTML = "Started...";
+                        gp.submitJob(params, completeCallback , statusCallback, function(error){
+                            alert(error);
+                            dom.byId('downloadMarquee').innerHTML = "There was an error.";
+                        });
+                        function completeCallback(jobInfo){
+                          if ( jobInfo.jobStatus !== "esriJobFailed" ) {
+                            gp.getResultData(jobInfo.jobId, "OUTPUT", downloadFile);
+                          }
+                        }
+                        function statusCallback(jobInfo) {
+                          var status = jobInfo.jobStatus;
+                          dom.byId('downloadMarquee').innerHTML = status;
+                          if ( status === "esriJobFailed" ) {
+                            alert(status);
+                            dom.byId('downloadMarquee').innerHTML = "ESRI Job failed.";
+                          }
+                          else if (status === "esriJobSucceeded"){
+                            dom.byId('downloadMarquee').innerHTML = "Success!";
+                          }
+                        }
+                        function downloadFile(outputFile){
+                          map.graphics.clear();
+                          var theurl = outputFile.value.url;  
+                          window.location = theurl;
+                        }
+                    });
+
+
+                    ////UPLOAD FUNCTIONS
+                    on(dom.byId("uploadForm"), "change", function (event) {
+                        var fileName = event.target.value.toLowerCase();
+
+                        if (sniff("ie")) { //filename is full path in IE so extract the file name
+                          var arr = fileName.split("\\");
+                          fileName = arr[arr.length - 1];
+                        }
+                        if (fileName.indexOf(".zip") !== -1) {//is file a zip - if not notify user
+                          generateFeatureCollection(fileName);
+                        }
+                        else {
+                          dom.byId('upload-status').innerHTML = '<p style="color:red">Add shapefile as .zip file</p>';
+                        }
+                      });
+
+                    function generateFeatureCollection (fileName) {
+                        var name = fileName.split(".");
+                        //Chrome and IE add c:\fakepath to the value - we need to remove it
+                        //See this link for more info: http://davidwalsh.name/fakepath
+                        name = name[0].replace("c:\\fakepath\\", "");
+
+                        dom.byId('upload-status').innerHTML = '<b>Loading </b>' + name;
+
+                        //Define the input params for generate see the rest doc for details
+                        //http://www.arcgis.com/apidocs/rest/index.html?generate.html
+                        var params = {
+                          'name': name,
+                          'targetSR': map.spatialReference,
+                          'maxRecordCount': 1000,
+                          'enforceInputFileSizeLimit': true,
+                          'enforceOutputJsonSizeLimit': true
+                        };
+
+                        //generalize features for display Here we generalize at 1:40,000 which is approx 10 meters
+                        //This should work well when using web mercator.
+                        var extent = scaleUtils.getExtentForScale(map, 40000);
+                        var resolution = extent.getWidth() / map.width;
+                        params.generalize = true;
+                        params.maxAllowableOffset = resolution;
+                        params.reducePrecision = true;
+                        params.numberOfDigitsAfterDecimal = 0;
+
+                        var myContent = {
+                          'filetype': 'shapefile',
+                          'publishParameters': JSON.stringify(params),
+                          'f': 'json',
+                          'callback.html': 'textarea'
+                        };
+
+                        //use the rest generate operation to generate a feature collection from the zipped shapefile
+                        var portalUrl = "http://www.arcgis.com";
+                        request({
+                          url: portalUrl + '/sharing/rest/content/features/generate',
+                          content: myContent,
+                          form: dom.byId('uploadForm'),
+                          handleAs: 'json',
+                          load: lang.hitch(this, function (response) {
+                            if (response.error) {
+                              errorHandler(response.error);
+                              return;
+                            }
+                            var layerName = response.featureCollection.layers[0].layerDefinition.name;
+                            dom.byId('upload-status').innerHTML = '<b>Loaded: </b>' + layerName;
+                            verifySchema(response.featureCollection);
+                          }),
+                          error: lang.hitch(this, errorHandler)
+                        });
+                      }
+
+                    function errorHandler (error) {
+                        dom.byId('upload-status').innerHTML =
+                        "<p style='color:red'>" + error.message + "</p>";
+                      }
+
+                    function addShapefileToMap (featureCollection) {
+                        //add the shapefile to the map and zoom to the feature collection extent
+                        //If you want to persist the feature collection when you reload browser you could store the collection in
+                        //local storage by serializing the layer using featureLayer.toJson()  see the 'Feature Collection in Local Storage' sample
+                        //for an example of how to work with local storage.
+                        var fullExtent;
+                        var layers = [];
+
+                        array.forEach(featureCollection.layers, function (layer) {
+                          var infoTemplate = new InfoTemplate("Details", "${*}");
+                          var featureLayer = new FeatureLayer(layer, {
+                            infoTemplate: infoTemplate
+                          });
+                          //associate the feature with the popup on click to enable highlight and zoom to
+                          featureLayer.on('click', function (event) {
+                            map.infoWindow.setFeatures([event.graphic]);
+                          });
+                          fullExtent = fullExtent ?
+                            fullExtent.union(featureLayer.fullExtent) : featureLayer.fullExtent;
+                          layers.push(featureLayer);
+                        });
+                        map.addLayers(layers);
+                        map.setExtent(fullExtent.expand(1.25), true);
+
+                        dom.byId('upload-status').innerHTML = "";
+                    }
+
+                    function verifySchema (featureCollection) {
+
+                        var fields = ["RTE_ID", "COMMENT"];
+
+                        var fieldFlag = false;
+                        var attFlag = false;
+                        var badField;
+
+                        array.forEach(featureCollection.layers, function (layer) {
+
+                            array.forEach(layer.featureSet.features, function (feature) {
+                                array.forEach(fields, function (field) {
+                                    if (field in feature.attributes) {
+                                        var att = feature.attributes[field];
+                                        if (att == undefined || att == null || att == " " || att == "") {
+                                            attFlag = true;
+                                            badField = field;
+                                        }
+                                    }
+                                    else {
+                                        fieldFlag = true;
+                                    }
+                                });
+                            });
+
+                        });
+
+                        if(fieldFlag) {
+                            alert("Shapefile does not contain all required fields.");
+                        }
+                        else {
+                            if (attFlag) {
+                                alert(badField + " has a NULL or blank value which must be populated.");
+                            }
+                            else {
+                                addShapefileToMap(featureCollection);
+                                dom.byId('marquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
+                                serviceLoad(featureCollection);
+                            }
+                        }
+                    }
+
+                    function serviceLoad (featureCollection) {
+                        var serviceURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";
+                        array.forEach(featureCollection.layers, function (layer) {
+                            var total = layer.featureSet.features.length;
+                            var counter = 0;
+                            array.forEach(layer.featureSet.features, function (feature) {
+                                var geom = feature.geometry;
+                                var paths = JSON.stringify(geom.paths);
+                                theText = "{'geometry':{'paths':" + paths + "},'attributes':{'RTE_ID':" + feature.attributes["RTE_ID"] + ", 'COMMENT':" + feature.attributes["COMMENT"] + "}}";
+                                theText = serviceURL + "[" + theText + "]";
+
+                                var layersRequest = request({
+                                    url: theText
+                                    },{
+                                    usePost: true
+                                });
+                                layersRequest.then(
+                                    function(response) {
+                                        var res = response.addResults[0]["success"];
+                                        if (res) {
+                                            counter += 1;
+                                            if (counter === total){
+                                                dom.byId('marquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
+                                            }
+                                            console.log("Success: ", response.layers);
+                                        } else {
+                                            dom.byId('marquee').innerHTML = "Upload Failed. Try again with an internet connection.";
+                                            alert("Upload Failed. Try again with an internet connection. (1)");
+                                        }
+                                    }, function(error) {
+                                        console.log("Error: ", error.message);
+                                });
+                            });
+                        });
+                    }
+
+
+
+                    ////JQUERY EVENTS
+                    $("#needHelp").click(function(){$("#popHelp").toggle("fast");});
+                    $("#menuBtn").click(function(){
+                        $("#menuPanel").slideToggle("fast");
+                        $("#menuArrow").toggleClass('glyphicon-chevron-up glyphicon-chevron-down');
+                    });
+                    $("#basemapCarousel").mouseover(function(){
+                        $("#basemapPanel").slideToggle("fast");
+                    });
+
+                    ////inital sign in page
+                    $('#signIn').submit(function(event){
+                        event.preventDefault();
+                        var routeClass = $("#inventoryClass").val();
+                        var organization = $("#selectOrg").val();
+                        var accessCode = $("#accessCode").val();
+
+                        if(routeClass != null){
+                            if(organization != null){
+                                if(routeClass == "CR"){
+                                    if(accessCode == "porksoda"){
+                                        $('#loginModal').modal("hide");
+                                        updateClass = routeClass;
+                                        org = organization;
+                                        presentData();
+                                    }
+                                    else{
+                                        alert("Invalid access code.")
+                                        $("#accessCode").val("");
+                                    }
+                                }
+                                else if(routeClass == "LS"){
+                                    if(accessCode == "raindogs"){
+                                        $('#loginModal').modal("hide");
+                                        updateClass = routeClass;
+                                        org = organization;
+                                        presentData();
+                                    }
+                                    else{
+                                        alert("Invalid access code.")
+                                        $("#accessCode").val("");
+                                    }
+                                }
+                            }
+                            else{
+                                alert("You must choose 'Your Organization' to continue.")
+                            }
+                        }
+                        else{
+                            alert("You must choose an 'Inventory to Update' to continue.")
+                        }
+                    });
+
+                    $("#inventoryClass").change(function(){
+                        $("#selectOrg").prop("disabled", false);
+                        $("#selectOrg").val("#");
+                        var routeClass = $("#inventoryClass").val();
+                        if (routeClass == "CR") {
+                            $(".crOption").attr("style", "display:block;");
+                            $(".lsOption").attr("style", "display:none;");
+                        }
+                        else if (routeClass == "LS") {
+                            $(".crOption").attr("style", "display:none;");
+                            $(".lsOption").attr("style", "display:block;");
+                        }
+                    });
+                    
+                    ////On load
+                    map.on("load", function(){$('#loginModal').modal({show: true, keyboard: false, backdrop: 'static'});});
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="loginModal" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="text-center">Sign-In</h1>
+                    </div>
+                    <div class="modal-body">
+                        <form id="signIn" class="form col-md-12 center-block">
+                            <div class="form-group">
+                                <select class="form-control input-lg" id="inventoryClass">
+                                    <option value="#" disabled selected>Choose an Inventory to Update</option>
+                                    <option value="CR">County Roads</option>
+                                    <option value="LS">Local Streets</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <select class="form-control input-lg" id="selectOrg" disabled="disabled">
+                                    <option value="#" disabled selected>Choose Your Organization</option>
+                                    <option class='crOption' value='1' style='display:none;'>Anderson - 1</option> <option class='crOption' value='2' style='display:none;'>Andrews - 2</option>   <option class='crOption' value='3' style='display:none;'>Angelina - 3</option>  <option class='crOption' value='4' style='display:none;'>Aransas - 4</option>  <option class='crOption' value='5' style='display:none;'>Archer - 5</option>    <option class='crOption' value='6' style='display:none;'>Armstrong - 6</option> <option class='crOption' value='7' style='display:none;'>Atascosa - 7</option>  <option class='crOption' value='8' style='display:none;'>Austin - 8</option>    <option class='crOption' value='9' style='display:none;'>Bailey - 9</option>    <option class='crOption' value='10' style='display:none;'>Bandera - 10</option> <option class='crOption' value='11' style='display:none;'>Bastrop - 11</option> <option class='crOption' value='12' style='display:none;'>Baylor - 12</option>  <option class='crOption' value='13' style='display:none;'>Bee - 13</option> <option class='crOption' value='14' style='display:none;'>Bell - 14</option>    <option class='crOption' value='15' style='display:none;'>Bexar - 15</option>   <option class='crOption' value='16' style='display:none;'>Blanco - 16</option>  <option class='crOption' value='17' style='display:none;'>Borden - 17</option>  <option class='crOption' value='18' style='display:none;'>Bosque - 18</option>  <option class='crOption' value='19' style='display:none;'>Bowie - 19</option>   <option class='crOption' value='20' style='display:none;'>Brazoria - 20</option>    <option class='crOption' value='21' style='display:none;'>Brazos - 21</option>  <option class='crOption' value='22' style='display:none;'>Brewster - 22</option>    <option class='crOption' value='23' style='display:none;'>Briscoe - 23</option> <option class='crOption' value='24' style='display:none;'>Brooks - 24</option>  <option class='crOption' value='25' style='display:none;'>Brown - 25</option>   <option class='crOption' value='26' style='display:none;'>Burleson - 26</option>    <option class='crOption' value='27' style='display:none;'>Burnet - 27</option>  <option class='crOption' value='28' style='display:none;'>Caldwell - 28</option>    <option class='crOption' value='29' style='display:none;'>Calhoun - 29</option> <option class='crOption' value='30' style='display:none;'>Callahan - 30</option>    <option class='crOption' value='31' style='display:none;'>Cameron - 31</option> <option class='crOption' value='32' style='display:none;'>Camp - 32</option>    <option class='crOption' value='33' style='display:none;'>Carson - 33</option>  <option class='crOption' value='34' style='display:none;'>Cass - 34</option>    <option class='crOption' value='35' style='display:none;'>Castro - 35</option>  <option class='crOption' value='36' style='display:none;'>Chambers - 36</option>    <option class='crOption' value='37' style='display:none;'>Cherokee - 37</option>    <option class='crOption' value='38' style='display:none;'>Childress - 38</option>   <option class='crOption' value='39' style='display:none;'>Clay - 39</option>    <option class='crOption' value='40' style='display:none;'>Cochran - 40</option> <option class='crOption' value='41' style='display:none;'>Coke - 41</option>    <option class='crOption' value='42' style='display:none;'>Coleman - 42</option> <option class='crOption' value='43' style='display:none;'>Collin - 43</option>  <option class='crOption' value='44' style='display:none;'>Collingsworth - 44</option>   <option class='crOption' value='45' style='display:none;'>Colorado - 45</option>    <option class='crOption' value='46' style='display:none;'>Comal - 46</option>   <option class='crOption' value='47' style='display:none;'>Comanche - 47</option>    <option class='crOption' value='48' style='display:none;'>Concho - 48</option>  <option class='crOption' value='49' style='display:none;'>Cooke - 49</option>   <option class='crOption' value='50' style='display:none;'>Coryell - 50</option> <option class='crOption' value='51' style='display:none;'>Cottle - 51</option>  <option class='crOption' value='52' style='display:none;'>Crane - 52</option>   <option class='crOption' value='53' style='display:none;'>Crockett - 53</option>    <option class='crOption' value='54' style='display:none;'>Crosby - 54</option>  <option class='crOption' value='55' style='display:none;'>Culberson - 55</option>   <option class='crOption' value='56' style='display:none;'>Dallam - 56</option>  <option class='crOption' value='57' style='display:none;'>Dallas - 57</option>  <option class='crOption' value='58' style='display:none;'>Dawson - 58</option>  <option class='crOption' value='59' style='display:none;'>Deaf Smith - 59</option>  <option class='crOption' value='60' style='display:none;'>Delta - 60</option>   <option class='crOption' value='61' style='display:none;'>Denton - 61</option>  <option class='crOption' value='62' style='display:none;'>De Witt - 62</option> <option class='crOption' value='63' style='display:none;'>Dickens - 63</option> <option class='crOption' value='64' style='display:none;'>Dimmit - 64</option>  <option class='crOption' value='65' style='display:none;'>Donley - 65</option>  <option class='crOption' value='66' style='display:none;'>Kenedy - 66</option>  <option class='crOption' value='67' style='display:none;'>Duval - 67</option>   <option class='crOption' value='68' style='display:none;'>Eastland - 68</option>    <option class='crOption' value='69' style='display:none;'>Ector - 69</option>   <option class='crOption' value='70' style='display:none;'>Edwards - 70</option> <option class='crOption' value='71' style='display:none;'>Ellis - 71</option>   <option class='crOption' value='72' style='display:none;'>El Paso - 72</option> <option class='crOption' value='73' style='display:none;'>Erath - 73</option>   <option class='crOption' value='74' style='display:none;'>Falls - 74</option>   <option class='crOption' value='75' style='display:none;'>Fannin - 75</option>  <option class='crOption' value='76' style='display:none;'>Fayette - 76</option> <option class='crOption' value='77' style='display:none;'>Fisher - 77</option>  <option class='crOption' value='78' style='display:none;'>Floyd - 78</option>   <option class='crOption' value='79' style='display:none;'>Foard - 79</option>   <option class='crOption' value='80' style='display:none;'>Fort Bend - 80</option>   <option class='crOption' value='81' style='display:none;'>Franklin - 81</option>    <option class='crOption' value='82' style='display:none;'>Freestone - 82</option>   <option class='crOption' value='83' style='display:none;'>Frio - 83</option>    <option class='crOption' value='84' style='display:none;'>Gaines - 84</option>  <option class='crOption' value='85' style='display:none;'>Galveston - 85</option>   <option class='crOption' value='86' style='display:none;'>Garza - 86</option>   <option class='crOption' value='87' style='display:none;'>Gillespie - 87</option>   <option class='crOption' value='88' style='display:none;'>Glasscock - 88</option>   <option class='crOption' value='89' style='display:none;'>Goliad - 89</option>  <option class='crOption' value='90' style='display:none;'>Gonzales - 90</option>    <option class='crOption' value='91' style='display:none;'>Gray - 91</option>    <option class='crOption' value='92' style='display:none;'>Grayson - 92</option> <option class='crOption' value='93' style='display:none;'>Gregg - 93</option>   <option class='crOption' value='94' style='display:none;'>Grimes - 94</option>  <option class='crOption' value='95' style='display:none;'>Guadalupe - 95</option>   <option class='crOption' value='96' style='display:none;'>Hale - 96</option>    <option class='crOption' value='97' style='display:none;'>Hall - 97</option>    <option class='crOption' value='98' style='display:none;'>Hamilton - 98</option>    <option class='crOption' value='99' style='display:none;'>Hansford - 99</option>    <option class='crOption' value='100' style='display:none;'>Hardeman - 100</option>  <option class='crOption' value='101' style='display:none;'>Hardin - 101</option>    <option class='crOption' value='102' style='display:none;'>Harris - 102</option>    <option class='crOption' value='103' style='display:none;'>Harrison - 103</option>  <option class='crOption' value='104' style='display:none;'>Hartley - 104</option>   <option class='crOption' value='105' style='display:none;'>Haskell - 105</option>   <option class='crOption' value='106' style='display:none;'>Hays - 106</option>  <option class='crOption' value='107' style='display:none;'>Hemphill - 107</option>  <option class='crOption' value='108' style='display:none;'>Henderson - 108</option> <option class='crOption' value='109' style='display:none;'>Hidalgo - 109</option>   <option class='crOption' value='110' style='display:none;'>Hill - 110</option>  <option class='crOption' value='111' style='display:none;'>Hockley - 111</option>   <option class='crOption' value='112' style='display:none;'>Hood - 112</option>  <option class='crOption' value='113' style='display:none;'>Hopkins - 113</option>   <option class='crOption' value='114' style='display:none;'>Houston - 114</option>   <option class='crOption' value='115' style='display:none;'>Howard - 115</option>    <option class='crOption' value='116' style='display:none;'>Hudspeth - 116</option>  <option class='crOption' value='117' style='display:none;'>Hunt - 117</option>  <option class='crOption' value='118' style='display:none;'>Hutchinson - 118</option>    <option class='crOption' value='119' style='display:none;'>Irion - 119</option> <option class='crOption' value='120' style='display:none;'>Jack - 120</option>  <option class='crOption' value='121' style='display:none;'>Jackson - 121</option>   <option class='crOption' value='122' style='display:none;'>Jasper - 122</option>    <option class='crOption' value='123' style='display:none;'>Jeff Davis - 123</option>    <option class='crOption' value='124' style='display:none;'>Jefferson - 124</option> <option class='crOption' value='125' style='display:none;'>Jim Hogg - 125</option>  <option class='crOption' value='126' style='display:none;'>Jim Wells - 126</option> <option class='crOption' value='127' style='display:none;'>Johnson - 127</option>   <option class='crOption' value='128' style='display:none;'>Jones - 128</option> <option class='crOption' value='129' style='display:none;'>Karnes - 129</option>    <option class='crOption' value='130' style='display:none;'>Kaufman - 130</option>   <option class='crOption' value='131' style='display:none;'>Kendall - 131</option>   <option class='crOption' value='132' style='display:none;'>Kent - 132</option>  <option class='crOption' value='133' style='display:none;'>Kerr - 133</option>  <option class='crOption' value='134' style='display:none;'>Kimble - 134</option>    <option class='crOption' value='135' style='display:none;'>King - 135</option>  <option class='crOption' value='136' style='display:none;'>Kinney - 136</option>    <option class='crOption' value='137' style='display:none;'>Kleberg - 137</option>   <option class='crOption' value='138' style='display:none;'>Knox - 138</option>  <option class='crOption' value='139' style='display:none;'>Lamar - 139</option> <option class='crOption' value='140' style='display:none;'>Lamb - 140</option>  <option class='crOption' value='141' style='display:none;'>Lampasas - 141</option>  <option class='crOption' value='142' style='display:none;'>La Salle - 142</option>  <option class='crOption' value='143' style='display:none;'>Lavaca - 143</option>    <option class='crOption' value='144' style='display:none;'>Lee - 144</option>   <option class='crOption' value='145' style='display:none;'>Leon - 145</option>  <option class='crOption' value='146' style='display:none;'>Liberty - 146</option>   <option class='crOption' value='147' style='display:none;'>Limestone - 147</option> <option class='crOption' value='148' style='display:none;'>Lipscomb - 148</option>  <option class='crOption' value='149' style='display:none;'>Live Oak - 149</option>  <option class='crOption' value='150' style='display:none;'>Llano - 150</option> <option class='crOption' value='151' style='display:none;'>Loving - 151</option>    <option class='crOption' value='152' style='display:none;'>Lubbock - 152</option>   <option class='crOption' value='153' style='display:none;'>Lynn - 153</option>  <option class='crOption' value='154' style='display:none;'>Madison - 154</option>   <option class='crOption' value='155' style='display:none;'>Marion - 155</option>    <option class='crOption' value='156' style='display:none;'>Martin - 156</option>    <option class='crOption' value='157' style='display:none;'>Mason - 157</option> <option class='crOption' value='158' style='display:none;'>Matagorda - 158</option> <option class='crOption' value='159' style='display:none;'>Maverick - 159</option>  <option class='crOption' value='160' style='display:none;'>McCulloch - 160</option> <option class='crOption' value='161' style='display:none;'>McLennan - 161</option>  <option class='crOption' value='162' style='display:none;'>McMullen - 162</option>  <option class='crOption' value='163' style='display:none;'>Medina - 163</option>    <option class='crOption' value='164' style='display:none;'>Menard - 164</option>    <option class='crOption' value='165' style='display:none;'>Midland - 165</option>   <option class='crOption' value='166' style='display:none;'>Milam - 166</option> <option class='crOption' value='167' style='display:none;'>Mills - 167</option> <option class='crOption' value='168' style='display:none;'>Mitchell - 168</option>  <option class='crOption' value='169' style='display:none;'>Montague - 169</option>  <option class='crOption' value='170' style='display:none;'>Montgomery - 170</option>    <option class='crOption' value='171' style='display:none;'>Moore - 171</option> <option class='crOption' value='172' style='display:none;'>Morris - 172</option>    <option class='crOption' value='173' style='display:none;'>Motley - 173</option>    <option class='crOption' value='174' style='display:none;'>Nacogdoches - 174</option>   <option class='crOption' value='175' style='display:none;'>Navarro - 175</option>   <option class='crOption' value='176' style='display:none;'>Newton - 176</option>    <option class='crOption' value='177' style='display:none;'>Nolan - 177</option> <option class='crOption' value='178' style='display:none;'>Nueces - 178</option>    <option class='crOption' value='179' style='display:none;'>Ochiltree - 179</option> <option class='crOption' value='180' style='display:none;'>Oldham - 180</option>    <option class='crOption' value='181' style='display:none;'>Orange - 181</option>    <option class='crOption' value='182' style='display:none;'>Palo Pinto - 182</option>    <option class='crOption' value='183' style='display:none;'>Panola - 183</option>    <option class='crOption' value='184' style='display:none;'>Parker - 184</option>    <option class='crOption' value='185' style='display:none;'>Parmer - 185</option>    <option class='crOption' value='186' style='display:none;'>Pecos - 186</option> <option class='crOption' value='187' style='display:none;'>Polk - 187</option>  <option class='crOption' value='188' style='display:none;'>Potter - 188</option>    <option class='crOption' value='189' style='display:none;'>Presidio - 189</option>  <option class='crOption' value='190' style='display:none;'>Rains - 190</option> <option class='crOption' value='191' style='display:none;'>Randall - 191</option>   <option class='crOption' value='192' style='display:none;'>Reagan - 192</option>    <option class='crOption' value='193' style='display:none;'>Real - 193</option>  <option class='crOption' value='194' style='display:none;'>Red River - 194</option> <option class='crOption' value='195' style='display:none;'>Reeves - 195</option>    <option class='crOption' value='196' style='display:none;'>Refugio - 196</option>   <option class='crOption' value='197' style='display:none;'>Roberts - 197</option>   <option class='crOption' value='198' style='display:none;'>Robertson - 198</option> <option class='crOption' value='199' style='display:none;'>Rockwall - 199</option>  <option class='crOption' value='200' style='display:none;'>Runnels - 200</option>   <option class='crOption' value='201' style='display:none;'>Rusk - 201</option>  <option class='crOption' value='202' style='display:none;'>Sabine - 202</option>    <option class='crOption' value='203' style='display:none;'>San Augustine - 203</option> <option class='crOption' value='204' style='display:none;'>San Jacinto - 204</option>   <option class='crOption' value='205' style='display:none;'>San Patricio - 205</option>  <option class='crOption' value='206' style='display:none;'>San Saba - 206</option>  <option class='crOption' value='207' style='display:none;'>Schleicher - 207</option>    <option class='crOption' value='208' style='display:none;'>Scurry - 208</option>    <option class='crOption' value='209' style='display:none;'>Shackelford - 209</option>   <option class='crOption' value='210' style='display:none;'>Shelby - 210</option>    <option class='crOption' value='211' style='display:none;'>Sherman - 211</option>   <option class='crOption' value='212' style='display:none;'>Smith - 212</option> <option class='crOption' value='213' style='display:none;'>Somervell - 213</option> <option class='crOption' value='214' style='display:none;'>Starr - 214</option> <option class='crOption' value='215' style='display:none;'>Stephens - 215</option>  <option class='crOption' value='216' style='display:none;'>Sterling - 216</option>  <option class='crOption' value='217' style='display:none;'>Stonewall - 217</option> <option class='crOption' value='218' style='display:none;'>Sutton - 218</option>    <option class='crOption' value='219' style='display:none;'>Swisher - 219</option>   <option class='crOption' value='220' style='display:none;'>Tarrant - 220</option>   <option class='crOption' value='221' style='display:none;'>Taylor - 221</option>    <option class='crOption' value='222' style='display:none;'>Terrell - 222</option>   <option class='crOption' value='223' style='display:none;'>Terry - 223</option> <option class='crOption' value='224' style='display:none;'>Throckmorton - 224</option>  <option class='crOption' value='225' style='display:none;'>Titus - 225</option> <option class='crOption' value='226' style='display:none;'>Tom Green - 226</option> <option class='crOption' value='227' style='display:none;'>Travis - 227</option>    <option class='crOption' value='228' style='display:none;'>Trinity - 228</option>   <option class='crOption' value='229' style='display:none;'>Tyler - 229</option> <option class='crOption' value='230' style='display:none;'>Upshur - 230</option>    <option class='crOption' value='231' style='display:none;'>Upton - 231</option> <option class='crOption' value='232' style='display:none;'>Uvalde - 232</option>    <option class='crOption' value='233' style='display:none;'>Val Verde - 233</option> <option class='crOption' value='234' style='display:none;'>Van Zandt - 234</option> <option class='crOption' value='235' style='display:none;'>Victoria - 235</option>  <option class='crOption' value='236' style='display:none;'>Walker - 236</option>    <option class='crOption' value='237' style='display:none;'>Waller - 237</option>    <option class='crOption' value='238' style='display:none;'>Ward - 238</option>  <option class='crOption' value='239' style='display:none;'>Washington - 239</option>    <option class='crOption' value='240' style='display:none;'>Webb - 240</option>  <option class='crOption' value='241' style='display:none;'>Wharton - 241</option>   <option class='crOption' value='242' style='display:none;'>Wheeler - 242</option>   <option class='crOption' value='243' style='display:none;'>Wichita - 243</option>   <option class='crOption' value='244' style='display:none;'>Wilbarger - 244</option> <option class='crOption' value='245' style='display:none;'>Willacy - 245</option>   <option class='crOption' value='246' style='display:none;'>Williamson - 246</option>    <option class='crOption' value='247' style='display:none;'>Wilson - 247</option>    <option class='crOption' value='248' style='display:none;'>Winkler - 248</option>   <option class='crOption' value='249' style='display:none;'>Wise - 249</option>  <option class='crOption' value='250' style='display:none;'>Wood - 250</option>  <option class='crOption' value='251' style='display:none;'>Yoakum - 251</option>    <option class='crOption' value='252' style='display:none;'>Young - 252</option> <option class='crOption' value='253' style='display:none;'>Zapata - 253</option>    <option class='crOption' value='254' style='display:none;'>Zavala - 254</option>
+                                    <option class='lsOption' value="CSEC" style='display:none;'>CSEC</option>  <option class='lsOption' value="CAPCOG" style='display:none;'>CAPCOG</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" class="form-control input-lg" placeholder="Access Code" id="accessCode">
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-primary btn-lg btn-block">Sign In</button>
+                                    <a id="needHelp" href="#">Need Help?</a>
+                                    <div id="popHelp" style="display:none">
+                                            <p><br>Welcome to the Road Inventory Update Application!<br><br>If you do not have an access code, please contact TxDOT TPP's Data Management Section to acquire one.</p>
+                                    </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="col-md-12"></div>    
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div id="divMap">
+            <div id="menuContainer">
+                <div id="menuPanel" style="display:none">
+                    <div class="panel-group" id="accordion">
+                        <div class="panel panel-default">
+                            <div class="panel-heading btn-default" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" style="cursor: pointer;">
+                                <h4 class="panel-title">Edit</h4>
+                            </div>
+                            <div id="collapseOne" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    <p>Edit the data stuff here. Template, edit tools, etc. Submits edit button which sends email?</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" style="cursor: pointer;">
+                                <h4 class="panel-title">Download Template</h4>
+                            </div>
+                            <div id="collapseTwo" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    <p>Download template for uploading data (geoprocessing service) here.</p>
+                                    <select id="selectFeatures" data-dojo-type="dijit/form/Select" style="font-size: medium; width: 150px">
+                                        <option value="A123456">A123456</option> <option value="P542456">P542456</option> <option value="WWF999">WWF999</option>  
+                                    </select>
+                                    <button id="download">Download!</button>
+                                    <div id="downloadMarquee"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" style="cursor: pointer;">
+                                <h4 class="panel-title">Upload Data</h4>
+                            </div>
+                            <div id="collapseThree" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    <p>Upload data here. Will go through geoprocessing verification first.</p>
+
+                                    <div style='padding-left:4px;'>
+                                        <p>Add a zipped shapefile to the map.</p>
+                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a>help topic for information and limitations.</p>
+                                        <form enctype="multipart/form-data" method="post" id="uploadForm">
+                                            <div class="field">
+                                                <label class="file-upload">
+                                                    <span><strong>Add File</strong></span>
+                                                    <input type="file" name="file" id="inFile" />
+                                                </label>
+                                            </div>
+                                        </form>
+                                        <span class="file-upload-status" style="opacity:1;" id="upload-status"></span>
+                                        <div id="fileInfo"></div>
+                                        <div id="marquee"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="menuBtn" type="button" class="btn btn-default"><span id="menuArrow" class="glyphicon glyphicon-chevron-down"</span></button>
+            <span id="info"></span>
+            <div id="basemapCarousel"></div>
+                    <div id="basemapPanel">
+                        <div id="basemapGallery" style="margin:5px;"></div>
+                    </div>            
+        </div>
+
+    </body>
+</html>
