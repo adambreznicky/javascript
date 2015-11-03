@@ -9,7 +9,7 @@ and open the template in the editor.
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Road Inventory Updates</title>
 
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
         <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
         <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
@@ -46,6 +46,9 @@ and open the template in the editor.
                 height: 110px;
                 z-index: 50;
                 overflow: auto;
+            }
+            select {
+                cursor: pointer;
             }
             
 
@@ -95,6 +98,24 @@ and open the template in the editor.
                 background-color: #C2C4C5;
                 border-color: #C2C4C5;
             }
+            .btn-file {
+                position: relative;
+                overflow: hidden;
+            }
+            .btn-file input[type=file] {
+                position: absolute;
+                top: 0;
+                right: 0;
+                min-width: 100%;
+                min-height: 100%;
+                font-size: 100px;
+                text-align: right;
+                opacity: 0;
+                outline: none;
+                background: white;
+                cursor: inherit;
+                display: block;
+            }
             
         </style>
 
@@ -114,6 +135,7 @@ and open the template in the editor.
                 "esri/request",
                 "esri/geometry/scaleUtils",
                 "esri/geometry/webMercatorUtils",
+                "esri/config",
                 "esri/tasks/query",
                 "esri/tasks/QueryTask",
 
@@ -121,6 +143,11 @@ and open the template in the editor.
                 "esri/InfoTemplate",
                 "esri/layers/FeatureLayer",
                 "esri/dijit/BasemapGallery",
+                "esri/tasks/GeometryService",
+
+                "esri/dijit/Legend",
+                "esri/dijit/editing/Editor",
+                "esri/dijit/editing/TemplatePicker",
 
                 "esri/renderers/SimpleRenderer",
                 "esri/symbols/SimpleFillSymbol",
@@ -137,8 +164,9 @@ and open the template in the editor.
                 "dojo/_base/lang",
                 "dojo/domReady!"],
             function($, $ui,
-                    Map, request, scaleUtils, webMercatorUtils, Query, QueryTask,
-                    Geoprocessor, InfoTemplate, FeatureLayer, BasemapGallery,
+                    Map, request, scaleUtils, webMercatorUtils, config, Query, QueryTask,
+                    Geoprocessor, InfoTemplate, FeatureLayer, BasemapGallery, GeometryService,
+                    Legend, Editor, TemplatePicker,
                     SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
                     ready, parser, require, sniff, dom, on, array, lang) {
 
@@ -148,6 +176,8 @@ and open the template in the editor.
                     var org;
 
                     parser.parse();
+                    var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+                    // config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
@@ -208,6 +238,10 @@ and open the template in the editor.
                     }
 
                     function presentData() {
+                        $("#menuPanel").slideToggle();
+                        var legendInfos;
+                        var templateLayers;
+                        var editorInfos;
                         var expression;
                         var query = new Query();
 
@@ -234,10 +268,106 @@ and open the template in the editor.
                             query.returnGeometry = true;
                             queryTask.execute(query, findExtent);
 
+                            map.on("zoom-end", function() {
+                                var lvl = map.getZoom();
+                                if (lvl < 11){
+                                    counties.show();
+                                }
+                                else {
+                                    counties.hide();
+                                }
+                            });
+
+                            legendInfos = [{
+                                    layer: countyroads,
+                                    defaultSymbol: false,
+                                    title: "Surface Type"
+                                },{
+                                    layer: counties,
+                                    defaultSymbol: false,
+                                    title: "Active County"
+                                }];
+
+                            templateLayers = [updatesLyr];
+
+                            editorInfos = [{
+                                    featureLayer:updatesLyr,
+                                    fieldInfos: [{
+                                        fieldName: "CHANGE",
+                                        label: "Update Type",
+                                        isEditable: true
+                                    },{
+                                        fieldName: "COUNTY",
+                                        label: "County Number",
+                                        isEditable: false
+                                    },{
+                                        fieldName: "LENGTH",
+                                        label: "Length (Miles)",
+                                        isEditable: false
+                                    },{
+                                        fieldName: "SURFACE_TYPE",
+                                        label: "Surface Type",
+                                        tooltip: "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
+                                    },{
+                                        fieldName: "NUMBER_OF_LANES",
+                                        label: "Number of Lanes"
+                                    },{
+                                        fieldName: "HIGHWAY_DESIGN",
+                                        label: "Highway Design",
+                                        tooltip: "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
+                                    },{
+                                        fieldName: "FULL_NAME",
+                                        label: "Full Street Name"
+                                    },{
+                                        fieldName: "COMMENT",
+                                        label: "Comment"
+                                    }]
+                                }];
                             
                         }
-                            
 
+                        initLegend(legendInfos);
+                        initEditor(templateLayers, editorInfos);
+                            
+                    }
+
+                    function initLegend (Infos) {
+                        var legend = new Legend({
+                            map: map,
+                            layerInfos: Infos,
+                            respectCurrentMapScale: true
+                        }, "legend");
+                        legend.startup();
+                    }
+
+                    function initEditor(templateLayers, editorInfos) {
+                        
+                        var tpCustom = new TemplatePicker({
+                            featureLayers: templateLayers,
+                            grouping: false,
+                            columns: 1,
+                            emptyMessage: "Nothing to edit"
+                        }, "editTemplate");
+                        tpCustom.startup();
+
+                        var editorSettings = {
+                            map: map,
+                            geometryService: geomServ,
+                            layerInfos: editorInfos,
+                            toolbarVisible: true,
+                            templatePicker: tpCustom,
+                            createOptions:{
+                                polylineDrawTools: [Editor.CREATE_TOOL_POLYLINE, Editor.CREATE_TOOL_FREEHAND_POLYLINE]
+                            }
+                        };
+                        
+                        var editorParams = {
+                            settings: editorSettings
+                        };
+                        
+                        var widgetEditor = new Editor(editorParams, "editBar");
+                        widgetEditor.startup();
+                        $("#menuPanel").slideToggle();
                     }
                 
 
@@ -246,8 +376,8 @@ and open the template in the editor.
                     on(dom.byId("download"), "click", function () {
                         var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");
                         var params = {
-                            "RTE_ID": dijit.byId("selectFeatures").value,
-                            "OUTPUT": "%scratchFolder%\\" + dijit.byId("selectFeatures").value + ".zip"
+                            "RTE_ID": $("selectFeatures").val(),
+                            "OUTPUT": "%scratchFolder%\\" + $("selectFeatures").val() + ".zip"
                           };
                         dom.byId('downloadMarquee').innerHTML = "Started...";
                         gp.submitJob(params, completeCallback , statusCallback, function(error){
@@ -280,6 +410,7 @@ and open the template in the editor.
 
                     ////UPLOAD FUNCTIONS
                     on(dom.byId("uploadForm"), "change", function (event) {
+                        dom.byId('uploadMarquee').innerHTML = "";
                         var fileName = event.target.value.toLowerCase();
 
                         if (sniff("ie")) { //filename is full path in IE so extract the file name
@@ -292,7 +423,7 @@ and open the template in the editor.
                         else {
                           dom.byId('upload-status').innerHTML = '<p style="color:red">Add shapefile as .zip file</p>';
                         }
-                      });
+                    });
 
                     function generateFeatureCollection (fileName) {
                         var name = fileName.split(".");
@@ -327,7 +458,6 @@ and open the template in the editor.
                           'f': 'json',
                           'callback.html': 'textarea'
                         };
-
                         //use the rest generate operation to generate a feature collection from the zipped shapefile
                         var portalUrl = "http://www.arcgis.com";
                         request({
@@ -346,12 +476,11 @@ and open the template in the editor.
                           }),
                           error: lang.hitch(this, errorHandler)
                         });
-                      }
+                    }
 
                     function errorHandler (error) {
-                        dom.byId('upload-status').innerHTML =
-                        "<p style='color:red'>" + error.message + "</p>";
-                      }
+                        dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + error.message + '</p>';
+                    }
 
                     function addShapefileToMap (featureCollection) {
                         //add the shapefile to the map and zoom to the feature collection extent
@@ -376,8 +505,7 @@ and open the template in the editor.
                         });
                         map.addLayers(layers);
                         map.setExtent(fullExtent.expand(1.25), true);
-
-                        dom.byId('upload-status').innerHTML = "";
+                        
                     }
 
                     function verifySchema (featureCollection) {
@@ -409,14 +537,16 @@ and open the template in the editor.
 
                         if(fieldFlag) {
                             alert("Shapefile does not contain all required fields.");
+                            dom.byId('uploadMarquee').innerHTML = '<p style="color:red">Shapefile does not contain all required fields.</p>';
                         }
                         else {
                             if (attFlag) {
                                 alert(badField + " has a NULL or blank value which must be populated.");
+                                dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + badField + " has a NULL or blank value which must be populated." + '</p>';
                             }
                             else {
                                 addShapefileToMap(featureCollection);
-                                dom.byId('marquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
+                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
                                 serviceLoad(featureCollection);
                             }
                         }
@@ -444,11 +574,11 @@ and open the template in the editor.
                                         if (res) {
                                             counter += 1;
                                             if (counter === total){
-                                                dom.byId('marquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
+                                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
                                             }
                                             console.log("Success: ", response.layers);
                                         } else {
-                                            dom.byId('marquee').innerHTML = "Upload Failed. Try again with an internet connection.";
+                                            dom.byId('uploadMarquee').innerHTML = "Upload Failed. Try again with an internet connection.";
                                             alert("Upload Failed. Try again with an internet connection. (1)");
                                         }
                                     }, function(error) {
@@ -533,7 +663,7 @@ and open the template in the editor.
             });
         </script>
     </head>
-    <body>
+    <body class="tundra">
         <div id="loginModal" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -578,7 +708,7 @@ and open the template in the editor.
         
         <div id="divMap">
             <div id="menuContainer">
-                <div id="menuPanel" style="display:none">
+                <div id="menuPanel">
                     <div class="panel-group" id="accordion">
                         <div class="panel panel-default">
                             <div class="panel-heading btn-default" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" style="cursor: pointer;">
@@ -587,6 +717,10 @@ and open the template in the editor.
                             <div id="collapseOne" class="panel-collapse collapse in">
                                 <div class="panel-body">
                                     <p>Edit the data stuff here. Template, edit tools, etc. Submits edit button which sends email?</p>
+                                    <div id="editBar" style="overflow:hidden;"></div>
+                                    <div id="editTemplate"></div>
+                                    <br>
+                                    <div id="legend"></div>
                                 </div>
                             </div>
                         </div>
@@ -597,10 +731,10 @@ and open the template in the editor.
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
                                     <p>Download template for uploading data (geoprocessing service) here.</p>
-                                    <select id="selectFeatures" data-dojo-type="dijit/form/Select" style="font-size: medium; width: 150px">
+                                    <select class="form-control" id="selectFeatures">
                                         <option value="A123456">A123456</option> <option value="P542456">P542456</option> <option value="WWF999">WWF999</option>  
                                     </select>
-                                    <button id="download">Download!</button>
+                                    <button type="button" class="btn btn-default" id="download"><span class="glyphicon glyphicon-download-alt"></span> Download!</button>
                                     <div id="downloadMarquee"></div>
                                 </div>
                             </div>
@@ -615,18 +749,17 @@ and open the template in the editor.
 
                                     <div style='padding-left:4px;'>
                                         <p>Add a zipped shapefile to the map.</p>
-                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a>help topic for information and limitations.</p>
-                                        <form enctype="multipart/form-data" method="post" id="uploadForm">
-                                            <div class="field">
-                                                <label class="file-upload">
-                                                    <span><strong>Add File</strong></span>
-                                                    <input type="file" name="file" id="inFile" />
-                                                </label>
+                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
+                                        <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
+                                            <div class="form-group">
+                                                <span class="btn btn-default btn-file"><span class="glyphicon glyphicon-search"></span> Choose a File
+                                                    <input type="file" name="file"/>
+                                                </span>
                                             </div>
                                         </form>
                                         <span class="file-upload-status" style="opacity:1;" id="upload-status"></span>
                                         <div id="fileInfo"></div>
-                                        <div id="marquee"></div>
+                                        <div id="uploadMarquee"></div>
                                     </div>
                                 </div>
                             </div>
