@@ -9,9 +9,9 @@ and open the template in the editor.
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Road Inventory Updates</title>
 
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
         <style type="text/css">
             html, body, #divMap {
@@ -120,10 +120,10 @@ and open the template in the editor.
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="//js.arcgis.com/3.14/">
+            ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">
         </script><!-- swamp thang -->
 
         <script>
@@ -141,7 +141,6 @@ and open the template in the editor.
                 "esri/tasks/QueryTask",
 
                 "esri/tasks/Geoprocessor",
-                "esri/InfoTemplate",
                 "esri/layers/FeatureLayer",
                 "esri/dijit/BasemapGallery",
                 "esri/tasks/GeometryService",
@@ -167,7 +166,7 @@ and open the template in the editor.
                 "dojo/domReady!"],
             function($, $ui,
                     Map, request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
-                    Geoprocessor, InfoTemplate, FeatureLayer, BasemapGallery, GeometryService, Units,
+                    Geoprocessor, FeatureLayer, BasemapGallery, GeometryService, Units,
                     Legend, Editor, TemplatePicker, 
                     SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
                     ready, parser, require, sniff, dom, on, array, lang) {
@@ -178,7 +177,7 @@ and open the template in the editor.
                     var org;
 
                     parser.parse();
-                    var geomServ = new GeometryService("//tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
+                    var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
@@ -195,7 +194,7 @@ and open the template in the editor.
 
                     ////CRI FEATURE LAYERS & EVENTS
                     var countyRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
-                    var countiesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
+                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
                     var counties = new FeatureLayer(countiesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         visible: false,
@@ -205,14 +204,14 @@ and open the template in the editor.
                     });
                     counties.setRenderer(countyRr);
 
-                    var updatesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
+                    var updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
                     var updatesLyr = new FeatureLayer(updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
-                    var crURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
+                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -276,11 +275,25 @@ and open the template in the editor.
                                     counties.hide();
                                 }
                             });
+
+                            updatesLyr.on("mouse-over", function(){
+                                map.setMapCursor("pointer");
+                            });
+                            updatesLyr.on("mouse-out", function(){
+                                map.setMapCursor("default");
+                            });
+
+                            countyroads.on("mouse-over", function(){
+                                map.setMapCursor("pointer");
+                            });
+                            countyroads.on("mouse-out", function(){
+                                map.setMapCursor("default");
+                            });
                             
                             updatesLyr.on("before-apply-edits", function(g){
                                 var features;
                                 if (map.getZoom() > 10){
-                                    features = g.adds;
+                                    var features = g.adds;
                                     var featurettes = g.updates;
                                     array.forEach(features, function(i){
                                         var numb = parseInt(org);
@@ -288,12 +301,12 @@ and open the template in the editor.
 
                                         var fixed = webMercatorUtils.webMercatorToGeographic(i.geometry);
                                         var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
-                                        i.attributes.LENGTH = parseFloat(lengther);
+                                        i.attributes.LENGTH = parseFloat(lengther).toFixed(3);
                                     });
                                     array.forEach(featurettes, function(i){
                                         var fixed = webMercatorUtils.webMercatorToGeographic(i.geometry);
                                         var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
-                                        i.attributes.LENGTH = parseFloat(lengther);
+                                        i.attributes.LENGTH = parseFloat(lengther).toFixed(3);
 
                                     }); 
                                 }
@@ -390,14 +403,14 @@ and open the template in the editor.
                         
                         var widgetEditor = new Editor(editorParams, "editBar");
                         widgetEditor.startup();
-                        $("#menuPanel").slideToggle();
+                        // $("#menuPanel").slideToggle();
                     }
                 
 
 
                     ////DOWNLOAD FUNCTIONS
                     on(dom.byId("download"), "click", function () {
-                        var gp = new Geoprocessor("//maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
+                        var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
                         var params = {
                             "RTE_ID": $("selectFeatures").val(),
                             "OUTPUT": "%scratchFolder%\\" + $("selectFeatures").val() + ".zip"
@@ -478,7 +491,7 @@ and open the template in the editor.
                           'callback.html': 'textarea'
                         };
                         //use the rest generate operation to generate a feature collection from the zipped shapefile
-                        var portalUrl = "//www.arcgis.com";//swamp thang
+                        var portalUrl = "http://www.arcgis.com";//swamp thang
                         request({
                           url: portalUrl + '/sharing/rest/content/features/generate',
                           content: myContent,
@@ -510,14 +523,7 @@ and open the template in the editor.
                         var layers = [];
 
                         array.forEach(featureCollection.layers, function (layer) {
-                          var infoTemplate = new InfoTemplate("Details", "${*}");
-                          var featureLayer = new FeatureLayer(layer, {
-                            infoTemplate: infoTemplate
-                          });
-                          //associate the feature with the popup on click to enable highlight and zoom to
-                          featureLayer.on('click', function (event) {
-                            map.infoWindow.setFeatures([event.graphic]);
-                          });
+                          var featureLayer = new FeatureLayer(layer);
                           fullExtent = fullExtent ?
                             fullExtent.union(featureLayer.fullExtent) : featureLayer.fullExtent;
                           layers.push(featureLayer);
@@ -572,7 +578,7 @@ and open the template in the editor.
                     }
 
                     function serviceLoad (featureCollection) {
-                        var serviceURL = "//maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
+                        var serviceURL = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
                         array.forEach(featureCollection.layers, function (layer) {
                             var total = layer.featureSet.features.length;
                             var counter = 0;
@@ -768,7 +774,7 @@ and open the template in the editor.
 
                                     <div style='padding-left:4px;'>
                                         <p>Add a zipped shapefile to the map.</p><!-- swamp thang -->
-                                        <p>Visit the<a target='_blank' href="//doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
+                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
                                         <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
                                             <div class="form-group">
                                                 <span class="btn btn-default btn-file"><span class="glyphicon glyphicon-search"></span> Choose a File
