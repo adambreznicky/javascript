@@ -1,9 +1,4 @@
-
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
+<!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -132,6 +127,11 @@ and open the template in the editor.
                 "jqueryui",
 
                 "esri/map",
+                "esri/graphic",
+                "esri/geometry/Geometry",
+                "esri/toolbars/edit",
+                "esri/toolbars/draw",
+
                 "esri/request",
                 "esri/geometry/scaleUtils",
                 "esri/geometry/webMercatorUtils",
@@ -147,8 +147,8 @@ and open the template in the editor.
                 "esri/units",
 
                 "esri/dijit/Legend",
-                "esri/dijit/editing/Editor",
                 "esri/dijit/editing/TemplatePicker",
+                "esri/dijit/AttributeInspector",
 
                 "esri/renderers/SimpleRenderer",
                 "esri/symbols/SimpleFillSymbol",
@@ -163,20 +163,24 @@ and open the template in the editor.
                 "dojo/on",
                 "dojo/_base/array",
                 "dojo/_base/lang",
+                "dojo/dom-construct",
                 "dojo/domReady!"],
             function($, $ui,
-                    Map, request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
+                    Map, Graphic, Geomtery, Edit, Draw,
+                    request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
                     Geoprocessor, FeatureLayer, BasemapGallery, GeometryService, Units,
-                    Legend, Editor, TemplatePicker, 
+                    Legend, TemplatePicker, AttributeInspector,
                     SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
-                    ready, parser, require, sniff, dom, on, array, lang) {
+                    ready, parser, require, sniff, dom, on, array, lang, domConstruct) {
 
                 ready(function(){
                     dojo.require("bootstrap");
                     var updateClass;
                     var org;
+                    var editToolbar;
 
                     parser.parse();
+                    config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
                     var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
 
                     var map = new Map("divMap", {
@@ -229,6 +233,7 @@ and open the template in the editor.
                         var coords = ", " + current.split(",")[1] + ", " + current.split(",")[2];
                         $("#info").html("Level: " + map.getZoom() + coords);
                     });
+                    map.disableDoubleClickZoom();
 
                     function showCoordinates(evt) {
                         var mp = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
@@ -327,36 +332,38 @@ and open the template in the editor.
                             templateLayers = [updatesLyr];
 
                             editorInfos = [{
-                                    featureLayer:updatesLyr,
-                                    fieldInfos: [{
-                                        fieldName: "CHANGE",
-                                        label: "Update Type",
-                                        isEditable: true
+                                    'featureLayer':updatesLyr,
+                                    'showAttachments': false,
+                                    'isEditable': true,
+                                    'fieldInfos': [{
+                                        'fieldName': "CHANGE",
+                                        'label': "Update Type",
+                                        'isEditable': true
                                     },{
-                                        fieldName: "COUNTY",
-                                        label: "County Number",
-                                        isEditable: false
+                                        'fieldName': "COUNTY",
+                                        'label': "County Number",
+                                        'isEditable': false
                                     },{
-                                        fieldName: "LENGTH",
-                                        label: "Length (Miles)",
-                                        isEditable: false
+                                        'fieldName': "LENGTH",
+                                        'label': "Length (Miles)",
+                                        'isEditable': false
                                     },{
-                                        fieldName: "SURFACE_TYPE",
-                                        label: "Surface Type",
-                                        tooltip: "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
+                                        'fieldName': "SURFACE_TYPE",
+                                        'label': "Surface Type",
+                                        'tooltip': "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
                                     },{
-                                        fieldName: "NUMBER_OF_LANES",
-                                        label: "Number of Lanes"
+                                        'fieldName': "NUMBER_OF_LANES",
+                                        'label': "Number of Lanes"
                                     },{
-                                        fieldName: "HIGHWAY_DESIGN",
-                                        label: "Highway Design",
-                                        tooltip: "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
+                                        'fieldName': "HIGHWAY_DESIGN",
+                                        'label': "Highway Design",
+                                        'tooltip': "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
                                     },{
-                                        fieldName: "FULL_NAME",
-                                        label: "Full Street Name"
+                                        'fieldName': "FULL_NAME",
+                                        'label': "Full Street Name"
                                     },{
-                                        fieldName: "COMMENT",
-                                        label: "Comment"
+                                        'fieldName': "COMMENT",
+                                        'label': "Comment"
                                     }]
                                 }];
                             
@@ -386,24 +393,87 @@ and open the template in the editor.
                         }, "editTemplate");
                         tpCustom.startup();
 
-                        var editorSettings = {
-                            map: map,
-                            geometryService: geomServ,
-                            layerInfos: editorInfos,
-                            toolbarVisible: true,
-                            templatePicker: tpCustom,
-                            createOptions:{
-                                polylineDrawTools: [Editor.CREATE_TOOL_POLYLINE, Editor.CREATE_TOOL_FREEHAND_POLYLINE]
+                        var drawToolbar = new Draw(map);
+                        tpCustom.on("selection-change", function(){
+                            if(tpCustom.getSelected()){
+                                drawToolbar.activate(Draw.POLYLINE);
                             }
-                        };
+                        });
+
+                        drawToolbar.on("draw-end", function(evt) {
+                            drawToolbar.deactivate();
+                            var graphic = new Graphic(evt.geometry, null, null);
+                            updatesLyr.applyEdits([graphic]);
+                        });
+
+                        updatesLyr.on("click", function(evt){
+                            var att = evt.graphic.attributes;
+                            map.infoWindow.setTitle("Updates");
+                            map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+                        });
+
+                        var aiCustom = new AttributeInspector({
+                            layerInfos: editorInfos
+                        }, domConstruct.create("div"));
+
+                        aiCustom.on("attribute-change", function(evt){
+                            evt.graphic.attributes[evt.fieldName] = evt.fieldValue;
+                            updatesLyr.applyEdits(null, [evt.graphic], null);
+                        });
+
+                        aiCustom.on("delete", function(evt) {
+                            updatesLyr.applyEdits(null, null, [evt.feature]);
+                            map.infoWindow.hide();
+                        });
+
+                        map.infoWindow.setContent(aiCustom.domNode);
+                        map.infoWindow.resize(350, 240);
+
+                        // var editorSettings = {
+                        //     map: map,
+                        //     geometryService: geomServ,
+                        //     layerInfos: editorInfos,
+                        //     toolbarVisible: true,
+                        //     templatePicker: tpCustom,
+                        //     createOptions:{
+                        //         polylineDrawTools: [Editor.CREATE_TOOL_POLYLINE, Editor.CREATE_TOOL_FREEHAND_POLYLINE]
+                        //     }
+                        // };
                         
-                        var editorParams = {
-                            settings: editorSettings
-                        };
+                        // var editorParams = {
+                        //     settings: editorSettings
+                        // };
                         
-                        var widgetEditor = new Editor(editorParams, "editBar");
-                        widgetEditor.startup();
+                        // var widgetEditor = new Editor(editorParams, "editBar");
+                        // widgetEditor.startup();
+
+
                         // $("#menuPanel").slideToggle();
+                        buildEditToolbar();
+
+                    }
+
+                    function buildEditToolbar() {
+                        editToolbar = new Edit(map);
+                        updatesLyr.on("dbl-click", function(evt) {
+                            activateToolbar(evt.graphic);
+                        });
+                        editToolbar.on("deactivate", function(evt) {
+                            updatesLyr.applyEdits(null, [evt.graphic], null);
+                        });
+                        map.on("click", function(evt){
+                            editToolbar.deactivate();
+                        });
+                    }
+
+                    function activateToolbar(graphic) {
+                        var ghostLine = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([201,201,201]), 2);   
+                        var options = {
+                            allowAddVertices: true,
+                            allowDeleteVertices: true,
+                            ghostLineSymbol: ghostLine
+                        };
+                        editToolbar.activate(Edit.EDIT_VERTICES, graphic, options);
                     }
                 
 
