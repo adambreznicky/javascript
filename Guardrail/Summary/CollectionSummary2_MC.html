@@ -1,8 +1,8 @@
 <html>
 <head>
 <title>End Treatments Summary</title>
-<link rel="stylesheet" href="http://js.arcgis.com/3.12/dijit/themes/claro/claro.css">
-<link rel="stylesheet" href="http://js.arcgis.com/3.12/esri/css/esri.css">
+<link rel="stylesheet" href="//js.arcgis.com/3.12/dijit/themes/claro/claro.css">
+<link rel="stylesheet" href="//js.arcgis.com/3.12/esri/css/esri.css">
 <style>
 #mapDiv{
   border: 2px solid;
@@ -48,7 +48,7 @@ th {
 	text-align: center;
 }
 </style>
-<script src="http://js.arcgis.com/3.12/"></script>
+<script src="//js.arcgis.com/3.12/"></script>
 <script>
 var map;
 var pOneLyr;
@@ -154,7 +154,7 @@ var theTotal = 0;
 	//Add Proposition One feature layer
 	function addEndTreatments() {
 		var infoTemplate = new esri.InfoTemplate("End Treatments:",tableText);	
-		var projectsUrl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0";	
+		var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/GuardrailPoints/FeatureServer/0";	
 	
 		pOneLyr = new esri.layers.FeatureLayer(projectsUrl, {id:"Treatments",visible: true, outFields: theOutFields, infoTemplate: infoTemplate});	
 		activeLayer = pOneLyr;
