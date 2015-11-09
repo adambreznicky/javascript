@@ -227,13 +227,14 @@
                     map.on("load", function() {
                             map.on("mouse-move", showCoordinates);
                             map.on("mouse-drag", showCoordinates);
+                            map.disableDoubleClickZoom();
                         });
                     map.on("zoom-end", function() {
                         var current = $("#info").html();
                         var coords = ", " + current.split(",")[1] + ", " + current.split(",")[2];
                         $("#info").html("Level: " + map.getZoom() + coords);
                     });
-                    map.disableDoubleClickZoom();
+                    
 
                     function showCoordinates(evt) {
                         var mp = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
