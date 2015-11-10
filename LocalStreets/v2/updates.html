@@ -4,9 +4,9 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Road Inventory Updates</title>
 
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
         <style type="text/css">
             html, body, #divMap {
@@ -83,6 +83,9 @@
             #accordion {
                 margin-bottom: 0;
             }
+            #downloadFormat, #chooseData {
+                padding: 0;
+            }
             .panel-default > .panel-heading {
                 cursor: pointer;
                 background-color: #75A262;
@@ -111,14 +114,18 @@
                 cursor: inherit;
                 display: block;
             }
-            
+            span.dijit.dijitReset.dijitInline.dijitButton.atiButton.atiDeleteButton {
+                margin: .2em;
+                width: 50px;
+            }
+        
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="//js.arcgis.com/3.14/">
+            ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">
         </script><!-- swamp thang -->
 
         <script>
@@ -166,6 +173,8 @@
                 "dojo/_base/array",
                 "dojo/_base/lang",
                 "dojo/dom-construct",
+                "dojo/dom-style",
+                "dijit/form/Button",
                 "dojo/domReady!"],
             function($, $ui,
                     Map, Graphic, Geomtery, Edit, Draw, Extent, Point,
@@ -173,17 +182,18 @@
                     Geoprocessor, FeatureLayer, BasemapGallery, GeometryService, Units,
                     Legend, TemplatePicker, AttributeInspector,
                     SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
-                    ready, parser, require, sniff, dom, on, array, lang, domConstruct) {
+                    ready, parser, require, sniff, dom, on, array, lang, domConstruct, domStyle, dojoButton) {
 
                 ready(function(){
                     dojo.require("bootstrap");
                     var updateClass;
                     var org;
                     var editToolbar;
+                    var refLayers;
 
                     parser.parse();
                     config.defaults.io.proxyUrl = "//localhost/proxy/proxy.ashx";
-                    var geomServ = new GeometryService("//tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
+                    var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
@@ -200,7 +210,7 @@
 
                     ////CRI FEATURE LAYERS & EVENTS
                     var countyRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
-                    var countiesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
+                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
                     var counties = new FeatureLayer(countiesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         visible: false,
@@ -210,14 +220,14 @@
                     });
                     counties.setRenderer(countyRr);
 
-                    var updatesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
+                    var updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
                     var updatesLyr = new FeatureLayer(updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
-                    var crURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
+                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -268,6 +278,8 @@
                             countyroads.setDefinitionExpression("COUNTY = " + org);
 
                             map.addLayers([counties, countyroads, updatesLyr]);
+
+                            $("#resources").append("Resources:<br><a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
                         
                             var queryTask = new QueryTask(countiesURL);
                             query.where = expression;
@@ -284,21 +296,6 @@
                                 }
                             });
 
-                            updatesLyr.on("mouse-over", function(){
-                                map.setMapCursor("pointer");
-                            });
-                            updatesLyr.on("mouse-out", function(){
-                                map.setMapCursor("default");
-                            });
-
-                            countyroads.on("mouse-over", function(){
-                                map.setMapCursor("pointer");
-                            });
-                            countyroads.on("mouse-out", function(){
-                                map.setMapCursor("default");
-                            });
-
-
                             legendInfos = [{
                                     layer: countyroads,
                                     defaultSymbol: false,
@@ -310,6 +307,7 @@
                                 }];
 
                             templateLayers = [updatesLyr];
+                            refLayers = [updatesLyr, countyroads];
 
                             editorInfos = [{
                                     'featureLayer':updatesLyr,
@@ -345,6 +343,29 @@
                                         'fieldName': "COMMENT",
                                         'label': "Comment"
                                     }]
+                                }, {
+                                    'featureLayer':countyroads,
+                                    'showAttachments': false,
+                                    'isEditable': false,
+                                    'fieldInfos': [{
+                                        'fieldName': "COUNTY",
+                                        'label': "County Number"
+                                    },{
+                                        'fieldName': "LEN_OF_SECTION",
+                                        'label': "Length (Miles)"
+                                    },{
+                                        'fieldName': "SURFACE_TYPE",
+                                        'label': "Surface Type"
+                                    },{
+                                        'fieldName': "NUMBER_OF_LANES",
+                                        'label': "Number of Lanes"
+                                    },{
+                                        'fieldName': "HIGHWAY_DESIGN",
+                                        'label': "Highway Design"
+                                    },{
+                                        'fieldName': "FULL_NAME",
+                                        'label': "Full Street Name"
+                                    }]
                                 }];
                             
                         }
@@ -352,14 +373,22 @@
                         initLegend(legendInfos);
                         initTemplates(templateLayers);
                         initAttributes(editorInfos);
-                        // setupSelection(templateLayers);
+                        setupSelection();
                             
                     }
                     
-                    function setupSelection(templateLayers) {
-                        $.each(templateLayers, function(index, lyr){
+                    function setupSelection() {
+                        $.each(refLayers, function(index, lyr){
                             var selectionSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0,255,255]), 2);
                             lyr.setSelectionSymbol(selectionSymbol);
+
+                            lyr.on("mouse-over", function(){
+                                map.setMapCursor("pointer");
+                            });
+                            lyr.on("mouse-out", function(){
+                                map.setMapCursor("default");
+                            });
+
                         });
                     }
 
@@ -382,6 +411,8 @@
                         }, "editTemplate");
                         tpCustom.startup();
 
+                        document.getElementById("dojox_grid__View_2").style.width = "100%";
+
                         var drawToolbar = new Draw(map);
                         var selectedTemplate;
                         tpCustom.on("selection-change", function(){
@@ -392,7 +423,6 @@
                         });
 
                         drawToolbar.on("draw-end", function(evt) {
-                            console.log(evt);
                             drawToolbar.deactivate();
                             var numb = parseInt(org);
                             var fixed = webMercatorUtils.webMercatorToGeographic(evt.geometry);
@@ -413,23 +443,39 @@
                     }
                     
                     function selectFeature(evt){
-                            
+
+                        refLayers[0].clearSelection();
+                        refLayers[1].clearSelection();
+
                         var centerPoint = new Point(evt.mapPoint.x,evt.mapPoint.y,evt.mapPoint.spatialReference);
                         var mapWidth = map.extent.getWidth();
                         var pixelWidth = mapWidth/map.width;
-                        var tolerance = 10 * pixelWidth;
+                        var tolerance = 5 * pixelWidth;
                         var queryExtent = new Extent(1,1,tolerance,tolerance,evt.mapPoint.spatialReference);
                         
                         var selectQuery = new Query();
                         selectQuery.geometry = queryExtent.centerAt(centerPoint);
                         
-                        updatesLyr.selectFeatures(selectQuery, FeatureLayer.SELECTION_NEW, function(features) {
+                        refLayers[0].selectFeatures(selectQuery, FeatureLayer.SELECTION_NEW, function(features) {
                             if (features.length > 0) {
-                                map.infoWindow.setTitle(features[0].getLayer().name);
+                                // map.infoWindow.setTitle(features[0].getLayer().name);
+                                map.infoWindow.setTitle("Inventory Changes");
                                 map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+                                document.getElementById("dijit_form_Button_5").parentElement.style.display = "block";
+                                
                             }
                             else {
-                                map.infoWindow.hide();
+                                refLayers[1].selectFeatures(selectQuery, FeatureLayer.SELECTION_NEW, function(features) {
+                                    if (features.length > 0) {
+                                        // map.infoWindow.setTitle(features[0].getLayer().name);
+                                        map.infoWindow.setTitle("Current Inventory");
+                                        map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+                                        document.getElementById("dijit_form_Button_5").parentElement.style.display = "none";
+                                    }
+                                    else {
+                                        map.infoWindow.hide();
+                                    }
+                                });
                             }
                         });
                         
@@ -437,23 +483,36 @@
                     
                     function initAttributes(editorInfos) { 
                         
-                        updatesLyr.on("click", selectFeature);
+                        refLayers[0].on("click", selectFeature);
+                        refLayers[1].on("click", selectFeature);
                         
                         map.infoWindow.on("hide", function() {
-                            updatesLyr.clearSelection();
+                            refLayers[0].clearSelection();
+                            refLayers[1].clearSelection();
                         });
 
                         var aiCustom = new AttributeInspector({
                             layerInfos: editorInfos
                         }, domConstruct.create("div"));
 
+                        var geomButton = new dojoButton({label: "Edit Geometry"},domConstruct.create("div"));
+                        domConstruct.place(geomButton.domNode, aiCustom.deleteBtn.domNode, "after");
+
+
+                        geomButton.on("click", function() {
+                            var features = refLayers[0].getSelectedFeatures();
+                            var feature = features[0];
+                            map.infoWindow.hide();
+                            activateToolbar(feature);
+                        });
+
                         aiCustom.on("attribute-change", function(evt){
                             evt.feature.attributes[evt.fieldName] = evt.fieldValue;
-                            updatesLyr.applyEdits(null, [evt.feature], null);
+                            refLayers[0].applyEdits(null, [evt.feature], null);
                         });
 
                         aiCustom.on("delete", function(evt) {
-                            updatesLyr.applyEdits(null, null, [evt.feature]);
+                            refLayers[0].applyEdits(null, null, [evt.feature]);
                             map.infoWindow.hide();
                             editToolbar.deactivate();
                         });
@@ -466,22 +525,20 @@
 
                     function buildEditToolbar() {
                         editToolbar = new Edit(map);
-                        updatesLyr.on("dbl-click", function(evt) {
-                            activateToolbar(evt.graphic);
-                        });
                         editToolbar.on("deactivate", function(evt) {
                             var numb = parseInt(org);
                             var fixed = webMercatorUtils.webMercatorToGeographic(evt.graphic.geometry);
                             var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
                             var rounder = parseFloat(lengther).toFixed(3);
                             
-                            evt.graphic.attributes.COUNTY = numb;
-                            evt.graphic.attributes.LENGTH = rounder;
+                            if (updateClass == "CR") {
+                                evt.graphic.attributes.COUNTY = numb;
+                                evt.graphic.attributes.LENGTH = rounder;
+                            }
                             
-                            updatesLyr.applyEdits(null, [evt.graphic], null);
+                            refLayers[0].applyEdits(null, [evt.graphic], null);
                         });
                         map.on("click", function(evt){
-                            console.log(evt);
                             editToolbar.deactivate();
                             if (!('graphic' in evt)){
                                 map.infoWindow.hide();
@@ -504,10 +561,10 @@
 
                     ////DOWNLOAD FUNCTIONS
                     on(dom.byId("download"), "click", function () {
-                        var gp = new Geoprocessor("//maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
+                        var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
                         var params = {
-                            "RTE_ID": $("selectFeatures").val(),
-                            "OUTPUT": "%scratchFolder%\\" + $("selectFeatures").val() + ".zip"
+                            "RTE_ID": $("chooseData").val(),
+                            "OUTPUT": "%scratchFolder%\\" + $("chooseData").val() + ".zip"
                           };
                         dom.byId('downloadMarquee').innerHTML = "Started...";
                         gp.submitJob(params, completeCallback , statusCallback, function(error){
@@ -585,7 +642,7 @@
                           'callback.html': 'textarea'
                         };
                         //use the rest generate operation to generate a feature collection from the zipped shapefile
-                        var portalUrl = "//www.arcgis.com";//swamp thang
+                        var portalUrl = "http://www.arcgis.com";//swamp thang
                         request({
                           url: portalUrl + '/sharing/rest/content/features/generate',
                           content: myContent,
@@ -672,7 +729,7 @@
                     }
 
                     function serviceLoad (featureCollection) {
-                        var serviceURL = "//maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
+                        var serviceURL = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
                         array.forEach(featureCollection.layers, function (layer) {
                             var total = layer.featureSet.features.length;
                             var counter = 0;
@@ -836,7 +893,6 @@
                             <div id="collapseOne" class="panel-collapse collapse in">
                                 <div class="panel-body">
                                     <!--<p>Edit the data stuff here. Template, edit tools, etc. Submits edit button which sends email?</p>-->
-                                    <div id="editBar" style="overflow:hidden;"></div>
                                     <div id="editTemplate"></div>
                                     <br>
                                     <div id="legend"></div>
@@ -845,13 +901,16 @@
                         </div>
                         <div class="panel panel-default">
                             <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" style="cursor: pointer;">
-                                <h4 class="panel-title">Download Template</h4>
+                                <h4 class="panel-title">Download</h4>
                             </div>
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Download template for uploading data (geoprocessing service) here.</p>
-                                    <select class="form-control" id="selectFeatures">
-                                        <option value="A123456">A123456</option> <option value="P542456">P542456</option> <option value="WWF999">WWF999</option>  
+                                    <p>Download a copy of your data or a schema template for editing and uploading changes.</p>
+                                    <select class="form-control" id="downloadFormat">
+                                        <option value="FGDB">File Geodatabase</option> <option value="SHP">Shapefile</option> 
+                                    </select>
+                                    <select class="form-control" id="chooseData">
+                                        <option value="SCHEMA">Schema Only</option> <option value="DATA">Data & Schema</option>  
                                     </select>
                                     <button type="button" class="btn btn-default" id="download"><span class="glyphicon glyphicon-download-alt"></span> Download!</button>
                                     <div id="downloadMarquee"></div>
@@ -860,7 +919,7 @@
                         </div>
                         <div class="panel panel-default">
                             <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" style="cursor: pointer;">
-                                <h4 class="panel-title">Upload Data</h4>
+                                <h4 class="panel-title">Upload</h4>
                             </div>
                             <div id="collapseThree" class="panel-collapse collapse">
                                 <div class="panel-body">
@@ -868,7 +927,7 @@
 
                                     <div style='padding-left:4px;'>
                                         <p>Add a zipped shapefile to the map.</p><!-- swamp thang -->
-                                        <p>Visit the<a target='_blank' href="//doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
+                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
                                         <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
                                             <div class="form-group">
                                                 <span class="btn btn-default btn-file"><span class="glyphicon glyphicon-search"></span> Choose a File
@@ -880,6 +939,16 @@
                                         <div id="fileInfo"></div>
                                         <div id="uploadMarquee"></div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" style="cursor: pointer;">
+                                <h4 class="panel-title">Resources</h4>
+                            </div>
+                            <div id="collapseFour" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    <div id="resources"></div>
                                 </div>
                             </div>
                         </div>
