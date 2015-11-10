@@ -563,8 +563,11 @@
                     on(dom.byId("download"), "click", function () {
                         var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
                         var params = {
-                            "RTE_ID": $("chooseData").val(),
-                            "OUTPUT": "%scratchFolder%\\" + $("chooseData").val() + ".zip"
+                            "Update Class": updateClass,
+                            "Organization": org,
+                            "Download Format": $("downloadFormat").val(),
+                            "Choose Data": $("chooseData").val(),
+                            "OUTPUT": "%scratchFolder%\\" + "TxDOT_" + updateClass + "_" + org.toString() + ".zip"
                           };
                         dom.byId('downloadMarquee').innerHTML = "Started...";
                         gp.submitJob(params, completeCallback , statusCallback, function(error){
