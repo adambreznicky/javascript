@@ -4,9 +4,9 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Road Inventory Updates</title>
 
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
+        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
         <style type="text/css">
             html, body, #divMap {
@@ -115,10 +115,10 @@
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="http://js.arcgis.com/3.14/">
+            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="//js.arcgis.com/3.14/">
         </script><!-- swamp thang -->
 
         <script>
@@ -131,6 +131,8 @@
                 "esri/geometry/Geometry",
                 "esri/toolbars/edit",
                 "esri/toolbars/draw",
+                "esri/geometry/Extent",
+                "esri/geometry/Point",
 
                 "esri/request",
                 "esri/geometry/scaleUtils",
@@ -166,7 +168,7 @@
                 "dojo/dom-construct",
                 "dojo/domReady!"],
             function($, $ui,
-                    Map, Graphic, Geomtery, Edit, Draw,
+                    Map, Graphic, Geomtery, Edit, Draw, Extent, Point,
                     request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
                     Geoprocessor, FeatureLayer, BasemapGallery, GeometryService, Units,
                     Legend, TemplatePicker, AttributeInspector,
@@ -180,8 +182,8 @@
                     var editToolbar;
 
                     parser.parse();
-                    config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
-                    var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
+                    config.defaults.io.proxyUrl = "//localhost/proxy/proxy.ashx";
+                    var geomServ = new GeometryService("//tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
@@ -198,7 +200,7 @@
 
                     ////CRI FEATURE LAYERS & EVENTS
                     var countyRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
-                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
+                    var countiesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
                     var counties = new FeatureLayer(countiesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         visible: false,
@@ -208,14 +210,14 @@
                     });
                     counties.setRenderer(countyRr);
 
-                    var updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
+                    var updatesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
                     var updatesLyr = new FeatureLayer(updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
-                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
+                    var crURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -295,29 +297,6 @@
                             countyroads.on("mouse-out", function(){
                                 map.setMapCursor("default");
                             });
-                            
-                            updatesLyr.on("before-apply-edits", function(g){
-                                var features;
-                                if (map.getZoom() > 10){
-                                    var features = g.adds;
-                                    var featurettes = g.updates;
-                                    array.forEach(features, function(i){
-                                        var numb = parseInt(org);
-                                        i.attributes.COUNTY = numb;
-
-                                        var fixed = webMercatorUtils.webMercatorToGeographic(i.geometry);
-                                        var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
-                                        i.attributes.LENGTH = parseFloat(lengther).toFixed(3);
-                                    });
-                                    array.forEach(featurettes, function(i){
-                                        var fixed = webMercatorUtils.webMercatorToGeographic(i.geometry);
-                                        var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
-                                        i.attributes.LENGTH = parseFloat(lengther).toFixed(3);
-
-                                    }); 
-                                }
-
-                            });
 
 
                             legendInfos = [{
@@ -371,8 +350,17 @@
                         }
 
                         initLegend(legendInfos);
-                        initEditor(templateLayers, editorInfos);
+                        initTemplates(templateLayers);
+                        initAttributes(editorInfos);
+                        // setupSelection(templateLayers);
                             
+                    }
+                    
+                    function setupSelection(templateLayers) {
+                        $.each(templateLayers, function(index, lyr){
+                            var selectionSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0,255,255]), 2);
+                            lyr.setSelectionSymbol(selectionSymbol);
+                        });
                     }
 
                     function initLegend (Infos) {
@@ -384,7 +372,7 @@
                         legend.startup();
                     }
 
-                    function initEditor(templateLayers, editorInfos) {
+                    function initTemplates(templateLayers) {
                         
                         var tpCustom = new TemplatePicker({
                             featureLayers: templateLayers,
@@ -395,22 +383,64 @@
                         tpCustom.startup();
 
                         var drawToolbar = new Draw(map);
+                        var selectedTemplate;
                         tpCustom.on("selection-change", function(){
                             if(tpCustom.getSelected()){
+                                selectedTemplate = tpCustom.getSelected();
                                 drawToolbar.activate(Draw.POLYLINE);
                             }
                         });
 
                         drawToolbar.on("draw-end", function(evt) {
+                            console.log(evt);
                             drawToolbar.deactivate();
-                            var graphic = new Graphic(evt.geometry, null, null);
-                            updatesLyr.applyEdits([graphic]);
+                            var numb = parseInt(org);
+                            var fixed = webMercatorUtils.webMercatorToGeographic(evt.geometry);
+                            var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
+                            var rounder = parseFloat(lengther).toFixed(3);
+                            
+                            var blankAttributes = lang.mixin({}, selectedTemplate.template.prototype.attributes);
+                            var autoAttributes = lang.mixin(blankAttributes, {"COUNTY":numb, "LENGTH": rounder});
+                            var newGraphic = new Graphic(evt.geometry, null, autoAttributes);
+                            selectedTemplate.featureLayer.applyEdits([newGraphic], null, null);
+                            
+                            tpCustom.clearSelection();
                         });
+                        
+                        $("#menuPanel").slideToggle();
+                        buildEditToolbar();
 
-                        updatesLyr.on("click", function(evt){
-                            var att = evt.graphic.attributes;
-                            map.infoWindow.setTitle("Updates");
-                            map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+                    }
+                    
+                    function selectFeature(evt){
+                            
+                        var centerPoint = new Point(evt.mapPoint.x,evt.mapPoint.y,evt.mapPoint.spatialReference);
+                        var mapWidth = map.extent.getWidth();
+                        var pixelWidth = mapWidth/map.width;
+                        var tolerance = 10 * pixelWidth;
+                        var queryExtent = new Extent(1,1,tolerance,tolerance,evt.mapPoint.spatialReference);
+                        
+                        var selectQuery = new Query();
+                        selectQuery.geometry = queryExtent.centerAt(centerPoint);
+                        
+                        updatesLyr.selectFeatures(selectQuery, FeatureLayer.SELECTION_NEW, function(features) {
+                            if (features.length > 0) {
+                                map.infoWindow.setTitle(features[0].getLayer().name);
+                                map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+                            }
+                            else {
+                                map.infoWindow.hide();
+                            }
+                        });
+                        
+                    }
+                    
+                    function initAttributes(editorInfos) { 
+                        
+                        updatesLyr.on("click", selectFeature);
+                        
+                        map.infoWindow.on("hide", function() {
+                            updatesLyr.clearSelection();
                         });
 
                         var aiCustom = new AttributeInspector({
@@ -418,41 +448,21 @@
                         }, domConstruct.create("div"));
 
                         aiCustom.on("attribute-change", function(evt){
-                            evt.graphic.attributes[evt.fieldName] = evt.fieldValue;
-                            updatesLyr.applyEdits(null, [evt.graphic], null);
+                            evt.feature.attributes[evt.fieldName] = evt.fieldValue;
+                            updatesLyr.applyEdits(null, [evt.feature], null);
                         });
 
                         aiCustom.on("delete", function(evt) {
                             updatesLyr.applyEdits(null, null, [evt.feature]);
                             map.infoWindow.hide();
+                            editToolbar.deactivate();
                         });
 
                         map.infoWindow.setContent(aiCustom.domNode);
                         map.infoWindow.resize(350, 240);
 
-                        // var editorSettings = {
-                        //     map: map,
-                        //     geometryService: geomServ,
-                        //     layerInfos: editorInfos,
-                        //     toolbarVisible: true,
-                        //     templatePicker: tpCustom,
-                        //     createOptions:{
-                        //         polylineDrawTools: [Editor.CREATE_TOOL_POLYLINE, Editor.CREATE_TOOL_FREEHAND_POLYLINE]
-                        //     }
-                        // };
-                        
-                        // var editorParams = {
-                        //     settings: editorSettings
-                        // };
-                        
-                        // var widgetEditor = new Editor(editorParams, "editBar");
-                        // widgetEditor.startup();
-
-
-                        // $("#menuPanel").slideToggle();
-                        buildEditToolbar();
-
                     }
+                        
 
                     function buildEditToolbar() {
                         editToolbar = new Edit(map);
@@ -460,10 +470,23 @@
                             activateToolbar(evt.graphic);
                         });
                         editToolbar.on("deactivate", function(evt) {
+                            var numb = parseInt(org);
+                            var fixed = webMercatorUtils.webMercatorToGeographic(evt.graphic.geometry);
+                            var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
+                            var rounder = parseFloat(lengther).toFixed(3);
+                            
+                            evt.graphic.attributes.COUNTY = numb;
+                            evt.graphic.attributes.LENGTH = rounder;
+                            
                             updatesLyr.applyEdits(null, [evt.graphic], null);
                         });
                         map.on("click", function(evt){
+                            console.log(evt);
                             editToolbar.deactivate();
+                            if (!('graphic' in evt)){
+                                map.infoWindow.hide();
+                            }
+
                         });
                     }
 
@@ -481,7 +504,7 @@
 
                     ////DOWNLOAD FUNCTIONS
                     on(dom.byId("download"), "click", function () {
-                        var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
+                        var gp = new Geoprocessor("//maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
                         var params = {
                             "RTE_ID": $("selectFeatures").val(),
                             "OUTPUT": "%scratchFolder%\\" + $("selectFeatures").val() + ".zip"
@@ -562,7 +585,7 @@
                           'callback.html': 'textarea'
                         };
                         //use the rest generate operation to generate a feature collection from the zipped shapefile
-                        var portalUrl = "http://www.arcgis.com";//swamp thang
+                        var portalUrl = "//www.arcgis.com";//swamp thang
                         request({
                           url: portalUrl + '/sharing/rest/content/features/generate',
                           content: myContent,
@@ -649,7 +672,7 @@
                     }
 
                     function serviceLoad (featureCollection) {
-                        var serviceURL = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
+                        var serviceURL = "//maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
                         array.forEach(featureCollection.layers, function (layer) {
                             var total = layer.featureSet.features.length;
                             var counter = 0;
@@ -845,7 +868,7 @@
 
                                     <div style='padding-left:4px;'>
                                         <p>Add a zipped shapefile to the map.</p><!-- swamp thang -->
-                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
+                                        <p>Visit the<a target='_blank' href="//doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
                                         <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
                                             <div class="form-group">
                                                 <span class="btn btn-default btn-file"><span class="glyphicon glyphicon-search"></span> Choose a File
