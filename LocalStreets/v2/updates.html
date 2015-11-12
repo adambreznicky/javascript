@@ -193,7 +193,8 @@
 
                     parser.parse();
                     config.defaults.io.proxyUrl = "//localhost/proxy/proxy.ashx";
-                    var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");//swamp thang
+                    var geomServ = new GeometryService("https://maps.dot.state.tx.us/arcgis/rest/services/Utilities/Geometry/GeometryServer");//swamp thang
+                    // var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
@@ -329,14 +330,14 @@
                                     },{
                                         'fieldName': "SURFACE_TYPE",
                                         'label': "Surface Type",
-                                        'tooltip': "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
+                                        // 'tooltip': "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
                                     },{
                                         'fieldName': "NUMBER_OF_LANES",
                                         'label': "Number of Lanes"
                                     },{
                                         'fieldName': "HIGHWAY_DESIGN",
                                         'label': "Highway Design",
-                                        'tooltip': "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
+                                        // 'tooltip': "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
                                     },{
                                         'fieldName': "FULL_NAME",
                                         'label': "Full Street Name"
