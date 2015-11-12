@@ -1,7 +1,7 @@
 __file__ = 'downloadUpdates_v1'
 __date__ = '11/12/2015'
 __author__ = 'ABREZNIC'
-import arcpy, zipfile, os, shutil, urllib, urllib2, json
+import arcpy, zipfile, os, shutil
 # http://blogs.esri.com/esri/arcgis/2013/10/10/quick-tips-consuming-feature-services-with-geoprocessing/
 
 updateClass = arcpy.GetParameterAsText(0)
@@ -15,16 +15,16 @@ if not os.path.exists(directory):
     os.makedirs(directory)
 else:
     shutil.rmtree(directory)
-    os.makedirs(directory)
 arcpy.AddMessage("directory created.")
 
 if updateClass == "CR":
     if chooseData == "SCHEMA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/FeatureServer/0/query"
-        where = "1=1"
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0/query"
+        where = "1<>1"
     elif chooseData == "DATA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/FeatureServer/0/query"
-        where = """"COUNTY"=""" + str(org)
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0/query"
+        # where = """"COUNTY"=""" + str(org)
+        where = """"OBJECTID" = """ + str(1510)
 
 elif updateClass == "LS":
     if chooseData == "SCHEMA":
@@ -42,31 +42,16 @@ token = ''
 query = "?where={}&outFields={}&returnGeometry=true&f=json&token={}".format(where, fields, token)
 fsURL = baseURL + query
 arcpy.AddMessage(fsURL)
-
-# params = {'where': '1=1', 'returnIdsOnly': 'true', 'token': token, 'f': 'json'}
-# req = urllib2.Request(baseURL, urllib.urlencode(params))
-# response = urllib2.urlopen(req)
-# data = json.load(response)
-# arcpy.AddMessage(data)
-
 fs = arcpy.FeatureSet()
 fs.load(fsURL)
 arcpy.AddMessage("select completed.")
 
 if downloadFormat == "SHP":
     arcpy.CopyFeatures_management(fs, directory + os.sep + "TxDOT_" + updateClass + "_" + str(org) + ".shp")
-    newFC = directory + os.sep + "TxDOT_" + updateClass + "_" + str(org) + ".shp"
 elif downloadFormat == "FGDB":
     arcpy.CreateFileGDB_management(directory, "TxDOT_" + updateClass + "_" + str(org))
     fgdb = directory + os.sep + "TxDOT_" + updateClass + "_" + str(org)
     arcpy.CopyFeatures_management(fs, fgdb + os.sep + "TxDOT_" + updateClass + "_" + str(org))
-    newFC = fgdb + os.sep + "TxDOT_" + updateClass + "_" + str(org)
-
-if chooseData == "SCHEMA":
-    cursor = arcpy.da.UpdateCursor(newFC, ["*"])
-    for row in cursor:
-        cursor.deleteRow()
-arcpy.AddMessage("template cleaned out.")
 
 zipper = output
 if os.path.isfile(zipper):

@@ -4,7 +4,8 @@ __author__ = 'ABREZNIC'
 import arcpy, zipfile, os, shutil
 # http://blogs.esri.com/esri/arcgis/2013/10/10/quick-tips-consuming-feature-services-with-geoprocessing/
 
-input = arcpy.GetParameterAsText(0)
+# input = arcpy.GetParameterAsText(0)
+input = "A123456"
 output = arcpy.GetParameterAsText(1).replace("\\", os.sep)
 
 directory = arcpy.env.scratchFolder + os.sep + input
@@ -19,9 +20,10 @@ where = """"RTE_ID" = '""" + input + """'"""
 fields ='*'
 token = ''
 #The above variables construct the query
-query = "?where={}&outFields={}&returnGeometry=true&f=json&token={}".format(where, fields, token)
+query = "?where={}&outFields={}&returnGeometry=true&f=json".format(where, fields)
 fsURL = baseURL + query
 fs = arcpy.FeatureSet()
+arcpy.AddMessage(fsURL)
 fs.load(fsURL)
 arcpy.CopyFeatures_management(fs, directory + os.sep + input + ".shp")
 arcpy.AddMessage("select completed.")

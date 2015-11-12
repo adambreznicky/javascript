@@ -220,14 +220,15 @@
                     });
                     counties.setRenderer(countyRr);
 
-                    var updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InventoryUpdates/FeatureServer/0";//swamp thang
+                    var updatesURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads_Updates/FeatureServer/0";//swamp thang
                     var updatesLyr = new FeatureLayer(updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
-                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
+                    // var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
+                    var crURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/FeatureServer/0";
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -485,11 +486,7 @@
                         
                         refLayers[0].on("click", selectFeature);
                         refLayers[1].on("click", selectFeature);
-                        
-                        map.infoWindow.on("hide", function() {
-                            refLayers[0].clearSelection();
-                            refLayers[1].clearSelection();
-                        });
+                     
 
                         var aiCustom = new AttributeInspector({
                             layerInfos: editorInfos
@@ -542,6 +539,8 @@
                             editToolbar.deactivate();
                             if (!('graphic' in evt)){
                                 map.infoWindow.hide();
+                                refLayers[0].clearSelection();
+                                refLayers[1].clearSelection();
                             }
 
                         });
