@@ -22,19 +22,19 @@ if updateClass == "CR":
     if chooseData == "SCHEMA":
         baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/MapServer/0/query"
+        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/FeatureServer/0/query"
         where = """"COUNTY"=""" + str(org)
 
 elif updateClass == "LS":
     if chooseData == "SCHEMA":
         baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/LocalStreets_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/LocalStreets/MapServer/0/query"
-        where = "(ACRNM1='" + str(org) + "' OR ACRNM2='" + str(org) + "')"
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0/query"
+        where = """"COUNTY"=""" + str(org)
 arcpy.AddMessage("url created.")
 
-def getObjectIDs(query):
-    params = {'where': query, 'returnIdsOnly': 'true', 'token': token, 'f': 'json'}
+def getObjectIDs():
+    params = {'where': """"COUNTY"=""" + str(org), 'returnIdsOnly': 'true', 'token': token, 'f': 'json'}
     req = urllib2.Request(baseURL, urllib.urlencode(params))
     response = urllib2.urlopen(req)
     data = json.load(response)
@@ -55,11 +55,9 @@ def createFC(fs):
     arcpy.AddMessage("feature class created.")
     return newFC
 
-def updatedQuery(low, high, trigger):
+def updatedQuery(low, high):
     if low != high:
         addition = """ AND "OBJECTID" >= """ + str(low) + " AND " + """"OBJECTID" < """ + str(high)
-        if trigger == 1:
-            addition = """ AND "OBJECTID" >= """ + str(low)
     else:
         addition = """ AND "OBJECTID" = """ + str(low)
     newQuery = where + addition
@@ -67,11 +65,10 @@ def updatedQuery(low, high, trigger):
 
 fields ='*'
 token = ''
+objectIDs = getObjectIDs()
 
 if chooseData == "SCHEMA":
-    everything = "1=1"
-    objectIDs = getObjectIDs(everything)
-    where = """"OBJECTID" = """ + str(objectIDs[0])
+    where = """"OBJECTID" = """ + objectIDs[0]
     query = "?where={}&outFields={}&returnGeometry=true&f=json&token={}".format(where, fields, token)
     fsURL = baseURL + query
     fs = arcpy.FeatureSet()
@@ -84,7 +81,6 @@ if chooseData == "SCHEMA":
     arcpy.AddMessage("template cleaned out.")
 
 elif chooseData == "DATA":
-    objectIDs = getObjectIDs(where)
     total = len(objectIDs)
     arcpy.AddMessage("Total: " + str(total))
     totalFixed = total - 1
@@ -98,13 +94,12 @@ elif chooseData == "DATA":
         min = objectIDs[low]
         try:
             max = objectIDs[high]
-            trigger = 0
         except:
-            max = objectIDs[totalFixed]
-            trigger = 1
-        OIDquery = updatedQuery(min, max, trigger)
+            max = objectIDs[totalFixed - 1]
+        OIDquery = updatedQuery(min, max)
         query = "?where={}&outFields={}&returnGeometry=true&f=json&token={}".format(OIDquery, fields, token)
         fsURL = baseURL + query
+        arcpy.AddMessage(fsURL)
         fs = arcpy.FeatureSet()
         fs.load(fsURL)
         arcpy.AddMessage("select completed.")
@@ -116,8 +111,40 @@ elif chooseData == "DATA":
         high += 1000
 
 arcpy.AddMessage("packing up...")
+arcpy.AddMessage(directory)
 zipper = output
-shutil.make_archive(zipper, "zip", directory)
+# if os.path.isfile(zipper):
+#     os.remove(zipper)
+# zip = zipfile.ZipFile(zipper, 'w', zipfile.ZIP_DEFLATED)
 arcpy.AddMessage("zipfile completed.")
+
+filename = "TxDOT_" + updateClass + "_" + str(org) + ".gdb"
+# for filename in glob.glob(filename+"/*")::
+#     zip.write(infile, os.path.basename(inFileGeodatabase)+"/"+os.path.basename(infile), zipfile.ZIP_DEFLATED)
+# zip.close()
+
+shutil.make_archive(zipper, "zip", directory)
+# infile = filename
+# outfile = zipper
+# arcpy.AddMessage(filename)
+# arcpy.AddMessage(zipper)
+# def zipFileGeodatabase(inFileGeodatabase, newZipFN):
+#    if not (os.path.exists(inFileGeodatabase)):
+#       return False
+#
+#    if (os.path.exists(newZipFN)):
+#       os.remove(newZipFN)
+#
+#    zipobj = zipfile.ZipFile(newZipFN,'w')
+#
+#    for infile in glob.glob(inFileGeodatabase+"/*"):
+#       zipobj.write(infile, os.path.basename(inFileGeodatabase)+"/"+os.path.basename(infile), zipfile.ZIP_DEFLATED)
+#       print ("Zipping: "+infile)
+#
+#    zipobj.close()
+#
+#    return True
+#
+# zipFileGeodatabase(infile,outfile)
 
 arcpy.AddMessage("that's all folks!!")

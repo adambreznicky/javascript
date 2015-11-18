@@ -210,16 +210,13 @@
                     basemapGallery.startup();
 
                     ////CRI FEATURE LAYERS & EVENTS
-                    var countyRr = new SimpleRenderer(new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255,0,0]), 2), new Color([255,0,0])));
-                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";//swamp thang
+                    var countiesURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads_Poly/MapServer/0";//swamp thang
                     var counties = new FeatureLayer(countiesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
-                        visible: false,
                         opacity: .5,
                         showLabels: false,
                         outFields: ["CNTY_NM", "CNTY_NBR"]
                     });
-                    counties.setRenderer(countyRr);
 
                     var updatesURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads_Updates/FeatureServer/0";//swamp thang
                     var updatesLyr = new FeatureLayer(updatesURL,{
@@ -229,7 +226,7 @@
                     });
 
                     // var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
-                    var crURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/FeatureServer/0";
+                    var crURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/MapServer/0";
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -241,7 +238,6 @@
                     var ls_maintenanceURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/LocalStreets_Poly/MapServer/0";//swamp thang
                     var ls_maintenance = new FeatureLayer(ls_maintenanceURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
-                        visible: false,
                         opacity: .5,
                         showLabels: false,
                         outFields: ["*"]
@@ -254,7 +250,7 @@
                         outFields: ['*']
                     });
 
-                    var lsURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/FeatureServer/0";
+                    var lsURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/LocalStreets/MapServer/0";//swamp thang
                     var localstreets = new FeatureLayer(lsURL,{
                         id: "LS",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -313,16 +309,6 @@
                             query.returnGeometry = true;
                             queryTask.execute(query, findExtent);
 
-                            map.on("zoom-end", function() {
-                                var lvl = map.getZoom();
-                                if (lvl < 11){
-                                    counties.show();
-                                }
-                                else {
-                                    counties.hide();
-                                }
-                            });
-
                             legendInfos = [{
                                     layer: countyroads,
                                     defaultSymbol: false,
@@ -353,14 +339,14 @@
                                         'label': "Length (Miles)",
                                         'isEditable': false
                                     },{
-                                        'fieldName': "SURFACE_TYPE",
+                                        'fieldName': "SURFACE",
                                         'label': "Surface Type",
                                         // 'tooltip': "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
                                     },{
-                                        'fieldName': "NUMBER_OF_LANES",
+                                        'fieldName': "NUM_LANES",
                                         'label': "Number of Lanes"
                                     },{
-                                        'fieldName': "HIGHWAY_DESIGN",
+                                        'fieldName': "HWY_DESIGN",
                                         'label': "Highway Design",
                                         // 'tooltip': "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
                                     },{
@@ -400,9 +386,11 @@
                         else if (updateClass == "LS") {
                             expression = "ACRNM = '" + org + "'";
 
-                            ls_updatesLyr.setDefinitionExpression("SourceofData = " + org);
+                            ls_updatesLyr.setDefinitionExpression("SourceofData = '" + org + "'");
                             ls_maintenance.setDefinitionExpression(expression);
-                            localstreets.setDefinitionExpression("COUNTY = " + org);
+                            if (org !== "CSEC") {
+                                localstreets.setDefinitionExpression("ACRNM1 = '" + org + "' OR ACRNM2 = '" + org + "'");
+                            }
 
                             map.addLayers([ls_maintenance, localstreets, ls_updatesLyr]);
 
@@ -412,16 +400,6 @@
                             query.where = expression;
                             query.returnGeometry = true;
                             queryTask.execute(query, findExtent);
-
-                            map.on("zoom-end", function() {
-                                var lvl = map.getZoom();
-                                if (lvl < 11){
-                                    ls_maintenance.show();
-                                }
-                                else {
-                                    ls_maintenance.hide();
-                                }
-                            });
 
                             legendInfos = [{
                                     layer: localstreets,
@@ -445,7 +423,7 @@
                                         'label': "Update Type",
                                         'isEditable': true
                                     },{
-                                        'fieldName': "SourceofData",
+                                        'fieldName': "SOURCE",
                                         'label': "Source",
                                         'isEditable': false
                                     },{
@@ -453,26 +431,35 @@
                                         'label': "Length (Miles)",
                                         'isEditable': false
                                     },{
-                                        'fieldName': "StreetNamePreDirectional",
+                                        'fieldName': "SN_PreMod",
+                                        'label': "Street Name Pre-Modifier",
+                                    },{
+                                        'fieldName': "SN_PreDir",
                                         'label': "Street Name Pre-Directional",
                                     },{
-                                        'fieldName': "StreetNamePreType",
+                                        'fieldName': "SN_PreType",
                                         'label': "Street Name Pre-Type"
                                     },{
                                         'fieldName': "StreetName",
                                         'label': "Street Name",
                                     },{
-                                        'fieldName': "StreetNamePostType",
+                                        'fieldName': "SN_PstType",
                                         'label': "Street Name Post-Type"
                                     },{
-                                        'fieldName': "StreetNamePostDirectional",
+                                        'fieldName': "SN_PstDir",
                                         'label': "Street Name Post-Directional"
+                                    },{
+                                        'fieldName': "SN_PstMod",
+                                        'label': "Street Name Post-Modifier",
+                                    },{
+                                        'fieldName': "RoadClass",
+                                        'label': "Road Class",
                                     },{
                                         'fieldName': "SpeedLimit",
                                         'label': "Speed Limit"
                                     },{
-                                        'fieldName': "OneWay",
-                                        'label': "One Way?"
+                                        'fieldName': "HWY_DESIGN",
+                                        'label': "Design"
                                     },{
                                         'fieldName': "COMMENT",
                                         'label': "Comment"
@@ -482,23 +469,26 @@
                                     'showAttachments': false,
                                     'isEditable': false,
                                     'fieldInfos': [{
-                                        'fieldName': "COUNTY",
-                                        'label': "County Number"
+                                        'fieldName': "RTE_RB_NM",
+                                        'label': "Street Name"
                                     },{
-                                        'fieldName': "LEN_OF_SECTION",
+                                        'fieldName': "RTE_LEN",
                                         'label': "Length (Miles)"
                                     },{
-                                        'fieldName': "SURFACE_TYPE",
-                                        'label': "Surface Type"
+                                        'fieldName': "RTE_NBR",
+                                        'label': "Route Number"
                                     },{
-                                        'fieldName': "NUMBER_OF_LANES",
-                                        'label': "Number of Lanes"
+                                        'fieldName': "NAME1",
+                                        'label': "Primary Admin"
                                     },{
-                                        'fieldName': "HIGHWAY_DESIGN",
-                                        'label': "Highway Design"
+                                        'fieldName': "ACRNM1",
+                                        'label': "Admin Abbrev."
                                     },{
-                                        'fieldName': "FULL_NAME",
-                                        'label': "Full Street Name"
+                                        'fieldName': "SOURCE1",
+                                        'label': "Admin Type"
+                                    },{
+                                        'fieldName': "NAME2",
+                                        'label': "TxDOT District"
                                     }]
                                 }];
                             
@@ -572,7 +562,12 @@
                             }
                             else if (updateClass == "LS"){
                                 numb = org;
-                                autoAttributes = lang.mixin(blankAttributes, {"SourceofData":numb, "LENGTH": rounder});
+                                var d = new Date();
+                                var m = d.getMonth() + 1;
+                                var day = d.getDate();
+                                var yr = d.getFullYear();
+                                var t = m.toString() + "/" + day.toString() + "/" + yr.toString();
+                                autoAttributes = lang.mixin(blankAttributes, {"SOURCE":numb, "LENGTH": rounder, "DateUpdate": t});
                             }
                             
                             var newGraphic = new Graphic(evt.geometry, null, autoAttributes);
@@ -678,8 +673,15 @@
                             }
                             else if (updateClass == "LS") {
                                 numb = org;
-                                evt.graphic.attributes.SourceofData = numb;
+                                evt.graphic.attributes.SOURCE = numb;
                                 evt.graphic.attributes.LENGTH = rounder;
+
+                                var d = new Date();
+                                var m = d.getMonth() + 1;
+                                var day = d.getDate();
+                                var yr = d.getFullYear();
+                                var t = m.toString() + "/" + day.toString() + "/" + yr.toString();
+                                evt.graphic.attributes.DateUpdate = t;
                             }
                             
                             refLayers[0].applyEdits(null, [evt.graphic], null);
@@ -715,7 +717,7 @@
                             "Organization": org,
                             "Download Format": $("downloadFormat").val(),
                             "Choose Data": $("chooseData").val(),
-                            "OUTPUT": "%scratchFolder%\\" + "TxDOT_" + updateClass + "_" + org.toString() + ".zip"
+                            "OUTPUT": "%scratchFolder%\\" + "TxDOT_" + updateClass + "_" + org.toString()
                           };
                         dom.byId('downloadMarquee').innerHTML = "Started...";
                         gp.submitJob(params, completeCallback , statusCallback, function(error){
@@ -730,6 +732,7 @@
                         function statusCallback(jobInfo) {
                           var status = jobInfo.jobStatus;
                           dom.byId('downloadMarquee').innerHTML = status;
+                          // dom.byId('downloadMarquee').innerHTML = "Assembling the most recent data. This may take several minutes for large datasets."
                           if ( status === "esriJobFailed" ) {
                             alert(status);
                             dom.byId('downloadMarquee').innerHTML = "ESRI Job failed.";
@@ -983,6 +986,18 @@
                             $(".lsOption").attr("style", "display:block;");
                         }
                     });
+
+                    $("#chooseData").change(function(){
+                        var value = $("#chooseData").val();
+                        if (value == "DATA") {
+                            $("#downloadFormat").prop("disabled", false);
+                        }
+                        else if (value == "SCHEMA") {
+                            $("#downloadFormat").prop("disabled", true);
+                            $("#downloadFormat").val("SHP").change();
+
+                        }
+                    });
                     
                     ////On load
                     map.on("load", function(){$('#loginModal').modal({show: true, keyboard: false, backdrop: 'static'});});
@@ -1010,8 +1025,7 @@
                                 <select class="form-control input-lg" id="selectOrg" disabled="disabled">
                                     <option value="#" disabled selected>Choose Your Organization</option>
                                     <option class='crOption' value='1' style='display:none;'>Anderson - 1</option> <option class='crOption' value='2' style='display:none;'>Andrews - 2</option> <option class='crOption' value='3' style='display:none;'>Angelina - 3</option> <option class='crOption' value='4' style='display:none;'>Aransas - 4</option> <option class='crOption' value='5' style='display:none;'>Archer - 5</option>    <option class='crOption' value='6' style='display:none;'>Armstrong - 6</option> <option class='crOption' value='7' style='display:none;'>Atascosa - 7</option>  <option class='crOption' value='8' style='display:none;'>Austin - 8</option>    <option class='crOption' value='9' style='display:none;'>Bailey - 9</option>    <option class='crOption' value='10' style='display:none;'>Bandera - 10</option> <option class='crOption' value='11' style='display:none;'>Bastrop - 11</option> <option class='crOption' value='12' style='display:none;'>Baylor - 12</option>  <option class='crOption' value='13' style='display:none;'>Bee - 13</option> <option class='crOption' value='14' style='display:none;'>Bell - 14</option>    <option class='crOption' value='15' style='display:none;'>Bexar - 15</option>   <option class='crOption' value='16' style='display:none;'>Blanco - 16</option>  <option class='crOption' value='17' style='display:none;'>Borden - 17</option>  <option class='crOption' value='18' style='display:none;'>Bosque - 18</option>  <option class='crOption' value='19' style='display:none;'>Bowie - 19</option>   <option class='crOption' value='20' style='display:none;'>Brazoria - 20</option>    <option class='crOption' value='21' style='display:none;'>Brazos - 21</option>  <option class='crOption' value='22' style='display:none;'>Brewster - 22</option>    <option class='crOption' value='23' style='display:none;'>Briscoe - 23</option> <option class='crOption' value='24' style='display:none;'>Brooks - 24</option>  <option class='crOption' value='25' style='display:none;'>Brown - 25</option>   <option class='crOption' value='26' style='display:none;'>Burleson - 26</option>    <option class='crOption' value='27' style='display:none;'>Burnet - 27</option>  <option class='crOption' value='28' style='display:none;'>Caldwell - 28</option>    <option class='crOption' value='29' style='display:none;'>Calhoun - 29</option> <option class='crOption' value='30' style='display:none;'>Callahan - 30</option>    <option class='crOption' value='31' style='display:none;'>Cameron - 31</option> <option class='crOption' value='32' style='display:none;'>Camp - 32</option>    <option class='crOption' value='33' style='display:none;'>Carson - 33</option>  <option class='crOption' value='34' style='display:none;'>Cass - 34</option>    <option class='crOption' value='35' style='display:none;'>Castro - 35</option>  <option class='crOption' value='36' style='display:none;'>Chambers - 36</option>    <option class='crOption' value='37' style='display:none;'>Cherokee - 37</option>    <option class='crOption' value='38' style='display:none;'>Childress - 38</option>   <option class='crOption' value='39' style='display:none;'>Clay - 39</option>    <option class='crOption' value='40' style='display:none;'>Cochran - 40</option> <option class='crOption' value='41' style='display:none;'>Coke - 41</option>    <option class='crOption' value='42' style='display:none;'>Coleman - 42</option> <option class='crOption' value='43' style='display:none;'>Collin - 43</option>  <option class='crOption' value='44' style='display:none;'>Collingsworth - 44</option>   <option class='crOption' value='45' style='display:none;'>Colorado - 45</option>    <option class='crOption' value='46' style='display:none;'>Comal - 46</option>   <option class='crOption' value='47' style='display:none;'>Comanche - 47</option>    <option class='crOption' value='48' style='display:none;'>Concho - 48</option>  <option class='crOption' value='49' style='display:none;'>Cooke - 49</option>   <option class='crOption' value='50' style='display:none;'>Coryell - 50</option> <option class='crOption' value='51' style='display:none;'>Cottle - 51</option>  <option class='crOption' value='52' style='display:none;'>Crane - 52</option>   <option class='crOption' value='53' style='display:none;'>Crockett - 53</option>    <option class='crOption' value='54' style='display:none;'>Crosby - 54</option>  <option class='crOption' value='55' style='display:none;'>Culberson - 55</option>   <option class='crOption' value='56' style='display:none;'>Dallam - 56</option>  <option class='crOption' value='57' style='display:none;'>Dallas - 57</option>  <option class='crOption' value='58' style='display:none;'>Dawson - 58</option>  <option class='crOption' value='59' style='display:none;'>Deaf Smith - 59</option>  <option class='crOption' value='60' style='display:none;'>Delta - 60</option>   <option class='crOption' value='61' style='display:none;'>Denton - 61</option>  <option class='crOption' value='62' style='display:none;'>De Witt - 62</option> <option class='crOption' value='63' style='display:none;'>Dickens - 63</option> <option class='crOption' value='64' style='display:none;'>Dimmit - 64</option>  <option class='crOption' value='65' style='display:none;'>Donley - 65</option>  <option class='crOption' value='66' style='display:none;'>Kenedy - 66</option>  <option class='crOption' value='67' style='display:none;'>Duval - 67</option>   <option class='crOption' value='68' style='display:none;'>Eastland - 68</option>    <option class='crOption' value='69' style='display:none;'>Ector - 69</option>   <option class='crOption' value='70' style='display:none;'>Edwards - 70</option> <option class='crOption' value='71' style='display:none;'>Ellis - 71</option>   <option class='crOption' value='72' style='display:none;'>El Paso - 72</option> <option class='crOption' value='73' style='display:none;'>Erath - 73</option>   <option class='crOption' value='74' style='display:none;'>Falls - 74</option>   <option class='crOption' value='75' style='display:none;'>Fannin - 75</option>  <option class='crOption' value='76' style='display:none;'>Fayette - 76</option> <option class='crOption' value='77' style='display:none;'>Fisher - 77</option>  <option class='crOption' value='78' style='display:none;'>Floyd - 78</option>   <option class='crOption' value='79' style='display:none;'>Foard - 79</option>   <option class='crOption' value='80' style='display:none;'>Fort Bend - 80</option>   <option class='crOption' value='81' style='display:none;'>Franklin - 81</option>    <option class='crOption' value='82' style='display:none;'>Freestone - 82</option>   <option class='crOption' value='83' style='display:none;'>Frio - 83</option>    <option class='crOption' value='84' style='display:none;'>Gaines - 84</option>  <option class='crOption' value='85' style='display:none;'>Galveston - 85</option>   <option class='crOption' value='86' style='display:none;'>Garza - 86</option>   <option class='crOption' value='87' style='display:none;'>Gillespie - 87</option>   <option class='crOption' value='88' style='display:none;'>Glasscock - 88</option>   <option class='crOption' value='89' style='display:none;'>Goliad - 89</option>  <option class='crOption' value='90' style='display:none;'>Gonzales - 90</option>    <option class='crOption' value='91' style='display:none;'>Gray - 91</option>    <option class='crOption' value='92' style='display:none;'>Grayson - 92</option> <option class='crOption' value='93' style='display:none;'>Gregg - 93</option>   <option class='crOption' value='94' style='display:none;'>Grimes - 94</option>  <option class='crOption' value='95' style='display:none;'>Guadalupe - 95</option>   <option class='crOption' value='96' style='display:none;'>Hale - 96</option>    <option class='crOption' value='97' style='display:none;'>Hall - 97</option>    <option class='crOption' value='98' style='display:none;'>Hamilton - 98</option>    <option class='crOption' value='99' style='display:none;'>Hansford - 99</option>    <option class='crOption' value='100' style='display:none;'>Hardeman - 100</option>  <option class='crOption' value='101' style='display:none;'>Hardin - 101</option>    <option class='crOption' value='102' style='display:none;'>Harris - 102</option>    <option class='crOption' value='103' style='display:none;'>Harrison - 103</option>  <option class='crOption' value='104' style='display:none;'>Hartley - 104</option>   <option class='crOption' value='105' style='display:none;'>Haskell - 105</option>   <option class='crOption' value='106' style='display:none;'>Hays - 106</option>  <option class='crOption' value='107' style='display:none;'>Hemphill - 107</option>  <option class='crOption' value='108' style='display:none;'>Henderson - 108</option> <option class='crOption' value='109' style='display:none;'>Hidalgo - 109</option>   <option class='crOption' value='110' style='display:none;'>Hill - 110</option>  <option class='crOption' value='111' style='display:none;'>Hockley - 111</option>   <option class='crOption' value='112' style='display:none;'>Hood - 112</option>  <option class='crOption' value='113' style='display:none;'>Hopkins - 113</option>   <option class='crOption' value='114' style='display:none;'>Houston - 114</option>   <option class='crOption' value='115' style='display:none;'>Howard - 115</option>    <option class='crOption' value='116' style='display:none;'>Hudspeth - 116</option>  <option class='crOption' value='117' style='display:none;'>Hunt - 117</option>  <option class='crOption' value='118' style='display:none;'>Hutchinson - 118</option>    <option class='crOption' value='119' style='display:none;'>Irion - 119</option> <option class='crOption' value='120' style='display:none;'>Jack - 120</option>  <option class='crOption' value='121' style='display:none;'>Jackson - 121</option>   <option class='crOption' value='122' style='display:none;'>Jasper - 122</option>    <option class='crOption' value='123' style='display:none;'>Jeff Davis - 123</option>    <option class='crOption' value='124' style='display:none;'>Jefferson - 124</option> <option class='crOption' value='125' style='display:none;'>Jim Hogg - 125</option>  <option class='crOption' value='126' style='display:none;'>Jim Wells - 126</option> <option class='crOption' value='127' style='display:none;'>Johnson - 127</option>   <option class='crOption' value='128' style='display:none;'>Jones - 128</option> <option class='crOption' value='129' style='display:none;'>Karnes - 129</option>    <option class='crOption' value='130' style='display:none;'>Kaufman - 130</option>   <option class='crOption' value='131' style='display:none;'>Kendall - 131</option>   <option class='crOption' value='132' style='display:none;'>Kent - 132</option>  <option class='crOption' value='133' style='display:none;'>Kerr - 133</option>  <option class='crOption' value='134' style='display:none;'>Kimble - 134</option>    <option class='crOption' value='135' style='display:none;'>King - 135</option>  <option class='crOption' value='136' style='display:none;'>Kinney - 136</option>    <option class='crOption' value='137' style='display:none;'>Kleberg - 137</option>   <option class='crOption' value='138' style='display:none;'>Knox - 138</option>  <option class='crOption' value='139' style='display:none;'>Lamar - 139</option> <option class='crOption' value='140' style='display:none;'>Lamb - 140</option>  <option class='crOption' value='141' style='display:none;'>Lampasas - 141</option>  <option class='crOption' value='142' style='display:none;'>La Salle - 142</option>  <option class='crOption' value='143' style='display:none;'>Lavaca - 143</option>    <option class='crOption' value='144' style='display:none;'>Lee - 144</option>   <option class='crOption' value='145' style='display:none;'>Leon - 145</option>  <option class='crOption' value='146' style='display:none;'>Liberty - 146</option>   <option class='crOption' value='147' style='display:none;'>Limestone - 147</option> <option class='crOption' value='148' style='display:none;'>Lipscomb - 148</option>  <option class='crOption' value='149' style='display:none;'>Live Oak - 149</option>  <option class='crOption' value='150' style='display:none;'>Llano - 150</option> <option class='crOption' value='151' style='display:none;'>Loving - 151</option>    <option class='crOption' value='152' style='display:none;'>Lubbock - 152</option>   <option class='crOption' value='153' style='display:none;'>Lynn - 153</option>  <option class='crOption' value='154' style='display:none;'>Madison - 154</option>   <option class='crOption' value='155' style='display:none;'>Marion - 155</option>    <option class='crOption' value='156' style='display:none;'>Martin - 156</option>    <option class='crOption' value='157' style='display:none;'>Mason - 157</option> <option class='crOption' value='158' style='display:none;'>Matagorda - 158</option> <option class='crOption' value='159' style='display:none;'>Maverick - 159</option>  <option class='crOption' value='160' style='display:none;'>McCulloch - 160</option> <option class='crOption' value='161' style='display:none;'>McLennan - 161</option>  <option class='crOption' value='162' style='display:none;'>McMullen - 162</option>  <option class='crOption' value='163' style='display:none;'>Medina - 163</option>    <option class='crOption' value='164' style='display:none;'>Menard - 164</option>    <option class='crOption' value='165' style='display:none;'>Midland - 165</option>   <option class='crOption' value='166' style='display:none;'>Milam - 166</option> <option class='crOption' value='167' style='display:none;'>Mills - 167</option> <option class='crOption' value='168' style='display:none;'>Mitchell - 168</option>  <option class='crOption' value='169' style='display:none;'>Montague - 169</option>  <option class='crOption' value='170' style='display:none;'>Montgomery - 170</option>    <option class='crOption' value='171' style='display:none;'>Moore - 171</option> <option class='crOption' value='172' style='display:none;'>Morris - 172</option>    <option class='crOption' value='173' style='display:none;'>Motley - 173</option>    <option class='crOption' value='174' style='display:none;'>Nacogdoches - 174</option>   <option class='crOption' value='175' style='display:none;'>Navarro - 175</option>   <option class='crOption' value='176' style='display:none;'>Newton - 176</option>    <option class='crOption' value='177' style='display:none;'>Nolan - 177</option> <option class='crOption' value='178' style='display:none;'>Nueces - 178</option>    <option class='crOption' value='179' style='display:none;'>Ochiltree - 179</option> <option class='crOption' value='180' style='display:none;'>Oldham - 180</option>    <option class='crOption' value='181' style='display:none;'>Orange - 181</option>    <option class='crOption' value='182' style='display:none;'>Palo Pinto - 182</option>    <option class='crOption' value='183' style='display:none;'>Panola - 183</option>    <option class='crOption' value='184' style='display:none;'>Parker - 184</option>    <option class='crOption' value='185' style='display:none;'>Parmer - 185</option>    <option class='crOption' value='186' style='display:none;'>Pecos - 186</option> <option class='crOption' value='187' style='display:none;'>Polk - 187</option>  <option class='crOption' value='188' style='display:none;'>Potter - 188</option>    <option class='crOption' value='189' style='display:none;'>Presidio - 189</option>  <option class='crOption' value='190' style='display:none;'>Rains - 190</option> <option class='crOption' value='191' style='display:none;'>Randall - 191</option>   <option class='crOption' value='192' style='display:none;'>Reagan - 192</option>    <option class='crOption' value='193' style='display:none;'>Real - 193</option>  <option class='crOption' value='194' style='display:none;'>Red River - 194</option> <option class='crOption' value='195' style='display:none;'>Reeves - 195</option>    <option class='crOption' value='196' style='display:none;'>Refugio - 196</option>   <option class='crOption' value='197' style='display:none;'>Roberts - 197</option>   <option class='crOption' value='198' style='display:none;'>Robertson - 198</option> <option class='crOption' value='199' style='display:none;'>Rockwall - 199</option>  <option class='crOption' value='200' style='display:none;'>Runnels - 200</option>   <option class='crOption' value='201' style='display:none;'>Rusk - 201</option>  <option class='crOption' value='202' style='display:none;'>Sabine - 202</option>    <option class='crOption' value='203' style='display:none;'>San Augustine - 203</option> <option class='crOption' value='204' style='display:none;'>San Jacinto - 204</option>   <option class='crOption' value='205' style='display:none;'>San Patricio - 205</option>  <option class='crOption' value='206' style='display:none;'>San Saba - 206</option>  <option class='crOption' value='207' style='display:none;'>Schleicher - 207</option>    <option class='crOption' value='208' style='display:none;'>Scurry - 208</option>    <option class='crOption' value='209' style='display:none;'>Shackelford - 209</option>   <option class='crOption' value='210' style='display:none;'>Shelby - 210</option>    <option class='crOption' value='211' style='display:none;'>Sherman - 211</option>   <option class='crOption' value='212' style='display:none;'>Smith - 212</option> <option class='crOption' value='213' style='display:none;'>Somervell - 213</option> <option class='crOption' value='214' style='display:none;'>Starr - 214</option> <option class='crOption' value='215' style='display:none;'>Stephens - 215</option>  <option class='crOption' value='216' style='display:none;'>Sterling - 216</option>  <option class='crOption' value='217' style='display:none;'>Stonewall - 217</option> <option class='crOption' value='218' style='display:none;'>Sutton - 218</option>    <option class='crOption' value='219' style='display:none;'>Swisher - 219</option>   <option class='crOption' value='220' style='display:none;'>Tarrant - 220</option>   <option class='crOption' value='221' style='display:none;'>Taylor - 221</option>    <option class='crOption' value='222' style='display:none;'>Terrell - 222</option>   <option class='crOption' value='223' style='display:none;'>Terry - 223</option> <option class='crOption' value='224' style='display:none;'>Throckmorton - 224</option>  <option class='crOption' value='225' style='display:none;'>Titus - 225</option> <option class='crOption' value='226' style='display:none;'>Tom Green - 226</option> <option class='crOption' value='227' style='display:none;'>Travis - 227</option>    <option class='crOption' value='228' style='display:none;'>Trinity - 228</option>   <option class='crOption' value='229' style='display:none;'>Tyler - 229</option> <option class='crOption' value='230' style='display:none;'>Upshur - 230</option>    <option class='crOption' value='231' style='display:none;'>Upton - 231</option> <option class='crOption' value='232' style='display:none;'>Uvalde - 232</option>    <option class='crOption' value='233' style='display:none;'>Val Verde - 233</option> <option class='crOption' value='234' style='display:none;'>Van Zandt - 234</option> <option class='crOption' value='235' style='display:none;'>Victoria - 235</option>  <option class='crOption' value='236' style='display:none;'>Walker - 236</option>    <option class='crOption' value='237' style='display:none;'>Waller - 237</option>    <option class='crOption' value='238' style='display:none;'>Ward - 238</option>  <option class='crOption' value='239' style='display:none;'>Washington - 239</option>    <option class='crOption' value='240' style='display:none;'>Webb - 240</option>  <option class='crOption' value='241' style='display:none;'>Wharton - 241</option>   <option class='crOption' value='242' style='display:none;'>Wheeler - 242</option>   <option class='crOption' value='243' style='display:none;'>Wichita - 243</option>   <option class='crOption' value='244' style='display:none;'>Wilbarger - 244</option> <option class='crOption' value='245' style='display:none;'>Willacy - 245</option>   <option class='crOption' value='246' style='display:none;'>Williamson - 246</option>    <option class='crOption' value='247' style='display:none;'>Wilson - 247</option>    <option class='crOption' value='248' style='display:none;'>Winkler - 248</option>   <option class='crOption' value='249' style='display:none;'>Wise - 249</option>  <option class='crOption' value='250' style='display:none;'>Wood - 250</option>  <option class='crOption' value='251' style='display:none;'>Yoakum - 251</option>    <option class='crOption' value='252' style='display:none;'>Young - 252</option> <option class='crOption' value='253' style='display:none;'>Zapata - 253</option>    <option class='crOption' value='254' style='display:none;'>Zavala - 254</option>
-                                    <option class='lsOption' value="CSEC" style='display:none;'>CSEC</option> 
-                                    <option class='lsOption' value='ABLCTY' style='display:none;'>Abilene (CITY)</option>   <option class='lsOption' value='ABL' style='display:none;'>Abilene (DISTRICT)</option>  <option class='lsOption' value='AACOG' style='display:none;'>Alamo Area Council of Governments (COG)</option>   <option class='lsOption' value='AMA' style='display:none;'>Amarillo (DISTRICT)</option> <option class='lsOption' value='ARK-TEX' style='display:none;'>Ark-Tex Council of Governments (COG)</option>    <option class='lsOption' value='ATL' style='display:none;'>Atlanta (DISTRICT)</option>  <option class='lsOption' value='AUS' style='display:none;'>Austin (DISTRICT)</option>   <option class='lsOption' value='BMT' style='display:none;'>Beaumont (DISTRICT)</option> <option class='lsOption' value='BXR911' style='display:none;'>Bexar 911 (E911_COUNTY)</option>  <option class='lsOption' value='BVCOG' style='display:none;'>Brazos Valley Council of Governments (COG)</option>    <option class='lsOption' value='BWD' style='display:none;'>Brownwood (DISTRICT)</option>    <option class='lsOption' value='BRY' style='display:none;'>Bryan (DISTRICT)</option>    <option class='lsOption' value='CLHCO' style='display:none;'>Calhoun (COUNTY)</option>  <option class='lsOption' value='CAPCOG' style='display:none;'>Capital Area Council of Governments (COG)</option> <option class='lsOption' value='CTCOG' style='display:none;'>Central Texas Council of Governments (COG)</option>    <option class='lsOption' value='CHS' style='display:none;'>Childress (DISTRICT)</option>    <option class='lsOption' value='CBCOG' style='display:none;'>Coastal Bend Council of Governments (COG)</option> <option class='lsOption' value='CVCOG' style='display:none;'>Concho Valley Council of Governments (COG)</option>    <option class='lsOption' value='CRP' style='display:none;'>Corpus Christi (DISTRICT)</option>   <option class='lsOption' value='DAL' style='display:none;'>Dallas (DISTRICT)</option>   <option class='lsOption' value='DETCOG' style='display:none;'>Deep East Texas Council of Governments (COG)</option> <option class='lsOption' value='ETCOG' style='display:none;'>East Texas Council of Governments (COG)</option>   <option class='lsOption' value='ELP' style='display:none;'>El Paso (DISTRICT)</option>  <option class='lsOption' value='ELPMPO' style='display:none;'>El Paso MPO (MPO)</option>   <option class='lsOption' value='FTW' style='display:none;'>Fort Worth (DISTRICT)</option>   <option class='lsOption' value='GCRPC' style='display:none;'>Golden Crescent Regional Planning Commission (COG)</option>    <option class='lsOption' value='HOTCOG' style='display:none;'>Heart of Texas Council of Governments (COG)</option>  <option class='lsOption' value='HOU' style='display:none;'>Houston (DISTRICT)</option>  <option class='lsOption' value='H-GAC' style='display:none;'>Houston-Galveston Area Council (COG)</option>  <option class='lsOption' value='KRR911' style='display:none;'>Kerr 911 (E911_COUNTY)</option>   <option class='lsOption' value='LRD' style='display:none;'>Laredo (DISTRICT)</option>   <option class='lsOption' value='LRGVDC' style='display:none;'>Lower Rio Grande Valley Development Council (COG)</option>    <option class='lsOption' value='LBBCO' style='display:none;'>Lubbock (COUNTY)</option>  <option class='lsOption' value='LBB' style='display:none;'>Lubbock (DISTRICT)</option>  <option class='lsOption' value='LFK' style='display:none;'>Lufkin (DISTRICT)</option>   <option class='lsOption' value='MLNCO' style='display:none;'>McLennan (COUNTY)</option> <option class='lsOption' value='MDACO' style='display:none;'>Medina (COUNTY)</option>   <option class='lsOption' value='MDA911' style='display:none;'>Medina 911 (E911_COUNTY)</option> <option class='lsOption' value='MRGDC' style='display:none;'>Middle Rio Grande Development Council (COG)</option>   <option class='lsOption' value='MLDCTY' style='display:none;'>Midland (CITY)</option>   <option class='lsOption' value='NORTEX' style='display:none;'>Nortex Regional Planning Commission (COG)</option>    <option class='lsOption' value='NCTCOG' style='display:none;'>North Central Texas Council of Governments (COG)</option> <option class='lsOption' value='ODACTY' style='display:none;'>Odessa (CITY)</option>    <option class='lsOption' value='ODA' style='display:none;'>Odessa (DISTRICT)</option>   <option class='lsOption' value='PRPC' style='display:none;'>Panhandle Regional Planning Commission (COG)</option>   <option class='lsOption' value='PAR' style='display:none;'>Paris (DISTRICT)</option>    <option class='lsOption' value='PBRPC' style='display:none;'>Permian Basin Regional Planning Commission (COG)</option>  <option class='lsOption' value='PHR' style='display:none;'>Pharr (DISTRICT)</option>    <option class='lsOption' value='RGCOG' style='display:none;'>Rio Grande Council of Governments (COG)</option>   <option class='lsOption' value='SJT' style='display:none;'>San Angelo (DISTRICT)</option>   <option class='lsOption' value='SAT' style='display:none;'>San Antonio (DISTRICT)</option>  <option class='lsOption' value='SETRPC' style='display:none;'>South East Texas Regional Planning Commission (COG)</option>  <option class='lsOption' value='SPAG' style='display:none;'>South Plains Association of Governments (COG)</option>  <option class='lsOption' value='STDC' style='display:none;'>South Texas Development Council (COG)</option>  <option class='lsOption' value='TEXOMA' style='display:none;'>Texoma Council of Governments (COG)</option>  <option class='lsOption' value='TYL' style='display:none;'>Tyler (DISTRICT)</option>    <option class='lsOption' value='VTACTY' style='display:none;'>Victoria (CITY)</option>  <option class='lsOption' value='WAC' style='display:none;'>Waco (DISTRICT)</option> <option class='lsOption' value='WCTCOG' style='display:none;'>West Central Texas Council of Governments (COG)</option>  <option class='lsOption' value='WTACO' style='display:none;'>Wichita (COUNTY)</option>  <option class='lsOption' value='WFS' style='display:none;'>Wichita Falls (DISTRICT)</option>    <option class='lsOption' value='WBGCO' style='display:none;'>Wilbarger (COUNTY)</option>    <option class='lsOption' value='YKM' style='display:none;'>Yoakum (DISTRICT)</option>
+                                    <option class='lsOption' value='ABLCTY' style='display:none;'>Abilene (CITY)</option>   <option class='lsOption' value='ABL' style='display:none;'>Abilene (DISTRICT)</option>  <option class='lsOption' value='AACOG' style='display:none;'>Alamo Area Council of Governments (COG)</option>   <option class='lsOption' value='AMA' style='display:none;'>Amarillo (DISTRICT)</option> <option class='lsOption' value='ARK-TEX' style='display:none;'>Ark-Tex Council of Governments (COG)</option>    <option class='lsOption' value='ATL' style='display:none;'>Atlanta (DISTRICT)</option>  <option class='lsOption' value='AUS' style='display:none;'>Austin (DISTRICT)</option>   <option class='lsOption' value='BMT' style='display:none;'>Beaumont (DISTRICT)</option> <option class='lsOption' value='BXR911' style='display:none;'>Bexar 911 (E911_COUNTY)</option>  <option class='lsOption' value='BVCOG' style='display:none;'>Brazos Valley Council of Governments (COG)</option>    <option class='lsOption' value='BWD' style='display:none;'>Brownwood (DISTRICT)</option>    <option class='lsOption' value='BRY' style='display:none;'>Bryan (DISTRICT)</option>    <option class='lsOption' value='CLHCO' style='display:none;'>Calhoun (COUNTY)</option>  <option class='lsOption' value='CAPCOG' style='display:none;'>Capital Area Council of Governments (COG)</option> <option class='lsOption' value='CTCOG' style='display:none;'>Central Texas Council of Governments (COG)</option>    <option class='lsOption' value='CHS' style='display:none;'>Childress (DISTRICT)</option>    <option class='lsOption' value='CBCOG' style='display:none;'>Coastal Bend Council of Governments (COG)</option> <option class='lsOption' value="CSEC" style='display:none;'>Comission on State Emergency Communications (STATE)</option> <option class='lsOption' value='CVCOG' style='display:none;'>Concho Valley Council of Governments (COG)</option>    <option class='lsOption' value='CRP' style='display:none;'>Corpus Christi (DISTRICT)</option>   <option class='lsOption' value='DAL' style='display:none;'>Dallas (DISTRICT)</option>   <option class='lsOption' value='DETCOG' style='display:none;'>Deep East Texas Council of Governments (COG)</option> <option class='lsOption' value='ETCOG' style='display:none;'>East Texas Council of Governments (COG)</option>   <option class='lsOption' value='ELP' style='display:none;'>El Paso (DISTRICT)</option>  <option class='lsOption' value='ELPMPO' style='display:none;'>El Paso MPO (MPO)</option>   <option class='lsOption' value='FTW' style='display:none;'>Fort Worth (DISTRICT)</option>   <option class='lsOption' value='GCRPC' style='display:none;'>Golden Crescent Regional Planning Commission (COG)</option>    <option class='lsOption' value='HOTCOG' style='display:none;'>Heart of Texas Council of Governments (COG)</option>  <option class='lsOption' value='HOU' style='display:none;'>Houston (DISTRICT)</option>  <option class='lsOption' value='H-GAC' style='display:none;'>Houston-Galveston Area Council (COG)</option>  <option class='lsOption' value='KRR911' style='display:none;'>Kerr 911 (E911_COUNTY)</option>   <option class='lsOption' value='LRD' style='display:none;'>Laredo (DISTRICT)</option>   <option class='lsOption' value='LRGVDC' style='display:none;'>Lower Rio Grande Valley Development Council (COG)</option>    <option class='lsOption' value='LBBCO' style='display:none;'>Lubbock (COUNTY)</option>  <option class='lsOption' value='LBB' style='display:none;'>Lubbock (DISTRICT)</option>  <option class='lsOption' value='LFK' style='display:none;'>Lufkin (DISTRICT)</option>   <option class='lsOption' value='MLNCO' style='display:none;'>McLennan (COUNTY)</option> <option class='lsOption' value='MDACO' style='display:none;'>Medina (COUNTY)</option>   <option class='lsOption' value='MDA911' style='display:none;'>Medina 911 (E911_COUNTY)</option> <option class='lsOption' value='MRGDC' style='display:none;'>Middle Rio Grande Development Council (COG)</option>   <option class='lsOption' value='MLDCTY' style='display:none;'>Midland (CITY)</option>   <option class='lsOption' value='NORTEX' style='display:none;'>Nortex Regional Planning Commission (COG)</option>    <option class='lsOption' value='NCTCOG' style='display:none;'>North Central Texas Council of Governments (COG)</option> <option class='lsOption' value='ODACTY' style='display:none;'>Odessa (CITY)</option>    <option class='lsOption' value='ODA' style='display:none;'>Odessa (DISTRICT)</option>   <option class='lsOption' value='PRPC' style='display:none;'>Panhandle Regional Planning Commission (COG)</option>   <option class='lsOption' value='PAR' style='display:none;'>Paris (DISTRICT)</option>    <option class='lsOption' value='PBRPC' style='display:none;'>Permian Basin Regional Planning Commission (COG)</option>  <option class='lsOption' value='PHR' style='display:none;'>Pharr (DISTRICT)</option>    <option class='lsOption' value='RGCOG' style='display:none;'>Rio Grande Council of Governments (COG)</option>   <option class='lsOption' value='SJT' style='display:none;'>San Angelo (DISTRICT)</option>   <option class='lsOption' value='SAT' style='display:none;'>San Antonio (DISTRICT)</option>  <option class='lsOption' value='SETRPC' style='display:none;'>South East Texas Regional Planning Commission (COG)</option>  <option class='lsOption' value='SPAG' style='display:none;'>South Plains Association of Governments (COG)</option>  <option class='lsOption' value='STDC' style='display:none;'>South Texas Development Council (COG)</option>  <option class='lsOption' value='TEXOMA' style='display:none;'>Texoma Council of Governments (COG)</option>  <option class='lsOption' value='TYL' style='display:none;'>Tyler (DISTRICT)</option>    <option class='lsOption' value='VTACTY' style='display:none;'>Victoria (CITY)</option>  <option class='lsOption' value='WAC' style='display:none;'>Waco (DISTRICT)</option> <option class='lsOption' value='WCTCOG' style='display:none;'>West Central Texas Council of Governments (COG)</option>  <option class='lsOption' value='WTACO' style='display:none;'>Wichita (COUNTY)</option>  <option class='lsOption' value='WFS' style='display:none;'>Wichita Falls (DISTRICT)</option>    <option class='lsOption' value='WBGCO' style='display:none;'>Wilbarger (COUNTY)</option>    <option class='lsOption' value='YKM' style='display:none;'>Yoakum (DISTRICT)</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -1026,7 +1040,7 @@
                             </div>
                         </form>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer" style="border:none;">
                         <div class="col-md-12"></div>    
                     </div>
                 </div>
@@ -1058,12 +1072,13 @@
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
                                     <p>Download a copy of your data or a schema template for editing and uploading changes.</p>
-                                    <select class="form-control" id="downloadFormat">
-                                        <option value="FGDB">File Geodatabase</option> <option value="SHP">Shapefile</option> 
-                                    </select>
                                     <select class="form-control" id="chooseData">
                                         <option value="SCHEMA">Schema Only</option> <option value="DATA">Data & Schema</option>  
                                     </select>
+                                    <select class="form-control" id="downloadFormat"  disabled="disabled">
+                                        <option value="SHP">Shapefile</option>  <option value="FGDB">File Geodatabase</option> 
+                                    </select>
+                                    
                                     <button type="button" class="btn btn-default" id="download"><span class="glyphicon glyphicon-download-alt"></span> Download!</button>
                                     <div id="downloadMarquee"></div>
                                 </div>
