@@ -17,6 +17,7 @@ else:
     shutil.rmtree(directory)
     os.makedirs(directory)
 arcpy.AddMessage("directory created.")
+label = ""
 
 if updateClass == "CR":
     if chooseData == "SCHEMA":
@@ -45,13 +46,13 @@ def getObjectIDs(query):
 
 def createFC(fs):
     if downloadFormat == "SHP":
-        arcpy.CopyFeatures_management(fs, directory + os.sep + "TxDOT_" + updateClass + "_" + str(org) + ".shp")
-        newFC = directory + os.sep + "TxDOT_" + updateClass + "_" + str(org) + ".shp"
+        arcpy.CopyFeatures_management(fs, directory + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org) + ".shp")
+        newFC = directory + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org) + ".shp"
     elif downloadFormat == "FGDB":
         arcpy.CreateFileGDB_management(directory, "TxDOT_" + updateClass + "_" + str(org))
         fgdb = directory + os.sep + "TxDOT_" + updateClass + "_" + str(org)
-        arcpy.CopyFeatures_management(fs, fgdb + ".gdb" + os.sep + "TxDOT_" + updateClass + "_" + str(org))
-        newFC = fgdb + ".gdb" + os.sep + "TxDOT_" + updateClass + "_" + str(org)
+        arcpy.CopyFeatures_management(fs, fgdb + ".gdb" + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org))
+        newFC = fgdb + ".gdb" + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org)
     arcpy.AddMessage("feature class created.")
     return newFC
 
@@ -68,7 +69,9 @@ def updatedQuery(low, high, trigger):
 fields ='*'
 token = ''
 
+
 if chooseData == "SCHEMA":
+    label = "Updates"
     everything = "1=1"
     objectIDs = getObjectIDs(everything)
     where = """"OBJECTID" = """ + str(objectIDs[0])
@@ -84,6 +87,7 @@ if chooseData == "SCHEMA":
     arcpy.AddMessage("template cleaned out.")
 
 elif chooseData == "DATA":
+    label = "Inventory"
     objectIDs = getObjectIDs(where)
     total = len(objectIDs)
     arcpy.AddMessage("Total: " + str(total))
@@ -117,7 +121,18 @@ elif chooseData == "DATA":
 
 arcpy.AddMessage("packing up...")
 zipper = output
-shutil.make_archive(zipper, "zip", directory)
+if os.path.isfile(zipper):
+    os.remove(zipper)
+arcpy.AddMessage("zipfile started.")
+if downloadFormat == "FGDB":
+    newZipper = zipper[:-4]
+    shutil.make_archive(newZipper, "zip", directory)
+elif downloadFormat == "SHP":
+    zip = zipfile.ZipFile(zipper, 'w', zipfile.ZIP_DEFLATED)
+    for filename in os.listdir(directory):
+        if not filename.endswith('.lock'):
+            zip.write(os.path.join(directory, filename), filename)
+    zip.close()
 arcpy.AddMessage("zipfile completed.")
 
 arcpy.AddMessage("that's all folks!!")

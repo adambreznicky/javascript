@@ -40,7 +40,7 @@ if agsService == 'true':
     except:
         token = ''
         pass
-    
+
 # Return largest ObjectID
 params = {'where': '1=1', 'returnIdsOnly': 'true', 'token': token, 'f': 'json'}
 req = urllib2.Request(baseURL, urllib.urlencode(params))

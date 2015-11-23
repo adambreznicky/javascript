@@ -703,8 +703,8 @@
                                 if (field in feature.attributes) {
                                     var att = feature.attributes[field];
                                     if (att == undefined || att == null || att == " " || att == "") {
-                                        attFlag = true;
-                                        badField = field;
+                                       // attFlag = true;
+                                        //badField = field;
                                     }
                                 }
                                 else {
@@ -742,7 +742,7 @@
                         array.forEach(layer.featureSet.features, function (feature) {
                             var geom = feature.geometry;
                             var paths = JSON.stringify(geom.paths);
-                            theText = "{'geometry':{'paths':" + paths + "},'attributes':{'RTE_ID':" + feature.attributes["RTE_ID"] + ", 'COMMENT':" + feature.attributes["COMMENT"] + "}}";
+                            theText = "{'geometry':{'paths':" + paths + "},'attributes':{'RTE_ID':" + feature.attributes["RTE_ID"] +"}}";
                             theText = serviceURL + "[" + theText + "]";
 
                             var layersRequest = request({

@@ -32,13 +32,13 @@
             #basemapPanel {
                 position:absolute;
                 bottom:0;
-                display:none;
+                /*display:none;*/
                 padding:10px;
                 margin:0;
                 background: rgb(0, 0, 0);
                 background: rgba(0, 0, 0, 0.5);
                 width: 100%;
-                height: 110px;
+                height: 130px;
                 z-index: 50;
                 overflow: auto;
             }
@@ -140,6 +140,7 @@
                 "esri/toolbars/draw",
                 "esri/geometry/Extent",
                 "esri/geometry/Point",
+                "esri/basemaps",
 
                 "esri/request",
                 "esri/geometry/scaleUtils",
@@ -151,6 +152,7 @@
 
                 "esri/tasks/Geoprocessor",
                 "esri/layers/FeatureLayer",
+                "esri/dijit/Basemap",
                 "esri/dijit/BasemapGallery",
                 "esri/tasks/GeometryService",
                 "esri/units",
@@ -177,9 +179,9 @@
                 "dijit/form/Button",
                 "dojo/domReady!"],
             function($, $ui,
-                    Map, Graphic, Geomtery, Edit, Draw, Extent, Point,
+                    Map, Graphic, Geomtery, Edit, Draw, Extent, Point, esriBasemaps,
                     request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
-                    Geoprocessor, FeatureLayer, BasemapGallery, GeometryService, Units,
+                    Geoprocessor, FeatureLayer, Basemap, BasemapGallery, GeometryService, Units,
                     Legend, TemplatePicker, AttributeInspector,
                     SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
                     ready, parser, require, sniff, dom, on, array, lang, domConstruct, domStyle, dojoButton) {
@@ -190,24 +192,47 @@
                     var org;
                     var editToolbar;
                     var refLayers;
+                    var templateFields;
+                    var serviceURL;
 
                     parser.parse();
-                    config.defaults.io.proxyUrl = "//localhost/proxy/proxy.ashx";
+                    config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
                     var geomServ = new GeometryService("https://maps.dot.state.tx.us/arcgis/rest/services/Utilities/Geometry/GeometryServer");//swamp thang
                     // var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+
+                    esriBasemaps.SPM = {
+                        baseMapLayers: [
+                          { url: "http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer" }
+                        ],
+                        title : "TxDOT",
+                        thumbnailUrl : "http://maps.dot.state.tx.us/AGO_Template/TxDOT_Viewer/images/Basemaps/SPM.png"
+                    };
+
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
                       zoom: 7,
-                      basemap: "topo",
+                      basemap: "SPM",
                       logo: false
                     });
 
                     var basemapGallery = new BasemapGallery({
-                        showArcGISBasemaps: true,
                         map: map
                     }, "basemapGallery");
+                    var SPM = new Basemap({
+                        id: "SPM",
+                        title: "TxDOT Planning Map",
+                        thumbnailUrl: "./statewideplanningmap.png",
+                        layers:[
+                          { url: "http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer" }
+                        ]
+                    });
+                    basemapGallery.add(SPM);
                     basemapGallery.startup();
+                    on(basemapGallery, "load", function() {
+                        var nd = document.getElementById("galleryNode_SPM");
+                        nd.parentElement.insertBefore(nd, nd.parentElement.firstElementChild);
+                    });
 
                     ////CRI FEATURE LAYERS & EVENTS
                     var countiesURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads_Poly/MapServer/0";//swamp thang
@@ -321,6 +346,8 @@
 
                             templateLayers = [updatesLyr];
                             refLayers = [updatesLyr, countyroads];
+                            templateFields = ['LENGTH', 'SURFACE', 'NUM_LANES', 'HWY_DESIGN', 'FULL_NAME', 'CHANGE', 'COMMENT', 'COUNTY', 'CONTROLSEC'];
+                            serviceURL = updatesURL;
 
                             editorInfos = [{
                                     'featureLayer':updatesLyr,
@@ -386,7 +413,7 @@
                         else if (updateClass == "LS") {
                             expression = "ACRNM = '" + org + "'";
 
-                            ls_updatesLyr.setDefinitionExpression("SourceofData = '" + org + "'");
+                            ls_updatesLyr.setDefinitionExpression("SOURCE = '" + org + "'");
                             ls_maintenance.setDefinitionExpression(expression);
                             if (org !== "CSEC") {
                                 localstreets.setDefinitionExpression("ACRNM1 = '" + org + "' OR ACRNM2 = '" + org + "'");
@@ -413,6 +440,8 @@
 
                             templateLayers = [ls_updatesLyr];
                             refLayers = [ls_updatesLyr, localstreets];
+                            templateFields = ['SOURCE', 'DateUpdate', 'RoadUnqID', 'SN_PreMod', 'SN_PreDir', 'SN_PreType', 'StreetName', 'SN_PstType', 'SN_PstDir', 'SN_PstMod', 'FS_PreDir', 'FS_PstType', 'FS_PstDir', 'SpeedLimit', 'RoadClass', 'CHANGE','LENGTH','FULL_NAME', 'HWY_DESIGN', 'COMMENT'];
+                            serviceURL = ls_updatesURL;
 
                             editorInfos = [{
                                     'featureLayer':ls_updatesLyr,
@@ -711,18 +740,18 @@
 
                     ////DOWNLOAD FUNCTIONS
                     on(dom.byId("download"), "click", function () {
-                        var gp = new Geoprocessor("http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/ExtractFeatures/GPServer/ExtractFeatures");//swamp thang
+                        var gp = new Geoprocessor("https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/downloadUpdates/GPServer/Updates");//swamp thang
                         var params = {
-                            "Update Class": updateClass,
+                            "UpdateClass": updateClass,
                             "Organization": org,
-                            "Download Format": $("downloadFormat").val(),
-                            "Choose Data": $("chooseData").val(),
-                            "OUTPUT": "%scratchFolder%\\" + "TxDOT_" + updateClass + "_" + org.toString()
+                            "DownloadFormat": $("#downloadFormat").val(),
+                            "ChooseData": $("#chooseData").val()
                           };
+                          console.log(params);
                         dom.byId('downloadMarquee').innerHTML = "Started...";
                         gp.submitJob(params, completeCallback , statusCallback, function(error){
-                            alert(error);
-                            dom.byId('downloadMarquee').innerHTML = "There was an error.";
+                            console.log(error);
+                            dom.byId('downloadMarquee').innerHTML = "<p style='color:red'>There was an error.</p>";
                         });
                         function completeCallback(jobInfo){
                           if ( jobInfo.jobStatus !== "esriJobFailed" ) {
@@ -731,14 +760,14 @@
                         }
                         function statusCallback(jobInfo) {
                           var status = jobInfo.jobStatus;
-                          dom.byId('downloadMarquee').innerHTML = status;
-                          // dom.byId('downloadMarquee').innerHTML = "Assembling the most recent data. This may take several minutes for large datasets."
+                          //dom.byId('downloadMarquee').innerHTML = status;
+                          dom.byId('downloadMarquee').innerHTML = "<p style='color:black'>Preparing your download...<br> This may take several minutes for large datasets.</p>"
                           if ( status === "esriJobFailed" ) {
-                            alert(status);
-                            dom.byId('downloadMarquee').innerHTML = "ESRI Job failed.";
+                            dom.byId('downloadMarquee').innerHTML = "<p style='color:red'>Uh-oh... Something went wrong.</p>";
+                            console.log(jobInfo);
                           }
                           else if (status === "esriJobSucceeded"){
-                            dom.byId('downloadMarquee').innerHTML = "Success!";
+                            dom.byId('downloadMarquee').innerHTML = "<p style='color:green'>Success!</p>";
                           }
                         }
                         function downloadFile(outputFile){
@@ -819,6 +848,48 @@
                         dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + error.message + '</p>';
                     }
 
+                    function verifySchema (featureCollection) {
+
+                        var fieldFlag = false;
+                        var attFlag = false;
+                        var badField;
+
+                        array.forEach(featureCollection.layers, function (layer) {
+
+                            array.forEach(layer.featureSet.features, function (feature) {
+                                array.forEach(templateFields, function (field) {
+                                    if (field in feature.attributes) {
+                                        var att = feature.attributes[field];
+                                        if (att == undefined || att == null || att == " " || att == "") {
+                                           // attFlag = true;
+                                           // badField = field;
+                                        }
+                                    }
+                                    else {
+                                        fieldFlag = true;
+                                    }
+                                });
+                            });
+
+                        });
+
+                        if(fieldFlag) {
+                            alert("Shapefile does not contain all required fields.");
+                            dom.byId('uploadMarquee').innerHTML = '<p style="color:red">Shapefile does not contain all required fields.<br><p style="font-size: xx-small;">Updates can only be uploaded via the schema template shapefile acquired from the Download section of this menu.</p></p>';
+                        }
+                        else {
+                            if (attFlag) {
+                                alert(badField + " has a NULL or blank value which must be populated.");
+                                dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + badField + " has a NULL or blank value which must be populated." + '</p>';
+                            }
+                            else {
+                                addShapefileToMap(featureCollection);
+                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
+                                serviceLoad(featureCollection);
+                            }
+                        }
+                    }
+
                     function addShapefileToMap (featureCollection) {
                         //add the shapefile to the map and zoom to the feature collection extent
                         //If you want to persist the feature collection when you reload browser you could store the collection in
@@ -838,83 +909,99 @@
                         
                     }
 
-                    function verifySchema (featureCollection) {
-
-                        var fields = ["RTE_ID", "COMMENT"];
-
-                        var fieldFlag = false;
-                        var attFlag = false;
-                        var badField;
-
-                        array.forEach(featureCollection.layers, function (layer) {
-
-                            array.forEach(layer.featureSet.features, function (feature) {
-                                array.forEach(fields, function (field) {
-                                    if (field in feature.attributes) {
-                                        var att = feature.attributes[field];
-                                        if (att == undefined || att == null || att == " " || att == "") {
-                                            attFlag = true;
-                                            badField = field;
-                                        }
-                                    }
-                                    else {
-                                        fieldFlag = true;
-                                    }
-                                });
-                            });
-
-                        });
-
-                        if(fieldFlag) {
-                            alert("Shapefile does not contain all required fields.");
-                            dom.byId('uploadMarquee').innerHTML = '<p style="color:red">Shapefile does not contain all required fields.</p>';
-                        }
-                        else {
-                            if (attFlag) {
-                                alert(badField + " has a NULL or blank value which must be populated.");
-                                dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + badField + " has a NULL or blank value which must be populated." + '</p>';
-                            }
-                            else {
-                                addShapefileToMap(featureCollection);
-                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
-                                serviceLoad(featureCollection);
-                            }
-                        }
-                    }
-
                     function serviceLoad (featureCollection) {
-                        var serviceURL = "http://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/gpTester/FeatureServer/0/applyEdits?f=json&adds=";//swamp thang
+                        var uploadURL = serviceURL + "/addFeatures?f=json&features=";
+                        // var uploadURL = serviceURL + "/applyEdits?f=json&adds=";
+
+                             var xmlhttp;
+                            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                                xmlhttp=new XMLHttpRequest();
+                            }
+                            else {// code for IE6, IE5
+                                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+                            }
+                            xmlhttp.onreadystatechange = function() {
+                                if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+                                   //document.getElementById("uploadStatus").innerHTML = xmlhttp.responseText;
+                                   console.log(xmlhttp.responseText);
+                                }
+                            };
+
                         array.forEach(featureCollection.layers, function (layer) {
-                            var total = layer.featureSet.features.length;
+                            var total = layer.featureSet.features;
                             var counter = 0;
+                            // console.log(total);
+                            // updatesLyr.applyEdits(total, null, null);
+                            // console.log(layer);
+                                    // updatesLyr.applyEdits([newGraphic], null, null);
                             array.forEach(layer.featureSet.features, function (feature) {
+                                console.log(feature);
                                 var geom = feature.geometry;
                                 var paths = JSON.stringify(geom.paths);
-                                var theText = "{'geometry':{'paths':" + paths + "},'attributes':{'RTE_ID':" + feature.attributes["RTE_ID"] + ", 'COMMENT':" + feature.attributes["COMMENT"] + "}}";
-                                theText = serviceURL + "[" + theText + "]";
-
-                                var layersRequest = request({
-                                    url: theText
-                                    },{
-                                    usePost: true
-                                });
-                                layersRequest.then(
-                                    function(response) {
-                                        var res = response.addResults[0]["success"];
-                                        if (res) {
-                                            counter += 1;
-                                            if (counter === total){
-                                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
-                                            }
-                                            console.log("Success: ", response.layers);
-                                        } else {
-                                            dom.byId('uploadMarquee').innerHTML = "Upload Failed. Try again with an internet connection.";
-                                            alert("Upload Failed. Try again with an internet connection. (1)");
-                                        }
-                                    }, function(error) {
-                                        console.log("Error: ", error.message);
-                                });
+                                 var atts = feature.attributes;
+                                var theText;
+                                if (updateClass == "CR") {
+                                   theText = "{'geometry':{'paths':" + paths + "},'attributes':{'COUNTY':" + org + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + "}}";
+                                    // var newGraphic = new Graphic(geom, null, atts);
+                                    // updatesLyr.applyEdits([newGraphic], null, null);
+                                }
+                                else if (updateClass == "LS") {
+                                    theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'StreetName':" + feature.attributes.StreetName + "}}";
+                                }
+                                theText = uploadURL + "[" + theText + "]";
+                                // var layersRequest = request({
+                                //     url: theText
+                                //     },{
+                                //     usePost: true
+                                // });
+                            //     layersRequest.then(
+                            //         function(response) {
+                            //             var res = response.addResults[0]["success"];
+                            //             if (res) {
+                            //                 counter += 1;
+                            //                 if (counter === total){
+                            //                     dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
+                            //                 }
+                            //                 console.log("Success: ", response.layers);
+                            //             } else {
+                            //                 dom.byId('uploadMarquee').innerHTML = "Upload Failed. Try again with an internet connection.";
+                            //                 alert("Upload Failed. Try again with an internet connection. (1)");
+                            //             }
+                            //         }, function(error) {
+                            //             console.log("Ugh Error: ", error);
+                            //     });
+                            
+                            console.log(theText);
+                            xmlhttp.open("POST",theText,false);
+                            try {
+                                xmlhttp.send();
+                                if (xmlhttp.status >= 200 && xmlhttp.status < 304) {
+                                    if (xmlhttp.responseText.slice(-7) === "true}]}"){
+                                        //counter += 1;
+                                        console.log("got a good one");
+                                    }
+                                } else {
+                                    // document.getElementById('overlay').style.display='none';
+                                    // document.getElementById('wait').style.display='none';
+                                    // x.innerHTML = 'Upload Failed. Try again with an internet connection.';
+                                    // for (var i = 0; i < Buttons.length; i++) {
+                                    //     Buttons[i].disabled = false;
+                                    // }
+                                    // alert("Upload Failed. Try again with an internet connection.");
+                                    console.log("shit");
+                                }
+                            } catch (e) {
+                                // document.getElementById('overlay').style.display='none';
+                                // document.getElementById('wait').style.display='none';
+                                // x.innerHTML = 'Upload Failed. Try again with an internet connection.';
+                                // for (var i = 0; i < Buttons.length; i++) {
+                                //     Buttons[i].disabled = false;
+                                // }
+                                // alert("Upload Failed. Try again with an internet connection.");
+                                console.log(e);
+                            }
                             });
+
                         });
                     }
 
@@ -1071,12 +1158,12 @@
                             </div>
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Download a copy of your data or a schema template for editing and uploading changes.</p>
+                                    <p>Download a copy of your data inventory or a schema template for editing and uploading changes.<br><p style="font-size: xx-small;">Note: Downloading your data inventory in the Shapefile format may truncate field names.</p></p>
                                     <select class="form-control" id="chooseData">
-                                        <option value="SCHEMA">Schema Only</option> <option value="DATA">Data & Schema</option>  
+                                        <option value="SCHEMA" selected>Schema Only</option> <option value="DATA">Data & Schema</option>  
                                     </select>
                                     <select class="form-control" id="downloadFormat"  disabled="disabled">
-                                        <option value="SHP">Shapefile</option>  <option value="FGDB">File Geodatabase</option> 
+                                        <option value="SHP" selected>Shapefile</option>  <option value="FGDB">File Geodatabase</option> 
                                     </select>
                                     
                                     <button type="button" class="btn btn-default" id="download"><span class="glyphicon glyphicon-download-alt"></span> Download!</button>

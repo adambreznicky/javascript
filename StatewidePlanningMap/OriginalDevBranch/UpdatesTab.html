@@ -1,0 +1,1982 @@
+<html>
+<head>
+  <title>Statewide Planning Map</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+  <link rel="stylesheet" href="//js.arcgis.com/3.12/dijit/themes/claro/claro.css">
+  <link rel="stylesheet" href="//js.arcgis.com/3.12/esri/css/esri.css">
+  <style>
+	 #toc{
+	  border: 2px solid;
+	  border-radius: 5px;
+	  border-color: #FFFFFF;
+	  width:200px;
+	  position: absolute;
+	  left: 2px;
+	  top: 2px; 
+	 }
+	 #mapDiv{
+	  border: 2px solid;
+	  border-radius: 5px;
+	  border-color: #F8F8F8;	 
+	  height:99%;
+	  position: absolute;
+	  left: 205px;
+	  bottom: 2px;
+	  right: 2px;
+	  top: 2px;
+	  overflow: hidden;
+	 }
+	 span{
+	  display:block;
+	 }
+	 #info{
+	  position: absolute;
+	  bottom: 3px;
+	  left: 22px;
+	  z-index: 50;
+	  color: #303030;
+	  font-weight: bold;
+	  text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+	 }
+	 #tcTabs{
+	  cursor: pointer;
+	  font-size: 15px;
+	 }
+	 th{
+	  background-color: #6699CC;
+      color: #FFFFFF;
+	  cursor: default;
+	  font-size: 15px;
+	  border-radius: 2px;	  
+	 }
+	 tr.alt td{
+	  color: #000000;
+      background-color: #F0F0F0;
+	 }
+	 td{
+	 	border-radius: 2px;
+	 }
+	 .Searcher{
+	 	cursor: pointer;
+	 }
+	 .MeasureUnits{
+	 	cursor: pointer;
+	 }
+	 #mapTab{
+	  display: block;
+	 }
+	 #searchTab{
+	  display: none; 
+	 }
+	 #measureTab{
+	   display: none;
+	 }
+	 #queryTab{
+	   display: none;
+	 }
+	 #sketchTab{
+	   display: none;
+	 }
+	 #legendTab{
+		display: none;
+	    overflow: auto;	
+		height: 750px;
+	 }
+	 #aboutTab{
+	   display: none;
+	 }	
+	 #updatesTab{
+	   display: none;
+	 }
+	 .tocTables{
+	  cursor: default;
+	  font-size: 13px;
+	  width: 98%;
+	 }
+	select {
+	 display: block;
+     width: 98%;
+     cursor: pointer;
+    }
+    button {
+    	cursor: pointer;
+    }
+    .Overlay, .Basemaps, .SearchResult, .clickable{
+    	cursor: pointer;
+    }
+	#searchResults{
+	 overflow: auto;
+	 height: 200px;
+	 color: blue;
+	 font-size: 15px;
+	}
+	#queryResults{
+	 overflow: auto;
+	 height: 200px;
+	 color: blue;
+	 font-size: 15px;
+	}	
+	.PRJFields {
+		width: 175px;
+	}
+	.queryFields {
+		width: 127px;
+	}
+	#updatesCR, #updatesLS {
+		display: none;
+	}
+  </style>
+  <script src="//js.arcgis.com/3.12/"></script>
+  <script>
+    //Map and measure variables
+	//Chris is in the ballgame
+	var map;
+	var projectsRI;
+	var toolbar;
+	var xPointArray = new Array();
+	var globalX;
+	var globalY;
+	var measureUnits="Miles";
+	var theDistMeasured=0;	
+	var theLegend;
+	var tiled;
+	
+	//Search variables
+	var citySearchLyr;
+	var countySearchLyr;
+	var csSearchLyr;
+	var districtSearchLyr;
+	var highwaySearchLyr;
+
+	//Overlay variables
+	var aadtLyr;
+	var labelLayerAADT;	
+	var areaOfficeLyr;
+	var COGLyr;
+	var FCLyr;
+	var FreightLyr;
+	var NHSLyr;	
+	var maintOfficeLyr;	
+	var txTrunkLyr;	
+	var MarkerLyr;	
+	var labelLayerMarker;	
+	var MPOLyr;	
+	var nonAttainLyr;		
+	var controlSectionLyr;
+	var labelLayerCS;
+	var USHouseLyr;	
+    var railRoadLyr;	
+	var speedLimitLyr;	
+	var StateHouseLyr;	
+	var StateSenateLyr;	
+	var futureTrafficLyr;
+	var pOneLyr;
+    var feasStudyLyr;	
+	var unfundedLyr;
+	var fundedLyr;
+	var minuteOrderLyr;
+	var pavementConditionLyr;
+	var VerticalLyr;
+	var permStationLyr;	
+	var activeOverlay;
+	var currentMeasure=0;
+	var activeTab = 'tcMap';
+	var deLength=0;
+	
+	require(["esri/map",
+	    "esri/renderers/Renderer",
+		"dojo/dom-construct",
+	    "esri/layers/LayerInfo",
+		"esri/dijit/Scalebar",
+		"dojo/on",
+
+		"esri/tasks/query", 
+		"esri/tasks/QueryTask",
+		"esri/arcgis/utils",
+		"esri/dijit/Legend",
+		"esri/geometry/webMercatorUtils",
+		"dojo/dom",
+		"esri/layers/KMLLayer",
+		"dojo/parser",
+		"esri/toolbars/draw",
+
+		"esri/geometry/geodesicUtils", 
+		"esri/units",
+		"esri/graphic",
+		"esri/graphicsUtils",
+		"esri/SpatialReference",
+		"esri/geometry/Extent",
+		"esri/layers/FeatureLayer",
+
+		"esri/symbols/SimpleLineSymbol",
+		"esri/symbols/CartographicLineSymbol",
+		"esri/renderers/UniqueValueRenderer",
+		"esri/symbols/SimpleMarkerSymbol",
+
+		"esri/symbols/SimpleFillSymbol",
+		"esri/symbols/TextSymbol",
+		"esri/renderers/SimpleRenderer",
+		"esri/layers/LabelLayer",
+		"esri/Color",
+		"esri/InfoTemplate",
+		"esri/layers/ArcGISTiledMapServiceLayer",
+
+		"esri/geometry/Polyline",
+		"esri/geometry/Point",
+		"esri/symbols/Font",
+
+		"dojo/domReady!"], function (Map, Renderer, domConstruct, LayerInfo, Scalebar, on,
+			Query, QueryTask, arcgisUtils, Legend, webMercatorUtils, dom, KMLLayer, parser, Draw,
+			geodesicUtils, Units, Graphic, graphicsUtils, SpatialReference, Extent, FeatureLayer,
+			SimpleLineSymbol, CartographicLineSymbol, UniqueValueRenderer, SimpleMarkerSymbol,
+			SimpleFillSymbol, TextSymbol, SimpleRenderer, LabelLayer, Color, InfoTemplate, Tiled,
+			Polyline, Point, Font) {
+			
+		parser.parse();
+		
+		window.onresize = handleIEProblem;
+		handleIEProblem();
+				
+		map = new Map("mapDiv", {minZoom:6, maxZoom:15});
+
+		tiled = new Tiled("//tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
+		map.addLayer(tiled);
+		
+		var theExtent = new Extent(-107,25.27,-93,37.27, new SpatialReference({ wkid: 4269 }));
+		map.setExtent(webMercatorUtils.geographicToWebMercator(theExtent));			
+		
+		//Add Roadway Inventory data to map but don't show until needed during Query.  Same for search layers but never show them.
+		addInventoryData();
+		addSearchLayers();
+
+		map.on("load", function() {
+		  map.on("mouse-move", showCoordinates);
+		  map.on("mouse-drag", showCoordinates);
+		  map.on("zoom-end", scaleDependentQueries);	  
+		});
+		
+		map.on("load", createToolbar);
+		map.on("click", logCoords);	
+		map.on("mouse-move", newCoords);
+		
+        var scalebar = new Scalebar({
+          map: map,
+          scalebarUnit: "english",
+		  attachTo: "bottom-left"
+        });	
+
+		theLegend = new Legend({map:map},"legendDiv");	
+		
+	
+		//Function to force IE8 to work, eventually this will not be needed.
+		function handleIEProblem() {
+			var ua = window.navigator.userAgent;
+			var msie = ua.indexOf ( "MSIE " );
+
+			if ( msie > 0 ) {
+				var theVersion = parseInt(ua.substring (msie+5, ua.indexOf (".", msie )));
+				if (theVersion<8) {
+					var outerDiv = document.getElementById("mapDiv");
+					outerDiv.style.width = document.body.clientWidth-215; 			
+				}	
+			}	
+		}
+		
+		function addSearchLayers() {
+			var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Search/FeatureServer/2";		
+			citySearchLyr = new FeatureLayer(projectsUrl, {id:"City_Search",visible: false,outFields:["CITY_NM","xCoord","yCoord"]});		
+			
+			projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Search/FeatureServer/1";		
+			countySearchLyr = new FeatureLayer(projectsUrl, {id:"County_Search",visible: false,outFields:["CNTY_NM","xCoord","yCoord"]});		
+
+			projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Search/FeatureServer/3";		
+			csSearchLyr = new FeatureLayer(projectsUrl, {id:"ControlSection_Search",visible: false,outFields:["CTRL_SECT_NBR","xCoord","yCoord"]});	
+
+			projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Search/FeatureServer/0";		
+			districtSearchLyr = new FeatureLayer(projectsUrl, {id:"District_Search",visible: false,outFields:["DIST_NM","xCoord","yCoord"]});	
+			
+			projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Search/FeatureServer/4";		
+			highwaySearchLyr = new FeatureLayer(projectsUrl, {id:"Highway_Search",visible: false,outFields:["RTE_NM","xCoord","yCoord","CNTY_NM"]});	
+		}
+		
+		function createLegend() {
+			if (activeOverlay) {
+				theLegend.refresh();
+			}
+			else {
+				theLegend.layerInfos=[{layer:tiled, title:"Statewide Planning Map"}];
+				theLegend.refresh();			
+			}
+		}
+		
+		function logCoords() {
+		  if (document.getElementById("measureTab").style.display=="block"||document.getElementById("sketchTab").style.display=="block") {
+			xPointArray.push([Number(globalX),Number(globalY)]);
+			calculateDistance();
+		  }
+		}
+
+		function newCoords() {
+		  if (document.getElementById("measureTab").style.display=="block"||document.getElementById("sketchTab").style.display=="block") {
+			if (xPointArray.length>=1) {	   
+			   polyline = new Polyline();
+			   polyline.addPath([xPointArray[xPointArray.length - 1],[Number(globalX),Number(globalY)]]);
+			   
+			   if (measureUnits=="Miles") {
+				   var thisMeasured = geodesicUtils.geodesicLengths([polyline], Units.MILES);
+				   var piece = Math.round(thisMeasured*1000)/1000
+				   var potential = currentMeasure + piece;
+				   document.getElementById("measuredDistance").innerHTML = Math.round(potential*1000)/1000 + " miles.";
+				}
+
+			   if (measureUnits=="Kilometers") {
+				   var thisMeasured = geodesicUtils.geodesicLengths([polyline], Units.KILOMETERS);
+				   var piece = Math.round(thisMeasured*1000)/1000
+				   var potential = currentMeasure + piece;
+				   document.getElementById("measuredDistance").innerHTML = Math.round(potential*1000)/1000 + " kilometers.";	
+				}		   
+
+			   if (measureUnits=="Feet") {
+				   var thisMeasured = geodesicUtils.geodesicLengths([polyline], Units.FEET);
+				   var piece = Math.round(thisMeasured*1000)/1000
+				   var potential = currentMeasure + piece;
+				   document.getElementById("measuredDistance").innerHTML = Math.round(potential*1000)/1000 + " feet.";	
+				}		   
+
+			   if (measureUnits=="Meters") {
+				   var thisMeasured = geodesicUtils.geodesicLengths([polyline], Units.METERS);
+				   var piece = Math.round(thisMeasured*1000)/1000
+				   var potential = currentMeasure + piece;
+				   document.getElementById("measuredDistance").innerHTML = Math.round(potential*1000)/1000 + " meters.";	
+				}
+			}
+		  }
+		}
+
+		function calculateDistance() {
+		   if (xPointArray.length>1) {	   
+			   polyline = new Polyline();
+			   polyline.addPath(xPointArray);
+			   
+			   if (measureUnits=="Miles") {
+				   theDistMeasured = geodesicUtils.geodesicLengths([polyline], Units.MILES);
+				   document.getElementById("measuredDistance").innerHTML = Math.round(theDistMeasured*1000)/1000 + " miles.";
+				   currentMeasure = Math.round(theDistMeasured*1000)/1000;
+				}
+
+			   if (measureUnits=="Kilometers") {
+				   theDistMeasured = geodesicUtils.geodesicLengths([polyline], Units.KILOMETERS);
+				   document.getElementById("measuredDistance").innerHTML = Math.round(theDistMeasured*1000)/1000 + " kilometers.";
+				   currentMeasure = Math.round(theDistMeasured*1000)/1000;
+				}		   
+
+			   if (measureUnits=="Feet") {
+				   theDistMeasured = geodesicUtils.geodesicLengths([polyline], Units.FEET);
+				   document.getElementById("measuredDistance").innerHTML = Math.round(theDistMeasured*1000)/1000 + " feet.";
+				   currentMeasure = Math.round(theDistMeasured*1000)/1000;
+				}		   
+
+			   if (measureUnits=="Meters") {
+				   theDistMeasured = geodesicUtils.geodesicLengths([polyline], Units.METERS);
+				   document.getElementById("measuredDistance").innerHTML = Math.round(theDistMeasured*1000)/1000 + " meters.";
+				   currentMeasure = Math.round(theDistMeasured*1000)/1000;
+				}
+			}	 
+		}
+		
+		on(dom.byId("clearMeasure"), "click", clearMeasure);
+		function clearMeasure() {
+			map.graphics.clear();
+			document.getElementById("measuredDistance").innerHTML = "0.00";
+		    xPointArray.length=0;
+			theDistMeasured=0;
+			currentMeasure=0;
+		}
+		
+		dojo.query(".MeasureUnits").forEach(function (result){
+				on(result, "click", changeUnits);
+		});
+		function changeUnits(event) {
+		   measureUnits=event.target.value;
+		   calculateDistance();
+		}
+
+		function createToolbar() {
+		  toolbar = new Draw(map);
+		  toolbar.on("draw-end", addToMap);
+		}	  
+		
+		function activateTool(theTool) {
+			var tool;
+			if (theTool == "POLYLINE") {
+				tool = Draw.POLYLINE;
+			}
+		 	toolbar.activate(tool);
+		  	map.hideZoomSlider();
+		}
+
+		function deActivateTool(theTool) {
+		  	var tool;
+			if (theTool == "POLYLINE") {
+				tool = Draw.POLYLINE;
+			}
+		  	toolbar.deactivate(tool);
+		  	map.showZoomSlider();
+		}	
+		  
+		function addToMap(evt) {
+			var lineColorCode = "#D80000";
+			var lineColor = new Color(lineColorCode);	
+			var theLine = new CartographicLineSymbol(esri.symbol.CartographicLineSymbol.STYLE_SOLID, lineColor, 3, CartographicLineSymbol.CAP_ROUND, CartographicLineSymbol.JOIN_MITER, 5);		
+			var defaultSymbol = new SimpleFillSymbol("solid", theLine, null);												
+			var graphic = new Graphic(evt.geometry,defaultSymbol);		
+			map.graphics.add(graphic);
+
+			if (activeTab=="sketchTab"){
+				deLength = parseFloat(deLength) + parseFloat(theDistMeasured);
+			}
+
+			theDistMeasured=0;
+			xPointArray.length=0;	
+			currentMeasure=0;
+		}	  
+		  
+		function showCoordinates(evt) {
+		  var mp = new webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
+		  globalX = mp.x.toFixed(6);
+		  globalY = mp.y.toFixed(6);
+		  document.getElementById("info").innerHTML = "Level: " + map.getZoom() + ", " + mp.x.toFixed(6) + ", " + mp.y.toFixed(6);
+		}	 
+
+		dojo.query(".Basemaps").forEach(function (result){
+				on(result, "click", changeBaseMap);
+		});
+		function changeBaseMap(event) {
+			clearStyle("tocMaps");
+			map.removeLayer(map.getLayer(map.layerIds[0]));
+
+			var newMap = event.target.id;
+			document.getElementById(newMap).style.color='red';
+			if (newMap=="Statewide_Planning_Map") {
+				var tiled = new Tiled("//tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer",{id: newMap});
+				map.addLayer(tiled);	  
+			}
+			else {
+				var basemap = new Tiled("//server.arcgisonline.com/ArcGIS/rest/services/" + newMap + "/MapServer", {id: newMap});	  
+				map.addLayer(basemap);
+			}			
+
+			if (activeOverlay) {
+				activeOverlay.show();
+			}      	  
+		}
+		
+		dojo.query(".Tabs").forEach(function (result){
+				on(result, "click", changeTab);
+		});
+		function changeTab(event) {
+			var ID = event.target.id;
+			if (ID == 'tcMap') {
+				activeTab = 'mapTab';
+			}
+			else if (ID == 'tcSearch') {
+				activeTab = 'searchTab';
+			}
+			else if (ID == 'tcMeasure') {
+				activeTab = 'measureTab';
+			}
+			else if (ID == 'tcQuery') {
+				activeTab = 'queryTab';
+			}
+			else if (ID == 'tcSketch') {
+				activeTab = 'sketchTab';
+			}
+			else if (ID == 'tcLegend') {
+				activeTab = 'legendTab';
+			}
+			else if (ID == 'tcAbout') {
+				activeTab = 'aboutTab';
+			}
+			else if (ID == 'tcUpdates') {
+				activeTab = 'updatesTab';
+			}
+
+			map.graphics.clear();
+			
+		    if (activeTab!="queryTab") {
+				projectsRI.hide();
+			}
+			if (activeTab=="queryTab"||activeTab=="sketchTab") {
+				hideAllOverlays();
+				document.getElementById("CLEAR").style.color = "red";	
+				document.getElementById("radMile").checked = true;
+			}
+		
+			clearStyle("tcTabs");
+			document.getElementById("mapTab").style.display="none";		
+			document.getElementById("searchTab").style.display="none";
+			document.getElementById("measureTab").style.display="none";
+			document.getElementById("queryTab").style.display="none";				
+			document.getElementById("sketchTab").style.display="none";
+			document.getElementById("legendTab").style.display="none";		
+			document.getElementById("aboutTab").style.display="none";
+			document.getElementById("updatesTab").style.display="none";	
+			document.getElementById(activeTab).style.display="block";
+
+			document.getElementById(ID).style.color='white';
+			document.getElementById(ID).style.backgroundColor='#6699CC';
+			
+			if (activeTab=="measureTab"||activeTab=="sketchTab") {
+			  measureUnits="Miles";
+			  theDistMeasured=0;
+			  xPointArray.length=0;	
+			  currentMeasure=0;
+			  deLength=0;
+	          activateTool("POLYLINE");		  
+			}
+			else {
+			  deActivateTool("POLYLINE");
+			}
+			
+			if (activeTab=="legendTab") {
+				createLegend();			
+			}
+		}	
+		
+		function panTo(theX,theY) {
+		  	var thePt = new Point(theX,theY, new SpatialReference({ wkid: 4269 }));
+		  	map.centerAt(webMercatorUtils.geographicToWebMercator(thePt));
+		  	//onLoad();   
+		}
+		
+		function zoomTo(event) {
+			var params = event.target.id;
+			var paramsList = params.split(',');
+			var theX = paramsList[0];
+			var theY = paramsList[1];
+			var theZ = paramsList[2];
+		  	var thePt = new Point(theX,theY, new SpatialReference({ wkid: 4269 }));
+		  	map.centerAndZoom(webMercatorUtils.geographicToWebMercator(thePt),theZ);
+		  	//onLoad();   
+		}	
+		
+		function clearStyle(theTable) {
+		  var tcTbl = document.getElementById(theTable);
+		  var tds = tcTbl.getElementsByTagName("td");
+	     
+	      for(var i = 0; i < tds.length; i++) {
+	        tds[i].style.color="black";
+			if (theTable=="tcTabs") {
+				tds[i].style.backgroundColor="white";
+			}
+	      }	  
+		}
+		
+		function scaleDependentQueries() {
+			if (activeOverlay) {
+				if (aadtLyr) {
+					aadtLyr.setDefinitionExpression("zLevel<" + (map.getZoom() + 1));				
+				}		
+						
+				if (FCLyr) {
+					if (map.getZoom()<9) {
+				       FCLyr.setDefinitionExpression("RTE_PRFX='IH' AND RTE_TYPE='KG'");				
+					}
+					if (map.getZoom()>8&&map.getZoom()<11) {
+				       FCLyr.setDefinitionExpression("(RTE_PRFX='IH' or RTE_PRFX='US') AND RTE_TYPE='KG'");				
+					}			
+					if (map.getZoom()>=11) {
+				       FCLyr.setDefinitionExpression("");				
+					}				
+				}			
+
+				if (MarkerLyr) {
+					if (map.getZoom()<9) {			
+						MarkerLyr.setDefinitionExpression("RTE_PRFX='IH' AND RIGHT(MRKR_NBR,2)='25'");
+					}
+					if (map.getZoom()>8&&map.getZoom()<11) {
+				       MarkerLyr.setDefinitionExpression("(RTE_PRFX='IH' AND (RIGHT(MRKR_NBR,1)='0')) or (RTE_PRFX='US' AND (RIGHT(MRKR_NBR,1)='0'))");				
+					}
+					if (map.getZoom()>10&&map.getZoom()<13) {
+				       MarkerLyr.setDefinitionExpression("(RTE_PRFX='IH' AND (RIGHT(MRKR_NBR,1)='0' OR RIGHT(MRKR_NBR,1)='5')) or (RTE_PRFX='US' AND (RIGHT(MRKR_NBR,1)='0' OR RIGHT(MRKR_NBR,1)='5')) or (RTE_PRFX='SH' AND (RIGHT(MRKR_NBR,1)='0' OR RIGHT(MRKR_NBR,1)='5')) or (RTE_PRFX='SL' AND (RIGHT(MRKR_NBR,1)='0' OR RIGHT(MRKR_NBR,1)='5'))");				
+					}				
+					if (map.getZoom()>12) {
+				       MarkerLyr.setDefinitionExpression("");				
+					}				
+				}	
+
+				if (controlSectionLyr) {
+					if (map.getZoom()<9) {
+				       controlSectionLyr.setDefinitionExpression("RTE_PRFX_CD='IH'");
+				       labelLayerCS.hide();
+					}
+					if (map.getZoom()>8&&map.getZoom()<10) {
+				       controlSectionLyr.setDefinitionExpression("(RTE_PRFX_CD='IH' or RTE_PRFX_CD='US')");	
+				       labelLayerCS.hide();
+					}
+					if (map.getZoom()>9&&map.getZoom()<12) {
+				       controlSectionLyr.setDefinitionExpression("(RTE_PRFX_CD='IH' or RTE_PRFX_CD='SH' or RTE_PRFX_CD='US' or RTE_PRFX_CD='SL')");
+				       labelLayerCS.show();
+					}				
+					if (map.getZoom()>11) {
+				       controlSectionLyr.setDefinitionExpression("");	
+				       labelLayerCS.show();
+					}				
+				}		
+
+				if (speedLimitLyr) {
+					if (map.getZoom()<9) {
+				       speedLimitLyr.setDefinitionExpression("LEFT(RIA_RTE_ID,2)='IH'");				
+					}
+					if (map.getZoom()>8&&map.getZoom()<11) {
+				       speedLimitLyr.setDefinitionExpression("(LEFT(RIA_RTE_ID,2)='IH' or LEFT(RIA_RTE_ID,2)='US')");				
+					}
+					if (map.getZoom()>10&&map.getZoom()<13) {
+				       speedLimitLyr.setDefinitionExpression("(LEFT(RIA_RTE_ID,2)='IH' or LEFT(RIA_RTE_ID,2)='US' or LEFT(RIA_RTE_ID,2)='SH' or LEFT(RIA_RTE_ID,2)='SL')");				
+					}				
+					if (map.getZoom()>12) {
+				       speedLimitLyr.setDefinitionExpression("");				
+					}				
+				}	
+
+				if (futureTrafficLyr) {
+					if (map.getZoom()<9) {
+				       futureTrafficLyr.setDefinitionExpression("LEFT(RIA_RTE_ID,2)='IH'");				
+					}
+					if (map.getZoom()>8&&map.getZoom()<11) {
+				       futureTrafficLyr.setDefinitionExpression("(LEFT(RIA_RTE_ID,2)='IH' or LEFT(RIA_RTE_ID,2)='US')");				
+					}
+					if (map.getZoom()>10&&map.getZoom()<13) {
+				       futureTrafficLyr.setDefinitionExpression("(LEFT(RIA_RTE_ID,2)='IH' or LEFT(RIA_RTE_ID,2)='US' or LEFT(RIA_RTE_ID,2)='SH' or LEFT(RIA_RTE_ID,2)='SL')");				
+					}				
+					if (map.getZoom()>12) {
+				       futureTrafficLyr.setDefinitionExpression("");				
+					}				
+				}
+
+				if (pavementConditionLyr) {
+					if (map.getZoom()<9) {
+				       pavementConditionLyr.setDefinitionExpression("LEFT(SIGNED_HIG,2)='IH'");				
+					}
+					if (map.getZoom()>8&&map.getZoom()<11) {
+				       pavementConditionLyr.setDefinitionExpression("(LEFT(SIGNED_HIG,2)='IH' or LEFT(SIGNED_HIG,2)='US')");				
+					}
+					if (map.getZoom()>10&&map.getZoom()<13) {
+				       pavementConditionLyr.setDefinitionExpression("(LEFT(SIGNED_HIG,2)='IH' or LEFT(SIGNED_HIG,2)='US' or LEFT(SIGNED_HIG,2)='SH' or LEFT(SIGNED_HIG,2)='SL')");				
+					}				
+					if (map.getZoom()>12) {
+				       pavementConditionLyr.setDefinitionExpression("");				
+					}				
+				}
+			}
+		}
+
+		function hideAllOverlays() {
+			activeOverlay = "";
+			if (aadtLyr) {aadtLyr.hide(); labelLayerAADT.hide()}			
+			if (areaOfficeLyr) {areaOfficeLyr.hide();}
+			if (COGLyr) {COGLyr.hide();}
+			if (FCLyr) {FCLyr.hide();}
+			if (FreightLyr) {FreightLyr.hide();}		
+			if (maintOfficeLyr) {maintOfficeLyr.hide();}		
+			if (txTrunkLyr) {txTrunkLyr.hide();}		
+			if (MPOLyr) {MPOLyr.hide();}		
+			if (NHSLyr) {NHSLyr.hide();}
+			if (nonAttainLyr) {nonAttainLyr.hide();}		
+			if (MarkerLyr) {MarkerLyr.hide(); labelLayerMarker.hide();}		
+			if (controlSectionLyr) {controlSectionLyr.hide(); labelLayerCS.hide();}					
+			if (USHouseLyr) {USHouseLyr.hide();}		
+			if (railRoadLyr) {railRoadLyr.hide();}			
+			if (StateHouseLyr) {StateHouseLyr.hide();}		
+			if (speedLimitLyr) {speedLimitLyr.hide();}
+			if (StateSenateLyr) {StateSenateLyr.hide();}
+			if (futureTrafficLyr) {futureTrafficLyr.hide();}
+			if (pOneLyr) {pOneLyr.hide();}
+			if (feasStudyLyr) {feasStudyLyr.hide();}
+			if (unfundedLyr) {unfundedLyr.hide();}
+			if (fundedLyr) {fundedLyr.hide();}	
+			if (minuteOrderLyr) {minuteOrderLyr.hide();}
+			if (pavementConditionLyr) {pavementConditionLyr.hide();}
+			if (VerticalLyr) {VerticalLyr.hide();}
+			if (permStationLyr) {permStationLyr.hide();}
+
+			clearStyle("tocData");		
+		}
+		
+		dojo.query(".Overlay").forEach(function (result){
+				on(result, "click", changeOverlay);
+		});
+		function changeOverlay(event) {
+			var tableText="";
+	        clearStyle("tocData");
+			hideAllOverlays();
+			
+			var theLayer = event.target.id;
+			document.getElementById(theLayer).style.color='red';
+			if (theLayer=="CLEAR") {
+				activeOverlay="";
+			}
+			
+			if (theLayer=="Pavement_Conditions") {	
+				if (pavementConditionLyr) {
+					pavementConditionLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway Name</td><td>${SIGNED_HIG}</td></tr>";
+					tableText += "<tr><td>Pavement Type</td><td>${PVMNT_TYPE}</td></tr>";			
+					tableText += "<tr><td>Distress Score</td><td>${DISTRESS_S}</td></tr>";						
+					tableText += "<tr><td>Condition Score</td><td>${CONDITION_}</td></tr>";									
+					tableText += "<tr><td>Ride Score</td><td>${RIDE_SCORE}</td></tr>";					
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Pavement Conditions:",tableText);	
+					//var projectsUrl = "//maps.dot.state.tx.us/ArcGIS/rest/services/PavementConditions/MapServer/0";	
+					var projectsUrl = "//maps.dot.state.tx.us/ArcGIS/rest/services/PavementConditions_Dynamic/MapServer/0";
+					
+					pavementConditionLyr = new FeatureLayer(projectsUrl, {id:"Pavement Conditions",visible: true,outFields:["SIGNED_HIG","PVMNT_TYPE","DISTRESS_S","CONDITION_","RIDE_SCORE"], infoTemplate: infoTemplate});			
+					map.addLayer(pavementConditionLyr);
+				}
+				activeOverlay = pavementConditionLyr;	
+			}			
+			
+			if (theLayer=="Minute_Orders") {	
+				if (minuteOrderLyr) {
+					minuteOrderLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway Name</td><td>${RTE_NM}</td></tr>";
+					tableText += "<tr><td>Control Section</td><td>${CTRL_SECT}</td></tr>";			
+					tableText += "<tr><td>Minute Order Number</td><td>${MO_NBR}</td></tr>";						
+					tableText += "<tr><td>Approval Date</td><td>${APRV_DT}</td></tr>";									
+					tableText += "<tr><td>Description</td><td>${DSPN_DSCR}</td></tr>";	
+					tableText += "<tr><td>AASHTO Application</td><td>${AASHTO_APPLN}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Highway Designations:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/TxDOT_Minute_Orders/FeatureServer/0";					
+
+					minuteOrderLyr = new FeatureLayer(projectsUrl, {id:"Minute Orders",visible: true,outFields:["RTE_NM","CTRL_SECT","MO_NBR","APRV_DT","DSPN_DSCR","AASHTO_APPLN"], infoTemplate: infoTemplate});	
+					map.addLayer(minuteOrderLyr);
+				}	
+				activeOverlay = minuteOrderLyr;	
+				theLegend.layerInfos=[{layer:minuteOrderLyr, title:"Minute Order Designations"}]; 
+			}						
+			
+			if (theLayer=="Speed_Limit") {	
+				if (speedLimitLyr) {
+					speedLimitLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Route ID</td><td>${RIA_RTE_ID}</td></tr>";
+					tableText += "<tr><td>Max Speed</td><td>${SPD_MAX}</td></tr>";			
+					tableText += "<tr><td>From DFO</td><td>${FRM_DFO}</td></tr>";
+					tableText += "<tr><td>To DFO</td><td>${TO_DFO}</td></tr>";											
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Speed Limit:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Inventory_Themes/FeatureServer/1";			
+					
+					speedLimitLyr = new FeatureLayer(projectsUrl, {id:"Speed_Limit",visible: true,outFields:["RIA_RTE_ID","SPD_MAX","FRM_DFO","TO_DFO"], infoTemplate: infoTemplate});		
+					map.addLayer(speedLimitLyr);
+				}	
+				activeOverlay = speedLimitLyr;	
+				theLegend.layerInfos=[{layer:speedLimitLyr, title:"Speed Limits"}]; 			
+			}
+
+			if (theLayer=="Proposition_One") {	
+				if (pOneLyr) {
+					pOneLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${HIGHWAY_NUMBER}</td></tr>";
+					tableText += "<tr><td>CSJ</td><td>${CONTROL_SECT_JOB}</td></tr>";
+					tableText += "<tr><td>Project Class</td><td>${PROJ_CLASS}</td></tr>";			
+					tableText += "<tr><td>Type of Work</td><td>${TYPE_OF_WORK}</td></tr>";
+					tableText += "<tr><td>Layman Description</td><td>${LAYMAN_DESCRIPTION1}</td></tr>";	
+					tableText += "<tr><td>Work Program</td><td>${TPP_WORK_PROGRAM}</td></tr>";
+					tableText += "<tr><td>Category</td><td>${TPP_CATEGORY_P2}</td></tr>";			
+					tableText += "<tr><td>PID</td><td>${TPP_PID}</td></tr>";
+					tableText += "<tr><td>Est. Construction Cost</td><td>$${EST_CONST_COST:NumberFormat(places:0)}</td></tr>";
+					tableText += "<tr><td>Funding</td><td>$${UTP_TOTAL_FUNDING_AVAILABLE:NumberFormat(places:0)}</td></tr>";					
+					tableText += "<tr><td>Total Score</td><td>${UTP_TOTAL_SCORE:NumberFormat(places:0)}</td></tr>";								
+					tableText += "</table>";	
+					
+					var infoTemplate = new InfoTemplate("Proposition One:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planned_Projects/FeatureServer/3";	
+
+					pOneLyr = new FeatureLayer(projectsUrl, {id:"Proposition_One",visible: true,outFields:["HIGHWAY_NUMBER","CONTROL_SECT_JOB","PROJ_CLASS","TYPE_OF_WORK","LAYMAN_DESCRIPTION1","TPP_WORK_PROGRAM","TPP_CATEGORY_P2","TPP_PID","EST_CONST_COST","UTP_TOTAL_FUNDING_AVAILABLE","UTP_STRATEGIC_SCORE","UTP_TOTAL_SCORE"], infoTemplate: infoTemplate});		
+					map.addLayer(pOneLyr);
+				}	
+				activeOverlay = pOneLyr;	
+				theLegend.layerInfos=[{layer:pOneLyr, title:"Proposition One"}]; 
+			}	
+
+			if (theLayer=="Feasibility_Studies") {	
+				if (feasStudyLyr) {
+					feasStudyLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${HIGHWAY_NUMBER}</td></tr>";
+					tableText += "<tr><td>CSJ</td><td>${CONTROL_SECT_JOB}</td></tr>";
+					tableText += "<tr><td>Project Class</td><td>${PROJ_CLASS}</td></tr>";			
+					tableText += "<tr><td>Type of Work</td><td>${TYPE_OF_WORK}</td></tr>";
+					tableText += "<tr><td>Layman Description</td><td>${LAYMAN_DESCRIPTION1}</td></tr>";	
+					tableText += "<tr><td>Work Program</td><td>${TPP_WORK_PROGRAM}</td></tr>";
+					tableText += "<tr><td>Category</td><td>${TPP_CATEGORY_P2}</td></tr>";			
+					tableText += "<tr><td>PID</td><td>${TPP_PID}</td></tr>";
+					tableText += "<tr><td>Est. Construction Cost</td><td>$${EST_CONST_COST:NumberFormat(places:0)}</td></tr>";
+					tableText += "<tr><td>Funding</td><td>TBD</td></tr>";				
+					tableText += "<tr><td>Strategic Score</td><td>${UTP_STRATEGIC_SCORE:NumberFormat(places:0)}</td></tr>";				
+					tableText += "<tr><td>Total Score</td><td>${UTP_TOTAL_SCORE:NumberFormat(places:0)}</td></tr>";								
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Feasibility Study:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planned_Projects/FeatureServer/0";	
+
+					feasStudyLyr = new FeatureLayer(projectsUrl, {id:"Feasibility_Studies",visible: true,outFields:["HIGHWAY_NUMBER","CONTROL_SECT_JOB","PROJ_CLASS","TYPE_OF_WORK","LAYMAN_DESCRIPTION1","TPP_WORK_PROGRAM","TPP_CATEGORY_P2","TPP_PID","EST_CONST_COST","UTP_TOTAL_FUNDING_AVAILABLE","UTP_STRATEGIC_SCORE","UTP_TOTAL_SCORE"], infoTemplate: infoTemplate});
+					map.addLayer(feasStudyLyr);
+				}	
+				activeOverlay = feasStudyLyr;	
+				theLegend.layerInfos=[{layer:feasStudyLyr, title:"Feasibility Studies"}]; 
+			}
+			
+			if (theLayer=="Unfunded_Projects") {	
+				if (unfundedLyr) {
+					unfundedLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${HIGHWAY_NUMBER}</td></tr>";				
+					tableText += "<tr><td>CSJ</td><td>${CONTROL_SECT_JOB}</td></tr>";
+					tableText += "<tr><td>Project Class</td><td>${PROJ_CLASS}</td></tr>";			
+					tableText += "<tr><td>Type of Work</td><td>${TYPE_OF_WORK}</td></tr>";
+					tableText += "<tr><td>Layman Description</td><td>${LAYMAN_DESCRIPTION1}</td></tr>";	
+					tableText += "<tr><td>Work Program</td><td>${TPP_WORK_PROGRAM}</td></tr>";
+					tableText += "<tr><td>Category</td><td>${TPP_CATEGORY_P2}</td></tr>";			
+					tableText += "<tr><td>PID</td><td>${TPP_PID}</td></tr>";
+					tableText += "<tr><td>Est. Construction Cost</td><td>$${EST_CONST_COST:NumberFormat(places:0)}</td></tr>";
+					tableText += "<tr><td>Funding</td><td>$${UTP_TOTAL_FUNDING_AVAILABLE:NumberFormat(places:0)}</td></tr>";				
+					tableText += "<tr><td>Strategic Score</td><td>${UTP_STRATEGIC_SCORE:NumberFormat(places:0)}</td></tr>";				
+					tableText += "<tr><td>Total Score</td><td>${UTP_TOTAL_SCORE:NumberFormat(places:0)}</td></tr>";								
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Project - Future Candidate:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planned_Projects/FeatureServer/2";	
+
+					unfundedLyr = new FeatureLayer(projectsUrl, {id:"Unfunded_Projects",visible: true,outFields:["HIGHWAY_NUMBER","CONTROL_SECT_JOB","PROJ_CLASS","TYPE_OF_WORK","LAYMAN_DESCRIPTION1","TPP_WORK_PROGRAM","TPP_CATEGORY_P2","TPP_PID","EST_CONST_COST","UTP_TOTAL_FUNDING_AVAILABLE","UTP_STRATEGIC_SCORE","UTP_TOTAL_SCORE"], infoTemplate: infoTemplate});	
+					unfundedLyr.setDefinitionExpression("TPP_WORK_PROGRAM <> 'CANDPA' AND RIGHT(CONTROL_SECT_JOB,3) Not Like '9%'");
+					map.addLayer(unfundedLyr);
+				}	
+				activeOverlay = unfundedLyr;			
+				theLegend.layerInfos=[{layer:unfundedLyr, title:"Future Candidates"}]; 			
+			}	
+
+			if (theLayer=="Funded_Projects") {	
+				if (fundedLyr) {
+					fundedLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${HIGHWAY_NUMBER}</td></tr>";				
+					tableText += "<tr><td>CSJ</td><td>${CONTROL_SECT_JOB}</td></tr>";
+					tableText += "<tr><td>Project Class</td><td>${PROJ_CLASS}</td></tr>";			
+					tableText += "<tr><td>Type of Work</td><td>${TYPE_OF_WORK}</td></tr>";
+					tableText += "<tr><td>Layman Description</td><td>${LAYMAN_DESCRIPTION1}</td></tr>";	
+					tableText += "<tr><td>Work Program</td><td>${TPP_WORK_PROGRAM}</td></tr>";
+					tableText += "<tr><td>Category</td><td>${TPP_CATEGORY_P2}</td></tr>";			
+					tableText += "<tr><td>PID</td><td>${TPP_PID}</td></tr>";
+					tableText += "<tr><td>Est. Construction Cost</td><td>$${EST_CONST_COST:NumberFormat(places:0)}</td></tr>";
+					tableText += "<tr><td>Funding</td><td>$${UTP_TOTAL_FUNDING_AVAILABLE:NumberFormat(places:0)}</td></tr>";				
+					tableText += "<tr><td>Strategic Score</td><td>${UTP_STRATEGIC_SCORE:NumberFormat(places:0)}</td></tr>";				
+					tableText += "<tr><td>Total Score</td><td>${UTP_TOTAL_SCORE:NumberFormat(places:0)}</td></tr>";								
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Project - 10 Year Program:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planned_Projects/FeatureServer/1";	
+
+					fundedLyr = new FeatureLayer(projectsUrl, {id:"Funded_Projects",visible: true,outFields:["HIGHWAY_NUMBER","CONTROL_SECT_JOB","PROJ_CLASS","TYPE_OF_WORK","LAYMAN_DESCRIPTION1","TPP_WORK_PROGRAM","TPP_CATEGORY_P2","TPP_PID","EST_CONST_COST","UTP_TOTAL_FUNDING_AVAILABLE","UTP_STRATEGIC_SCORE","UTP_TOTAL_SCORE"], infoTemplate: infoTemplate});	
+					map.addLayer(fundedLyr);
+				}	
+				activeOverlay = fundedLyr;	
+				theLegend.layerInfos=[{layer:fundedLyr, title:"10 Year Program"}]; 						
+			}			
+			
+			if (theLayer=="Future_Traffic") {	
+				if (futureTrafficLyr) {
+					futureTrafficLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Route ID</td><td>${RIA_RTE_ID}</td></tr>";
+					tableText += "<tr><td>2013 AADT</td><td>${ADT_CUR}</td></tr>";			
+					tableText += "<tr><td>2033 Estimated AADT</td><td>${ADT_DESGN}</td></tr>";
+					tableText += "<tr><td>24 Hour Truck Percentage</td><td>${TRK_AADT}</td></tr>";											
+					tableText += "</table><br>Future Traffic and Percent Truck data is for main lanes only.";		
+					
+					var infoTemplate = new InfoTemplate("Future Traffic:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Inventory_Themes/FeatureServer/0";	
+					
+					futureTrafficLyr = new FeatureLayer(projectsUrl, {id:"Future_Traffic",visible: true,outFields:["RIA_RTE_ID","ADT_CUR","ADT_DESGN","TRK_AADT"], infoTemplate: infoTemplate});	
+					map.addLayer(futureTrafficLyr);
+				}	
+				
+				activeOverlay = futureTrafficLyr;		
+				theLegend.layerInfos=[{layer:futureTrafficLyr, title:"Future Traffic and Percent Trucks.  Future is calculated as 2% growth rate and percent truck is 24 hour."}];
+			}		
+			
+			if (theLayer=="Railroads") {	
+				if (railRoadLyr) {
+					railRoadLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Railroad Name</td><td>${RR_NM}</td></tr>";
+					tableText += "<tr><td>Railroad Abbreviation</td><td>${RR_ABRVN}</td></tr>";			
+					tableText += "<tr><td>Status</td><td>${RR_STAT}</td></tr>";
+					tableText += "<tr><td>Type</td><td>${RR_TYPE}</td></tr>";						
+					tableText += "<tr><td>Number</td><td>${RR_NBR}</td></tr>";					
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Railroad:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/14";					
+
+					railRoadLyr = new FeatureLayer(projectsUrl, {id:"Railroads",visible: true,outFields:["RR_NM","RR_ABRVN","RR_STAT","RR_TYPE","RR_NBR"], infoTemplate: infoTemplate});
+					railRoadLyr.setDefinitionExpression("RR_STAT='A' AND RR_TYPE='M'");	
+					map.addLayer(railRoadLyr);
+				}	
+				activeOverlay = railRoadLyr;	
+				theLegend.layerInfos=[{layer:railRoadLyr, title:"Mainline Railroads"}];
+			}				
+			
+			if (theLayer=="Non_Attainment") {	
+				if (nonAttainLyr) {
+					nonAttainLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>FIPS</td><td>${FIPS}</td></tr>";
+					tableText += "<tr><td>Region</td><td>${REGION}</td></tr>";
+					tableText += "<tr><td>Status</td><td>${STATUS}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Non Attainment:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/8";			
+
+					nonAttainLyr = new FeatureLayer(projectsUrl, {id:"Non_Attainment",visible: true,outFields:["FIPS","REGION","STATUS"], infoTemplate: infoTemplate});			
+					map.addLayer(nonAttainLyr);
+				}	
+				activeOverlay = nonAttainLyr;
+				theLegend.layerInfos=[{layer:nonAttainLyr, title:"Non Attainment or Near Non Attainment Areas"}];			
+			}		
+			
+			if (theLayer=="Texas_Trunk") {	
+				if (txTrunkLyr) {
+					txTrunkLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${RTE_NM}</td></tr>";
+					tableText += "<tr><td>Trunk Type</td><td>${CMNT}</td></tr>";			
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Texas Trunk:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Texas_Trunk_System/FeatureServer/0";
+	      				
+					txTrunkLyr = new FeatureLayer(projectsUrl, {id:"Texas_Trunk",visible: true,outFields:["RTE_NM","CMNT"], infoTemplate: infoTemplate});			
+					map.addLayer(txTrunkLyr);
+				}	
+				activeOverlay = txTrunkLyr;
+				theLegend.layerInfos=[{layer:txTrunkLyr, title:"Texas Trunk System"}];
+			}			
+			
+			if (theLayer=="Maintenance_Offices") {	
+				if (maintOfficeLyr) {
+					maintOfficeLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Office Name</td><td>${OFFICE_NM}</td></tr>";
+					tableText += "<tr><td>Section Number</td><td>${MNT_SEC_NBR}</td></tr>";
+					tableText += "<tr><td>Published</td><td>${CREATE_DT}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Maintenance Office:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Maintenance_Office/FeatureServer/0";
+
+					maintOfficeLyr = new FeatureLayer(projectsUrl, {id:"Maintenance_Offices",visible: true,outFields:["OFFICE_NM","MNT_SEC_NBR","CREATE_DT"], infoTemplate: infoTemplate});		
+					map.addLayer(maintOfficeLyr);
+				}	
+				activeOverlay = maintOfficeLyr;			
+				theLegend.layerInfos=[{layer:maintOfficeLyr, title:"TxDOT Maintenance Sections"}];			
+			}				
+			
+			if (theLayer=="Functional_Classification") {	
+				if (FCLyr) {
+					FCLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${RTE_NM}</td></tr>";
+					tableText += "<tr><td>Proposed</td><td>${PROPOSED}</td></tr>";
+					tableText += "<tr><td>FC Code</td><td>${FC}</td></tr>";
+					tableText += "<tr><td>FC Description</td><td>${FC_DESC}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Functional Classification:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Functional_Classification/FeatureServer/0";			
+					
+					FCLyr = new FeatureLayer(projectsUrl, {id:"Functional_Classification",visible: true,outFields:["RTE_NM","PROPOSED","FC","FC_DESC"], infoTemplate: infoTemplate});		
+					map.addLayer(FCLyr);
+				}	
+				activeOverlay = FCLyr;		
+				theLegend.layerInfos=[{layer:FCLyr, title:"Functional Classification"}];			
+			}		
+			
+			if (theLayer=="Freight_Network") {	
+				if (FreightLyr) {
+					FreightLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${HWY}</td></tr>";
+					tableText += "<tr><td>Network Type</td><td>${FR_TYPE}</td></tr>";
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Freight Network:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Freight_Network/FeatureServer/1";		
+					
+					FreightLyr = new FeatureLayer(projectsUrl, {id:"Freight Network",visible: true,outFields:["HWY","FR_TYPE"], infoTemplate: infoTemplate});		
+					map.addLayer(FreightLyr);
+				}	
+				activeOverlay = FreightLyr;		
+				theLegend.layerInfos=[{layer:FreightLyr, title:"Freight Network"}];			
+			}		
+			
+			if (theLayer=="Vertical_Clearance") {	
+				if (VerticalLyr) {
+					VerticalLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Status</td><td>${STATUS}</td></tr>";
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Vertical Clearance:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Freight_Network/FeatureServer/0";		
+					
+					VerticalLyr = new FeatureLayer(projectsUrl, {id:"Vertical Clearance",visible: true,outFields:["STATUS"], infoTemplate: infoTemplate});	
+					map.addLayer(VerticalLyr);
+				}	
+				activeOverlay = VerticalLyr;		
+				theLegend.layerInfos=[{layer:VerticalLyr, title:"Vertical Clearance"}];			
+			}
+			
+			if (theLayer=="Permanent_Stations") {	
+				if (permStationLyr) {
+					permStationLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Station ID</td><td>${T_FLAG}</td></tr>";
+					tableText += "<tr><td>Station Type</td><td>${STATION_TYPE}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Permanent Count Station:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Permanent_Stations/FeatureServer/0";				
+					
+					permStationLyr = new FeatureLayer(projectsUrl, {id:"Permanent Stations",visible: true,outFields:["T_FLAG","STATION_TYPE"], infoTemplate: infoTemplate});		
+					map.addLayer(permStationLyr);
+				}	
+				activeOverlay = permStationLyr;		
+				theLegend.layerInfos=[{layer:permStationLyr, title:"Permanent Count Stations"}];			
+			}		
+			
+			if (theLayer=="AADT") {	
+				if (aadtLyr) {
+					aadtLyr.show();
+					labelLayerAADT.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Station Flag</td><td>${T_FLAG}</td></tr>";
+					tableText += "<tr><td>Site ID</td><td>${T_SITE_ID}</td></tr>";
+					tableText += "<tr><td>AADT 2013</td><td>${F2013_TRAF}</td></tr>";								
+					tableText += "<tr><td>AADT 2012</td><td>${F2012_TRAF}</td></tr>";
+					tableText += "<tr><td>AADT 2011</td><td>${F2011_TRAF}</td></tr>";
+					tableText += "<tr><td>AADT 2010</td><td>${F2010_TRAF}</td></tr>";
+					tableText += "<tr><td>AADT 2009</td><td>${F2009_TRAF}</td></tr>";
+					tableText += "<tr><td>AADT 2008</td><td>${F2008_TRAF}</td></tr>";
+					tableText += "<tr><td>AADT 2007</td><td>${F2007_TRAF}</td></tr>";				
+					tableText += "</table><br>This count includes frontage roads when present.";		
+					
+					var infoTemplate = new InfoTemplate("Traffic Count Station:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_AADT/FeatureServer/0";			
+
+					aadtLyr = new FeatureLayer(projectsUrl, {id:"AADT",visible: true,outFields:["T_FLAG","T_SITE_ID","F2013_TRAF","F2012_TRAF","F2011_TRAF","F2010_TRAF","F2009_TRAF","F2008_TRAF","F2007_TRAF"], infoTemplate: infoTemplate});			
+					map.addLayer(aadtLyr);
+					
+					//Labeling
+					var label_symbol =  new TextSymbol();
+					label_symbol.setColor(new Color("#F00000"));
+					label_symbol.setFont(new Font("10pt").setWeight(Font.WEIGHT_BOLD));
+
+					var label_renderer = new SimpleRenderer(label_symbol);
+					labelLayerAADT = new LabelLayer({id:"AADT_Labels"});
+					labelLayerAADT.addFeatureLayer(aadtLyr, label_renderer, "{F2013_TRAF}");
+					map.addLayer(labelLayerAADT);
+				}	
+				activeOverlay = aadtLyr;
+				theLegend.layerInfos=[{layer:aadtLyr, title:"Annual Average Daily Traffic - Count Location"}];
+			}	
+			
+			if (theLayer=="Reference_Markers") {	
+				if (MarkerLyr) {
+					MarkerLyr.show();
+					labelLayerMarker.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${RID}</td></tr>";
+					tableText += "<tr><td>Reference Marker</td><td>${MRKR_NBR}</td></tr>";			
+					tableText += "<tr><td>Marker Suffix</td><td>${MRKR_SFX}</td></tr>";
+					tableText += "<tr><td>DFO</td><td>${MEAS:NumberFormat(places:3)}</td></tr>";				
+					tableText += "<tr><td>Source</td><td>${SOURCE}</td></tr>";					
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Reference Markers:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Reference_Markers/FeatureServer/0";					
+
+					MarkerLyr = new FeatureLayer(projectsUrl, {id:"Reference Marker",visible: true,outFields:["RID","MRKR_NBR","MRKR_SFX","MEAS","SOURCE"], infoTemplate: infoTemplate});	
+					map.addLayer(MarkerLyr);
+					
+					//Labeling
+					var label_symbol =  new TextSymbol();
+					label_symbol.setColor(new Color("#CC9900"));
+					label_symbol.setFont(new Font("9pt").setWeight(Font.WEIGHT_BOLD));
+
+					var label_renderer = new SimpleRenderer(label_symbol);
+					labelLayerMarker = new LabelLayer({id:"Marker_Labels"});
+					labelLayerMarker.addFeatureLayer(MarkerLyr, label_renderer, "{MRKR_NBR}");
+					map.addLayer(labelLayerMarker);				
+				}	
+				activeOverlay = MarkerLyr;	
+				theLegend.layerInfos=[{layer:MarkerLyr, title:"Reference Markers"}]; 
+			}		
+			
+			if (theLayer=="State_House_Districts") {	
+				if (StateHouseLyr) {
+					StateHouseLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>District</td><td>${District}</td></tr>";
+					tableText += "<tr><td>Plan Name</td><td>${PLAN_NM}</td></tr>";			
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("State House District:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political_Boundaries/FeatureServer/0";
+
+					StateHouseLyr = new FeatureLayer(projectsUrl, {id:"State House District",visible: true,outFields:["District","PLAN_NM"], infoTemplate: infoTemplate});		
+					map.addLayer(StateHouseLyr);
+				}	
+				activeOverlay = StateHouseLyr;	
+				theLegend.layerInfos=[{layer:StateHouseLyr, title:"Texas House Districts"}];			
+			}	
+
+			if (theLayer=="State_Senate_Districts") {	
+				if (StateSenateLyr) {
+					StateSenateLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>District</td><td>${District}</td></tr>";
+					tableText += "<tr><td>Plan Name</td><td>${PLAN_NM}</td></tr>";			
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("State Senate District:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political_Boundaries/FeatureServer/1";				
+
+					StateSenateLyr = new FeatureLayer(projectsUrl, {id:"State Senate District",visible: true,outFields:["District","PLAN_NM"], infoTemplate: infoTemplate});		
+					map.addLayer(StateSenateLyr);
+				}	
+				activeOverlay = StateSenateLyr;
+				theLegend.layerInfos=[{layer:StateSenateLyr, title:"Texas Senate Districts"}];			
+			}	
+
+			if (theLayer=="US_House_Districts") {	
+				if (USHouseLyr) {
+					USHouseLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>District</td><td>${District}</td></tr>";
+					tableText += "<tr><td>Plan Name</td><td>${PLAN_NM}</td></tr>";			
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("US House District:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political_Boundaries/FeatureServer/2";				
+
+					USHouseLyr = new FeatureLayer(projectsUrl, {id:"US House District",visible: true,outFields:["District","PLAN_NM"], infoTemplate: infoTemplate});		
+					map.addLayer(USHouseLyr);
+				}	
+				activeOverlay = USHouseLyr;	
+				theLegend.layerInfos=[{layer:USHouseLyr, title:"US House Districts"}];			
+			}			
+			
+			if (theLayer=="NHS") {	
+				if (NHSLyr) {
+					NHSLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Highway</td><td>${RTE_NM}</td></tr>";
+					tableText += "<tr><td>System Type</td><td>${SYS_TYPE}</td></tr>";
+					tableText += "<tr><td>NHS Code</td><td>${NHS_CD}</td></tr>";
+					tableText += "<tr><td>NHS Type</td><td>${NHS_TYPE}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("NHS:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/12";				
+
+					NHSLyr = new FeatureLayer(projectsUrl, {id:"NHS",visible: true,outFields:["RTE_NM","SYS_TYPE","NHS_CD","NHS_TYPE"], infoTemplate: infoTemplate});		
+					map.addLayer(NHSLyr);
+				}	
+				activeOverlay = NHSLyr;		
+				theLegend.layerInfos=[{layer:NHSLyr, title:"National Highway System"}];			
+			}			
+			
+			if (theLayer=="Area_Offices") {	
+				if (areaOfficeLyr) {
+					areaOfficeLyr.show();
+				}
+				else {
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Office Name</td><td>${OFFICE_NM}</td></tr>";
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Area Office:",tableText);	
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Area_Office/FeatureServer/0";
+
+					areaOfficeLyr = new FeatureLayer(projectsUrl, {id:"Area_Offices",visible: true,outFields:["OFFICE_NM"], infoTemplate: infoTemplate});		
+					map.addLayer(areaOfficeLyr);
+				}	
+				activeOverlay = areaOfficeLyr;	
+				theLegend.layerInfos=[{layer:areaOfficeLyr, title:"TxDOT Area Offices"}];			
+			}		
+			
+			if (theLayer=="COG") {
+				if (COGLyr) {
+					COGLyr.show();
+				}
+				else {		
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>COG Name</td><td>${COG_NM}</td></tr>";
+					tableText += "<tr><td>COG Abbreviation</td><td>${COG_ABRVN}</td></tr>";
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("COG:",tableText);		
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/9";	
+					
+					COGLyr = new FeatureLayer(projectsUrl, {id:"COG",visible: true,outFields:["COG_NM","COG_ABRVN"], infoTemplate: infoTemplate});		
+					map.addLayer(COGLyr);
+				}	
+				activeOverlay = COGLyr;
+				theLegend.layerInfos=[{layer:COGLyr, title:"Council of Governments"}];
+			}	
+
+			if (theLayer=="MPO") {		
+				if (MPOLyr) {
+					MPOLyr.show();
+				}
+				else {		
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>MPO Name</td><td>${MPO_NM}</td></tr>";				
+					tableText += "<tr><td>MPO Label</td><td>${MPO_LBL}</td></tr>";
+					tableText += "<tr><td>MPO Number</td><td>${MPO_NBR}</td></tr>";				
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("MPO:",tableText);		
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Planning_Map_Overlays/FeatureServer/2";						
+					
+					MPOLyr = new FeatureLayer(projectsUrl, {id:"MPO",visible: true,outFields:["MPO_NM","MPO_LBL","MPO_NBR"], infoTemplate: infoTemplate});		
+					map.addLayer(MPOLyr);
+				}			
+				activeOverlay = MPOLyr;
+				theLegend.layerInfos=[{layer:MPOLyr, title:"Metropolitan Planning Organizations"}];
+			}		
+			
+			if (theLayer=="Control_Section") {		
+				if (controlSectionLyr) {
+					controlSectionLyr.show();
+					labelLayerCS.show();
+				}
+				else {			
+					tableText = "";
+					tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+					tableText += "<tr><td>Control Section</td><td>${CTRL_SECT_NBR}</td></tr>";
+					tableText += "<tr><td>Highway</td><td>${RTE_NM}</td></tr>";
+					tableText += "<tr><td>Begin Mile Point</td><td>${BEGIN_MPT_MS}</td></tr>";
+					tableText += "<tr><td>End Mile Point</td><td>${END_MPT_MS}</td></tr>";			
+					tableText += "<tr><td>Color Class</td><td>${CTRL_SECT_CLR_NBR}</td></tr>";					
+					tableText += "</table>";		
+					
+					var infoTemplate = new InfoTemplate("Control Section:",tableText);
+					var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Control_Section/FeatureServer/0";
+
+					controlSectionLyr = new FeatureLayer(projectsUrl, {id:"Control_Section",visible: true,outFields:["CTRL_SECT_NBR","RTE_NM","BEGIN_MPT_MS","END_MPT_MS","CTRL_SECT_CLR_NBR"], infoTemplate: infoTemplate});	
+					map.addLayer(controlSectionLyr);
+					
+					//Labeling
+					var label_symbol =  new TextSymbol();
+					label_symbol.setColor(new Color("#000000"));
+					label_symbol.setFont(new Font("10pt").setWeight(Font.WEIGHT_BOLD));
+
+					var label_renderer = new SimpleRenderer(label_symbol);
+					labelLayerCS = new LabelLayer({id:"CS_Labels"});
+					labelLayerCS.addFeatureLayer(controlSectionLyr, label_renderer, "{CTRL_SECT_NBR}");
+					map.addLayer(labelLayerCS);				
+				}		
+				activeOverlay = controlSectionLyr;	
+				theLegend.layerInfos=[{layer:controlSectionLyr, title:"Control Section Segments"}]; 
+			}
+			
+			scaleDependentQueries();
+		}
+		
+		function addInventoryData() { 
+			tableText = "";
+			tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+			tableText += "<tr><td>Highway</td><td>${HWY}</td></tr>";
+			tableText += "<tr><td>AADT</td><td>${ADT_CUR}</td></tr>";
+			tableText += "<tr><td>AADT Future</td><td>${ADT_DESGN}</td></tr>";		
+			tableText += "<tr><td>Lanes</td><td>${NUM_LANES}</td></tr>";
+			tableText += "<tr><td>Speed</td><td>${SPD_MAX}</td></tr>";
+			tableText += "<tr><td>Truck PCT</td><td>${TRK_AADT}</td></tr>";	
+			tableText += "<tr><td>ROW Width</td><td>${ROW_W_USL}</td></tr>";		
+			tableText += "<tr><td>Surface Width</td><td>${SUR_W}</td></tr>";
+			tableText += "<tr><td>Roadbed Width</td><td>${RB_WID}</td></tr>";
+			tableText += "<tr><td>Median Width</td><td>${MED_WID}</td></tr>";
+			tableText += "</table>";	
+
+			var infoTemplate = new InfoTemplate("Roadway Inventory:",tableText);		
+			var projectsUrl = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/TxDOT_Roadway_Inventory_OnSystem/FeatureServer/0";
+				
+			//var theSymbol = new esri.symbol.SimpleLineSymbol("solid", new esri.Color("#FF0000"), 5);	
+			var theSymbol = new CartographicLineSymbol(CartographicLineSymbol.STYLE_SOLID, new Color("#FF0000"), 5, CartographicLineSymbol.CAP_ROUND, CartographicLineSymbol.JOIN_MITER, 5);				
+			var theRenderer = new SimpleRenderer(theSymbol);
+
+			//Add the layer - outFields: ["*"] if you want to use all fields
+			projectsRI = new FeatureLayer(projectsUrl, {id:"RoadwayInventory",visible: false,outFields:["HWY","ADT_CUR","ADT_DESGN","NUM_LANES","SPD_MAX","TRK_AADT","ROW_W_USL","SUR_W","RB_WID","MED_WID","HSYS"], infoTemplate: infoTemplate});	
+			projectsRI.setRenderer(theRenderer);
+			projectsRI.setAutoGeneralize(false);	
+			map.addLayer(projectsRI);		
+		}		
+		
+		on(dom.byId("cmdRunQuery"), "click", gatherQueryInfo);
+		function gatherQueryInfo() {
+			/*if (validateQueryForm()!=true) { 
+				updateExternalLinks();	 
+				return;
+			}*/ 	
+		
+			var theRteName = document.getElementById("rteName").value;
+			var theAttrSelected = document.getElementById("attrSelect").value;
+			var theOpSelected = document.getElementById("opSelect").value;
+			var theValue = document.getElementById("attrValue").value;
+			var theOperator = "";
+			
+			theRteName = theRteName.toUpperCase();
+			
+			if (theOpSelected=="opGreaterThan") {
+			  theOperator = ">";
+			}
+			if (theOpSelected=="opLessThan") {
+			  theOperator = "<";
+			}
+			if (theOpSelected=="opEqual") {
+			  theOperator = "=";
+			}	
+			
+			var theQuery = "";
+			
+			if (theRteName=="*") {
+				theQuery = "REC=1 and HWY_STAT>3 and " + theAttrSelected + theOperator + theValue;	
+			}
+			else if (theRteName=="IH") {
+				theQuery = "REC=1 and HWY_STAT>3 and HSYS='IH' and " + theAttrSelected + theOperator + theValue;	
+			}
+			else if (theRteName=="US") {
+				theQuery = "REC=1 and HWY_STAT>3 and HSYS='US' and " + theAttrSelected + theOperator + theValue;	
+			}		
+			else if (theRteName=="SH") {
+				theQuery = "REC=1 and HWY_STAT>3 and HSYS='SH' and " + theAttrSelected + theOperator + theValue;	
+			}
+			else if (theRteName=="SL") {
+				theQuery = "REC=1 and HWY_STAT>3 and HSYS='SL' and " + theAttrSelected + theOperator + theValue;	
+			}
+			else if (theRteName=="FM") {
+				theQuery = "REC=1 and HWY_STAT>3 and HSYS='FM' and " + theAttrSelected + theOperator + theValue;	
+			}	
+			else if (theRteName=="RM") {
+				theQuery = "REC=1 and HWY_STAT>3 and HSYS='RM' and " + theAttrSelected + theOperator + theValue;	
+			}	
+			else {
+				theQuery = "REC=1 and HWY_STAT>3 and RIA_RTE_ID='" + theRteName + "-KG' and " + theAttrSelected + theOperator + theValue;	
+			}
+			
+			selectAttributes(theQuery);
+		}
+			
+		function selectAttributes(theQuery) {
+			projectsRI.setDefinitionExpression(theQuery);
+			noResults("queryResults","Running Query.....");
+			
+			projectsRI.selectFeatures(theQuery,FeatureLayer.SELECTION_NEW,function(featureSet){
+				if (featureSet.length>0) {
+				    if (featureSet.length<50) {
+						map.setExtent(graphicsUtils.graphicsExtent(featureSet));					
+						noResults("queryResults",featureSet.length + " records returned.  Click mapped segments to view details.");
+					}
+					else {
+						noResults("queryResults","More than 2,000 records returned.  Zoom out to view results, then click mapped segments to view details.");				
+					}
+					projectsRI.show();					
+				}
+				else {
+					noResults("queryResults","Query returned 0 records.<br>Please try again.");
+					projectsRI.hide();
+				}
+			});
+		}
+		
+		dojo.query(".Searcher").forEach(function (result){
+				on(result, "click", check);
+		});
+		var theSearchLayer;
+		function check(searchLayer) {
+			theSearchLayer = searchLayer.target.id;
+			document.getElementById("txtSearch").focus();
+			document.getElementById("searchResults").innerHTML = "";
+		}
+			
+		on(dom.byId("txtSearch"), "keyup", checkInput);
+		function checkInput(event) {
+			var userInput = event.target.value;
+
+			var inputLenTest=3;
+			if (theSearchLayer=="OnSystem_Highway") {
+				inputLenTest=4;
+			}
+			else {
+				inputLenTest=3;		
+			}
+		
+			if (userInput.length>inputLenTest) {		
+				if (theSearchLayer=="Texas_City") {			
+					var query = new Query();
+					query.returnGeometry = false;
+					query.where = "[CITY_NM] LIKE '" + userInput + "%'";				
+					citySearchLyr.queryIds(query, function (objectIds) {getAttributeData(objectIds);});					
+				}
+				
+				if (theSearchLayer=="TxDOT_Control_Section") {	
+					var query = new Query();
+					query.returnGeometry = false;
+					query.where = "[CTRL_SECT_NBR] LIKE '" + userInput + "%'";				
+					csSearchLyr.queryIds(query, function (objectIds) {getAttributeData(objectIds);});			
+				}
+				
+				if (theSearchLayer=="Texas_County") {		
+					var query = new Query();
+					query.returnGeometry = false;
+					query.where = "[CNTY_NM] LIKE '" + userInput + "%'";				
+					countySearchLyr.queryIds(query, function (objectIds) {getAttributeData(objectIds);});			
+				}
+				
+				if (theSearchLayer=="TxDOT_District") {	
+					var query = new Query();
+					query.returnGeometry = false;
+					query.where = "[DIST_NM] LIKE '" + userInput + "%'";				
+					districtSearchLyr.queryIds(query, function (objectIds) {getAttributeData(objectIds);});			
+				}			
+
+				if (theSearchLayer=="OnSystem_Highway") {
+					var query = new Query();
+					query.returnGeometry = false;
+					query.where = "[RTE_NM] LIKE '" + userInput + "%'";				
+					highwaySearchLyr.queryIds(query, function (objectIds) {getAttributeData(objectIds);});							
+				}				
+			}	
+		}
+		
+		function getAttributeData(theIDs) {		
+			var querySuccessful = false;	
+	        var query = new Query();
+	        query.objectIds = theIDs.slice();
+	        query.outFields = ["*"];
+
+			if (theSearchLayer=="Texas_City") {
+				citySearchLyr.queryFeatures(query, function (featureSet) {
+					showSearchResults(featureSet,12);
+					querySuccessful = true;	
+				});	
+			}
+			
+			if (theSearchLayer=="TxDOT_Control_Section") {
+				csSearchLyr.queryFeatures(query, function (featureSet) {
+				  showSearchResults(featureSet,13);
+				  querySuccessful = true;	
+				});	
+			}
+
+			if (theSearchLayer=="Texas_County") {
+				countySearchLyr.queryFeatures(query, function (featureSet) {
+				  showSearchResults(featureSet,10);
+				  querySuccessful = true;	
+				});	
+			}
+
+			if (theSearchLayer=="TxDOT_District") {
+				districtSearchLyr.queryFeatures(query, function (featureSet) {
+				  showSearchResults(featureSet,8);
+				  querySuccessful = true;	
+				});	
+			}
+
+			if (theSearchLayer=="OnSystem_Highway") {
+				highwaySearchLyr.queryFeatures(query, function (featureSet) {
+				  showSearchResults(featureSet,12);
+				  querySuccessful = true;	
+				});	
+			}
+			
+			if (querySuccessful) {
+			  //Nothing
+			}
+			else {
+			  noResults("searchResults","Nothing found by that name.<br>Please try again.");
+			}
+		}	
+		
+		function noResults(theDiv,theText) {
+			document.getElementById(theDiv).innerHTML = theText;
+		}
+		
+		function showSearchResults(results,theZoom) {
+			var resultItems = [];
+			var finalSet = [];
+			var resultText = "";
+	        var resultCount = results.features.length;
+	        for (var i = 0; i < resultCount; i++) {
+	          var featureAttributes = results.features[i].attributes;
+	          for (var attr in featureAttributes) {
+				finalSet.push(featureAttributes[attr]);
+	          }
+			  if (theSearchLayer=="OnSystem_Highway") {
+				resultText += "<span class='SearchResult' id='" + finalSet[1] + "," + finalSet[2] + "," + theZoom + "'>" + finalSet[0] + "-" + finalSet[3] + " CO.</span>";			
+			  }
+			  else {
+				resultText += "<span class='SearchResult' id='" + finalSet[1] + "," + finalSet[2] + "," + theZoom + "'>" + finalSet[0] + "</span>";
+			  }
+			  finalSet = [];
+	        }
+			
+			document.getElementById("searchResults").innerHTML = resultText;
+			dojo.query(".SearchResult").forEach(function (result){
+				on(result, "click", zoomTo);
+			});
+			
+		}
+		
+		on(dom.byId("btnCalcCost"), "click", deCalculateCost);
+		function deCalculateCost() {
+			if (deLength>0) {
+			   //Nothing
+			}
+			else {
+				alert("Please draw a line before calculating costs.");
+				return;
+			}
+			 
+			var deProjectType = document.getElementById("selPrjType").value;
+			var deAreaType = document.getElementById("selPrjAreaType").value;	 
+			var deRouteType = document.getElementById("selPrjRouteType").value; 
+		    var deDivided = document.getElementById("selPrjDividedType").value;
+		    var deFrontageRoads = document.getElementById("selPrjFrontageRoads").value;
+		    var deLanes = document.getElementById("txtPrjLanes").value;	 
+		    var deProjectLength = Math.round(deLength*1000)/1000;	 
+			 
+			if (deLanes<1) {
+				alert("Number of Lanes must be greater than 0.");
+				return;
+			}
+			 
+			if (deRouteType=="E") {
+				deDivided = "H";
+			}
+			 
+			var userProjectInput = deProjectType + deAreaType + deRouteType + deDivided; 
+			var codeArray = new Array("ADFH","ADFI","BDFH","BDFI","ADGH","ADGI","BDGH","BDGI","ADEH","BDEH","ACFH","ACFI","BCFH","BCFI","ACGH","ACGI","BCGH","BCGI","ACEH","BCEH");
+			var costArray = new Array(2891181,1523096,679775,410606,1567558,1142895,743221,527346,2500000,585985,3307443,1424801,883591,742257,2948087,1413481,1213519,853382,5463629,917134);
+		    var prjCostPerMile;
+			 
+			var i;
+			for (i=0;i<20;i++) {
+				if (userProjectInput==codeArray[i]) {
+					prjCostPerMile = costArray[i];			   
+				}
+			}
+			  
+			var totalRoadTypeCost = prjCostPerMile * deLanes * deProjectLength;
+		    var totalFrontageRoadCost=0;	  
+			 
+			if (deFrontageRoads=="2") {
+				totalFrontageRoadCost = 1250000 * deProjectLength * 4; 	    
+			}
+			else {
+				totalFrontageRoadCost = 0;
+			}	 
+			 
+			//Summing total project cost and writing to output
+			var theOutputArea = document.getElementById("deCostResult");	    
+			var totalProjectCost = totalRoadTypeCost + totalFrontageRoadCost;
+			totalProjectCost = Math.round(totalProjectCost/1000)*1000;
+			theOutputArea.innerHTML = "<br>Project Length: <br>" + deProjectLength + " miles<br><br>Estimated Construction Cost: <br>$" + addCommas(totalProjectCost);
+		}	
+		
+		function addCommas(nStr) {
+		  nStr += '';
+		  x = nStr.split('.');
+		  x1 = x[0];
+		  x2 = x.length > 1 ? '.' + x[1] : '';
+		  var rgx = /(\d+)(\d{3})/;
+		  while (rgx.test(x1)) {
+			x1 = x1.replace(rgx, '$1' + ',' + '$2');
+		  }
+		  return x1 + x2;
+		}	
+		
+		on(dom.byId("btnClearProject"), "click", deClear);
+		function deClear() {
+			map.graphics.clear();
+			document.getElementById("deCostResult").innerHTML = "";
+			theDistMeasured=0;
+			xPointArray.length=0;
+			currentMeasure=0;
+			deLength=0;
+		}
+		
+		on(dom.byId("verifyCode"), "click", verifyAccess);
+		function verifyAccess() {
+			var project = document.getElementById("updatesProject").value;
+			var code = document.getElementById("accessCode").value;
+			if (project == "updatesCR" && code == "armadillo") {
+				document.getElementById("updatesAccess").style.display = "none";
+				document.getElementById("updatesCR").style.display = "block";
+			}
+			else if (project == "updatesLS" && code == "crickets") {
+				document.getElementById("updatesAccess").style.display = "none";
+				document.getElementById("updatesLS").style.display = "block";
+			}
+			else {
+				alert("You have entered an invalid access code for this project.")
+			}
+		}
+		
+		on(dom.byId("organizationLS"), "change", editorLS);
+		function editorLS() {
+			var organization = document.getElementById("organizationLS").value;
+			if (organization !== "") {
+				document.getElementById("editorLS").style.display = "block";
+			}
+			else {
+				document.getElementById("editorLS").style.display = "none";
+			}
+		}
+		
+	});
+	
+  </script>
+</head>
+<body class="claro">
+  <div id="toc">
+      <div id="tabControl">
+		  <table id="tcTabs">
+			  <tr align="center">
+				  <td class="Tabs" id="tcMap" bgcolor='#6699CC' style="color:white;">Maps</td>
+				  <td class="Tabs" id="tcSearch">Search</td>
+				  <td class="Tabs" id="tcMeasure">Measure</td>
+				  <td class="Tabs" id="tcQuery">Query</td>
+			  </tr>
+			  <tr>
+				  <td class="Tabs" id="tcSketch" colspan=2>Sketch Tool</td>
+				  <td class="Tabs" id="tcLegend">Legend</td>				  
+				  <td class="Tabs" id="tcAbout">About</td>				  
+			  </tr>
+			  <tr>
+				  <td class="Tabs" id="tcUpdates">Updates</td>
+				  <td></td>
+				  <td></td>
+				  <td></td>
+			  </tr>	
+		  </table>
+	  </div>
+	  <div id="mapTab">
+		<table id="tocMaps" class="tocTables">
+		  <tr><th>Base Maps</th></tr>
+          <tr class="alt"><td class="Basemaps" id='Statewide_Planning_Map' style="color:red;">TxDOT</td></tr>		  
+		  <tr><td class="Basemaps" id='World_Street_Map'>ESRI Streets</td></tr>	  
+		  <tr class="alt"><td class="Basemaps" id='World_Imagery'>Imagery</td></tr>
+		  <tr><td class="Basemaps" id='World_Topo_Map'>Topographic</td></tr>
+		  <!--
+		  <tr class="alt"><td class="Basemaps" id='Canvas/World_Light_Gray_Base'>Gray Canvas</td></tr>	 
+		  <tr><td class="Basemaps" id='NatGeo_World_Map'>National Geographic</td></tr>	
+		  -->
+		</table>
+		<table id="tocData" class="tocTables">
+		  <tr><th>Overlays</th></tr>	
+		  <tr class="alt"><td class="Overlay" id="CLEAR" style="color:red;">Clear Overlays</td></tr>		  
+		  <tr><td class="Overlay" id='AADT'>AADT</td></tr>
+		  <tr class="alt"><td class="Overlay" id='Area_Offices'>Area Offices</td></tr>
+		  <tr><td class="Overlay" id='COG'>COG</td></tr>
+		  <tr class="alt"><td class="Overlay" id='Control_Section'>Control Section</td></tr>
+		  <tr><td class="Overlay" id='Freight_Network'>Freight Network</td></tr>		  
+		  <tr class="alt"><td class="Overlay" id='Functional_Classification'>Functional Classification</td></tr>
+		  <tr><td class="Overlay" id='Future_Traffic'>Future Traffic & Percent Truck</td></tr>
+		  <tr class="alt"><td class="Overlay" id='Minute_Orders'>Highway Designations</td></tr>		  
+	 	  <tr><td class="Overlay" id='Maintenance_Offices'>Maintenance Office</td></tr>	  
+		  <tr class="alt"><td class="Overlay" id='MPO'>MPO</td></tr>	
+		  <tr><td class="Overlay" id='NHS'>National Highway System</td></tr>		  
+		  <tr class="alt"><td class="Overlay" id='Non_Attainment'>Non-Attainment Areas</td></tr>
+		  <tr><td class="Overlay" id='Permanent_Stations'>Permanent Count Stations</td></tr>	
+          <tr class="alt"><td class="Overlay" id='Feasibility_Studies'>Projects - Feasibility Studies</td></tr>
+		  <tr><td class="Overlay" id='Unfunded_Projects'>Projects - Future Candidates</td></tr>	
+		  <tr class="alt"><td class="Overlay" id='Funded_Projects'>Projects - 10 Year Program</td></tr>
+          <tr><td class="Overlay" id='Proposition_One'>Projects - Proposition One</td></tr>		  
+		  <tr class="alt"><td class="Overlay" id='Railroads'>Railroads</td></tr>
+	      <tr><td class="Overlay" id='Reference_Markers'>Reference Markers</td></tr>
+		  <tr class="alt"><td class="Overlay" id='Speed_Limit'>Speed Limits</td></tr>
+		  <tr><td class="Overlay" id='State_House_Districts'>State House Districts</td></tr>
+		  <tr class="alt"><td class="Overlay" id='State_Senate_Districts'>State Senate Districts</td></tr>	
+		  <tr><td class="Overlay" id='Texas_Trunk'>Texas Trunk System</td></tr>
+		  <tr class="alt"><td class="Overlay" id='US_House_Districts'>US House Districts</td></tr>			  
+		  <tr><td class="Overlay" id='Vertical_Clearance'>Vertical Clearance</td></tr>			  
+		  <!--<tr class="alt"><td class="Overlay" id='Pavement_Conditions'>Pavement Conditions</td></tr>-->
+		</table>
+	  </div>
+	  <div id="searchTab">
+		<table class="tocTables">
+		 <tr><th>Select layer to search</th></tr>
+		 <tr><td>
+		 <label class='clickable'><input type="radio" name="option" class="Searcher" id="Texas_City">City</label><br>
+		 <label class='clickable'><input type="radio" name="option" class="Searcher" id="TxDOT_Control_Section">Control Section &nbsp;&nbsp; Ex. 002301</label><br>		 
+		 <label class='clickable'><input type="radio" name="option" class="Searcher" id="Texas_County">County</label><br>
+		 <label class='clickable'><input type="radio" name="option" class="Searcher" id="TxDOT_District">District</label><br>
+		 <label class='clickable'><input type="radio" name="option" class="Searcher" id="OnSystem_Highway">On System Highway<br>
+		 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ex. IH0035, US0083, SH0079<br>
+		 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ex. SL0001, FM2439</label><br>
+		 </td></tr>
+		 <tr><td>Type name.. then click to zoom.</td></tr>
+		 <tr><td><input id="txtSearch" type="text" onfocus="this.value=''" value="Search here..."/></td></tr>
+		 <tr><td><div id="searchResults"></div></td></tr>
+        </table>
+	  </div>
+	  <div id="measureTab">
+		<table class="tocTables">
+         <tr><th>Units</th></tr>		
+		 <tr><td colspan="2">
+		 <label class='clickable'><input type="radio" class="MeasureUnits" name="unitsList" value="Meters" title="Meters"> Meters</label>
+		 <br>
+		 <label class='clickable'><input type="radio" class="MeasureUnits" name="unitsList" value="Kilometers" title="Kilometers"> Kilometers</label>
+		 <br>
+		 <label class='clickable'><input type="radio" class="MeasureUnits" name="unitsList" value="Feet" title="Feet"> Feet</label>
+		 <br>
+		 <label class='clickable'><input id="radMile" type="radio" class="MeasureUnits" name="unitsList" value="Miles" checked="checked" title="Miles"> Miles</label>
+		 </td></tr>
+		 <tr><td width="100" colspan="2" align="left" id="measuredDistance">0.0</td></tr>
+		 <tr><td><button title="Clear Graphics" id="clearMeasure">Clear</button></td></tr>
+      	</table>
+	  </div>
+	  <div id="queryTab">
+		<table class="tocTables">
+			<tr><th colspan=2>Query 2013 Inventory Data</th><tr> 
+			<tr><td>Route:</td><td><input Class="queryFields" id="rteName" type="text"></td></tr>
+			<tr><td>Attribute:</td><td>
+				<select Class="queryFields" id="attrSelect">
+				  <option value="ADT_CUR">AADT</option>
+				  <option value="ADT_DESGN">AADT Future</option>
+				  <option value="TRK_AADT">Percent Truck</option>
+				  <option value="SPD_MAX">Speed Limit</option>
+				  <option value="NUM_LANES">Lanes</option>
+				  <option value="ROW_W_USL">ROW Width</option>
+				  <option value="SUR_W">Surface Width</option>
+				  <option value="RB_WID">Roadbed Width</option>
+				  <option value="MED_WID">Median Width</option>
+				</select>
+			</td></tr>
+			<tr><td>Operation:</td><td>
+			  <select Class="queryFields" id="opSelect">
+				  <option value="opEqual">Equals</option>
+				  <option value="opLessThan">Less Than</option>
+				  <option value="opGreaterThan">Greater Than</option>
+			  </select> 
+			</td></tr>
+			<tr><td>Value:</td><td><input Class="queryFields" id="attrValue" type="text"></td></tr>
+			<tr><td>&nbsp;</td><td align="right"><input id="cmdRunQuery" type="button" value="Run Query"/></td>
+			<tr><td colspan=2>Route tips:<br>Format=IH0035,SL0001 etc.<br>Enter * for all routes<br>Enter IH for all Interstates<br>Enter US for all US Highways<br>Enter SH for all State Highways<br><br><div id="queryResults"></div></td></tr>
+		</table>	  
+	  </div>
+		<div id="sketchTab">
+			<table class="tocTables">
+				<tr><th colspan=2>Sketch Planning Tool</th><tr>
+				<tr><td>
+				* Note - This tool is for planning purposes only.  It is not a tool for roadway design or engineering purposes.
+				<br><br>Construction cost estimates are calculated using average project cost by type from August 2003 to August 2013 in 2013 dollars.
+				<br><br>Frontage roads assumed two lanes per direction when selected.
+				<br><br>
+				</td></tr>
+				<tr><td>
+					<label Class="PRJFields" id="lblPrjType">Project Type</label>
+					<select Class="PRJFields" id="selPrjType" name="selPrjType">
+						<option value="A">New Roadway</option>
+						<option value="B">Reconstruction</option>					
+					</select>
+					<br>
+					<label Class="PRJFields" id="lblAreaType">Area Type</label>
+					<select Class="PRJFields" id="selPrjAreaType" name="selPrjAreaType">
+						<option value="C">Urban</option>
+						<option value="D">Rural</option>					
+					</select>
+					<br>
+					<label Class="PRJFields" id="lblPrjRouteType">Route Type</label>
+					<select Class="PRJFields" id="selPrjRouteType" name="selPrjRouteType">			
+						<option value="E">Freeway</option>
+						<option value="F">Arterial</option>						
+						<option value="G">Collector</option>															
+					</select>
+					<br>	 
+					<label Class="PRJFields" id="lblPrjDivided">Configuration</label>
+					<select Class="PRJFields" id="selPrjDividedType" name="selPrjDividedType">
+						<option value="H">Divided</option>
+						<option value="I">Undivided</option>					
+					</select>
+					<br>
+					<label Class="PRJFields" id="lblPrjFrontageRoads">Frontage Roads</label>
+					<select Class="PRJFields" id="selPrjFrontageRoads" name="selPrjFrontageRoads">
+						<option value="1">No</option>
+						<option value="2">Yes</option>
+					</select>		
+					<br>		
+					<label Class="PRJFields" id="lblPrjLanes">Number of Main Lanes</label>
+					<input Class="PRJFields" type="number" id="txtPrjLanes" name="txtPrjLanes">
+					<br><br>				 	
+					<button id="btnCalcCost" title="Estimate Project Cost">Calculate Cost</button>
+					<button id="btnClearProject" title="Clear Project">Clear</button>				 
+					<div id="deCostResult"></div>
+				</td></tr>
+			</table>					
+		</div>
+		<div id="legendTab">
+			<table class="tocTables">
+				<tr><th align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Map Legend</th><tr> 
+				<tr><td>
+					<div id="legendDiv">
+						<!--Legend-->
+					</div>
+				</td></tr>				
+			</table>
+		</div>		
+		<div id="aboutTab">
+			<table class="tocTables">
+				<tr><th>Map Disclaimer</th><tr> 
+				<tr><td>The Statewide Planning Map displays data in support of planning operations at TxDOT.
+				<br><br>Although we try to update information as often as possible, we are not assuming any responsibility for any damages or inaccuracies if you rely on it. 
+				<br><br>We offer no warranty that this application is accurate or complete. The information shown is for informational purposes and may not have been prepared for or be suitable for legal, engineering, or surveying purposes. 
+				<br><br>It does not represent an on-the-ground survey and represents only the approximate relative location of property/administrative boundaries. 
+				</td></tr>				
+			</table>
+		</div>
+		<div id="updatesTab">
+			<table class="tocTables">
+				<tr><th>Inventory Updates</th><tr>
+				<tr>
+					<tbody id="updatesAccess">
+						<tr><td>Welcome to the interactive data exchange for the TxDOT roadway inventory.
+							<br><br>Quick blerb about this data exchange application.
+							<br><br>Some disclaimer about using this application.
+							<br><br>Select your project and enter your access code below to get started.
+						</td></tr>
+						<tr><td>
+							<select id="updatesProject">
+								<option value="updatesCR" selected>County Roads</option>
+								<option value="updatesLS">Local Streets</option>
+							</select>			
+						</td></tr>
+						<tr><td>
+							<input id="accessCode" type="text" placeholder="Enter access code here...">			
+						</td></tr>
+						<tr><td>
+							<button id="verifyCode" title="Verify Access Code">Submit Access Code</button>
+						</td></tr>
+					</tbody>
+					<tbody id="updatesCR">
+						<tr><td>County Road Inventory</td></tr>
+					</tbody>
+					<tbody id="updatesLS">
+						<tr><td>Local Streets Inventory</td></tr>
+						<tr><td>
+							<select id="organizationLS">
+								<option value="" selected>Select Organization</option>
+								<option value="CSEC">CSEC</option>
+								<option value="CAPCOG">CAPCOG</option>
+							</select>
+							<div id="editorLS" style="display: none;">
+								<div id="templatePicker">template picker here</div>
+								<div id="shpLS">
+									<button>Download Shapefile Template</button>
+									<button>Upload Inventory Shapefile</button>
+								</div>
+								<div id="resourcesLS">Links to resources/references</div>
+							</div>
+						</td></tr>
+					</tbody>
+				</tr>
+			</table>
+		</div>	
+  </div>
+ <div id="mapDiv">
+     <span id="info"></span>
+ </div>   
+</body>
+</html>
