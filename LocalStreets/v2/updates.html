@@ -7,6 +7,8 @@
         <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
         <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
         <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick.css"/>
+        <link rel="stylesheet" type="text/css" href="http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick-theme.css"/>
 
         <style type="text/css">
             html, body, #divMap {
@@ -22,7 +24,7 @@
                 color: #303030;
                 text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
             }
-            #basemapCarousel {
+            #basemapTrigger {
                 position: absolute;
                 bottom: 0;
                 width: 100%;
@@ -33,15 +35,33 @@
                 position:absolute;
                 bottom:0;
                 /*display:none;*/
-                padding:10px;
+                padding-left:30px;
+                padding-right: 30px;
                 margin:0;
                 background: rgb(0, 0, 0);
                 background: rgba(0, 0, 0, 0.5);
                 width: 100%;
-                height: 130px;
+                height: 180px;
                 z-index: 50;
-                overflow: auto;
+                overflow: hidden;
+                vertical-align: center;
             }
+            #basemapItemList {
+                margin:auto;
+                width:100%;
+                height:100%;
+            }
+            .basemapItem {
+                height: 100%;
+                margin:10px;
+                text-align: center;
+                cursor: pointer;
+            }
+            .basemapImg {
+                width:100%;
+                max-height:133px;
+            }
+
             select {
                 cursor: pointer;
             }
@@ -124,6 +144,7 @@
         <script data-dojo-config="async:true, aliases: [
             ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
             ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['slick', 'http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick.min.js'],
             ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
             ]" src="http://js.arcgis.com/3.14/">
         </script><!-- swamp thang -->
@@ -132,6 +153,7 @@
             require([
                 "jquery",
                 "jqueryui",
+                "slick",
 
                 "esri/map",
                 "esri/graphic",
@@ -178,7 +200,7 @@
                 "dojo/dom-style",
                 "dijit/form/Button",
                 "dojo/domReady!"],
-            function($, $ui,
+            function($, $ui, slick,
                     Map, Graphic, Geomtery, Edit, Draw, Extent, Point, esriBasemaps,
                     request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
                     Geoprocessor, FeatureLayer, Basemap, BasemapGallery, GeometryService, Units,
@@ -218,7 +240,7 @@
 
                     var basemapGallery = new BasemapGallery({
                         map: map
-                    }, "basemapGallery");
+                    });
                     var SPM = new Basemap({
                         id: "SPM",
                         title: "TxDOT Planning Map",
@@ -228,10 +250,53 @@
                         ]
                     });
                     basemapGallery.add(SPM);
-                    basemapGallery.startup();
+
                     on(basemapGallery, "load", function() {
-                        var nd = document.getElementById("galleryNode_SPM");
-                        nd.parentElement.insertBefore(nd, nd.parentElement.firstElementChild);
+                        $.each(basemapGallery.basemaps, function (bm, value) {
+                            var image = value.thumbnailUrl;
+                            var label = value.title;
+                            var id = value.id;
+                            $("#basemapItemList").append("<div class='basemapItem' id='" + id + "'><img class='basemapImg' id='" + id + "' src='" + image + "'><p id='" + id + "' style='color:white;'>" + label + "</p></div>");
+                        });
+                        $('.basemapItemList').slick({
+                            infinite: true,
+                            slidesToShow: 5,
+                            slidesToScroll: 5,
+                            responsive: [
+                                {
+                                  breakpoint: 1024,
+                                  settings: {
+                                    slidesToShow: 4,
+                                    slidesToScroll: 4,
+                                    infinite: true,
+                                    dots: true
+                                  }
+                                },
+                                {
+                                  breakpoint: 600,
+                                  settings: {
+                                    slidesToShow: 3,
+                                    slidesToScroll: 3,
+                                    infinite: true,
+                                    dots: true
+                                  }
+                                },
+                                {
+                                  breakpoint: 480,
+                                  settings: {
+                                    slidesToShow: 2,
+                                    slidesToScroll: 2,
+                                    infinite: true,
+                                    dots: true
+                                  }
+                                }
+                            ]
+                        });
+                        $(".basemapItem").click(function (event) {
+                            var choice = event.target.id;
+                            basemapGallery.select(choice);
+                        });
+                        $("#basemapPanel").slideToggle("fast");
                     });
 
                     ////CRI FEATURE LAYERS & EVENTS
@@ -1013,7 +1078,7 @@
                         $("#menuPanel").slideToggle("fast");
                         $("#menuArrow").toggleClass('glyphicon-chevron-up glyphicon-chevron-down');
                     });
-                    $("#basemapCarousel").mouseover(function(){
+                    $("#basemapTrigger").mouseover(function(){
                         $("#basemapPanel").slideToggle("fast");
                     });
 
@@ -1211,9 +1276,9 @@
             </div>
             <button id="menuBtn" type="button" class="btn btn-default"><span id="menuArrow" class="glyphicon glyphicon-chevron-down"></span></button>
             <span id="info"></span>
-            <div id="basemapCarousel"></div>
+            <div id="basemapTrigger"></div>
                     <div id="basemapPanel">
-                        <div id="basemapGallery" style="margin:5px;"></div>
+                        <div id="basemapItemList" class="basemapItemList"></div>
                     </div>            
         </div>
 
