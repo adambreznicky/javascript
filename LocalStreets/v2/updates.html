@@ -24,6 +24,14 @@
                 color: #303030;
                 text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
             }
+            #user {
+                position: absolute;
+                bottom: 18px;
+                left: 20px;
+                z-index: 50;
+                color: #303030;
+                text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+            }
             #basemapTrigger {
                 position: absolute;
                 bottom: 0;
@@ -65,6 +73,9 @@
             select {
                 cursor: pointer;
             }
+            a {
+                color: rgb(20, 56, 92);
+            }
             
 
             /* Menu */
@@ -103,12 +114,12 @@
             #accordion {
                 margin-bottom: 0;
             }
-            #downloadFormat, #chooseData {
+            #downloadFormat, #chooseData, #chooseUpload {
                 padding: 0;
             }
             .panel-default > .panel-heading {
                 cursor: pointer;
-                background-color: #75A262;
+                background-color: rgb(20, 56, 92);
                 color:#FFFFFF;
                 border-radius: 4px 4px 0px 0px;
             }
@@ -133,6 +144,12 @@
                 background: white;
                 cursor: inherit;
                 display: block;
+            }
+            .btn-primary:hover{
+                background-color: rgb(137, 155, 173);
+            }
+            .btn-primary{
+                background-color: rgb(20, 56, 92);
             }
             span.dijit.dijitReset.dijitInline.dijitButton.atiButton.atiDeleteButton {
                 margin: .2em;
@@ -182,6 +199,7 @@
                 "esri/dijit/Legend",
                 "esri/dijit/editing/TemplatePicker",
                 "esri/dijit/AttributeInspector",
+                "esri/InfoTemplate",
 
                 "esri/renderers/SimpleRenderer",
                 "esri/symbols/SimpleFillSymbol",
@@ -204,7 +222,7 @@
                     Map, Graphic, Geomtery, Edit, Draw, Extent, Point, esriBasemaps,
                     request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
                     Geoprocessor, FeatureLayer, Basemap, BasemapGallery, GeometryService, Units,
-                    Legend, TemplatePicker, AttributeInspector,
+                    Legend, TemplatePicker, AttributeInspector, InfoTemplate,
                     SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, Color,
                     ready, parser, require, sniff, dom, on, array, lang, domConstruct, domStyle, dojoButton) {
 
@@ -216,6 +234,8 @@
                     var refLayers;
                     var templateFields;
                     var serviceURL;
+                    var aiCustom;
+                    var uploadedLayers;
 
                     var d = new Date();
                     var m = d.getMonth() + 1;
@@ -492,7 +512,7 @@
 
                             map.addLayers([ls_maintenance, localstreets, ls_updatesLyr]);
 
-                            $("#resources").append("Resources:<br><a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
+                            $("#resources").append("Resources:<br><a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a>");
                         
                             var queryTask = new QueryTask(ls_maintenanceURL);
                             query.where = expression;
@@ -721,7 +741,7 @@
                         refLayers[1].on("click", selectFeature);
                      
 
-                        var aiCustom = new AttributeInspector({
+                        aiCustom = new AttributeInspector({
                             layerInfos: editorInfos
                         }, domConstruct.create("div"));
 
@@ -898,14 +918,20 @@
                             }
                             var layerName = response.featureCollection.layers[0].layerDefinition.name;
                             dom.byId('upload-status').innerHTML = '<b>Loaded: </b>' + layerName;
-                            verifySchema(response.featureCollection);
+                            if ($("#chooseUpload").val() == "UPLOAD") {
+                                verifySchema(response.featureCollection);
+                            }
+                            else if ($("#chooseUpload").val() == "DISPLAY") {
+                                addShapefileToMap(response.featureCollection);
+                                dom.byId('uploadMarquee').innerHTML = '<p style="color:black">Shapefile added to the map only and has not been submitted as an inventory update.</p>';
+                            }
                           }),
                           error: lang.hitch(this, errorHandler)
                         });
                     }
 
                     function errorHandler (error) {
-                        dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + error.message + '</p>';
+                        dom.byId('uploadMarquee').innerHTML = '<p style="color:red">?' + error.message + '</p>';
                     }
 
                     function verifySchema (featureCollection) {
@@ -944,8 +970,8 @@
                                 dom.byId('uploadMarquee').innerHTML = '<p style="color:red">' + badField + " has a NULL or blank value which must be populated." + '</p>';
                             }
                             else {
-                                addShapefileToMap(featureCollection);
                                 dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Submited shapefile has passed field requirement checks.</p>';
+                                addShapefileToMap(featureCollection);
                                 serviceLoad(featureCollection);
                             }
                         }
@@ -957,15 +983,36 @@
                         //local storage by serializing the layer using featureLayer.toJson()  see the 'Feature Collection in Local Storage' sample
                         //for an example of how to work with local storage.
                         var fullExtent;
-                        var layers = [];
+                        uploadedLayers = [];
 
                         array.forEach(featureCollection.layers, function (layer) {
-                          var featureLayer = new FeatureLayer(layer);
-                          fullExtent = fullExtent ?
-                            fullExtent.union(featureLayer.fullExtent) : featureLayer.fullExtent;
-                          layers.push(featureLayer);
+                            console.log(aiCustom);
+                            console.log(layer);
+
+                            var uploadedLayer = new FeatureLayer(layer);
+                            fullExtent = fullExtent ?
+                            fullExtent.union(uploadedLayer.fullExtent) : uploadedLayer.fullExtent;
+                            uploadedLayers.push(uploadedLayer);
+
+                            var fieldInfos = [];
+                            array.forEach(layer.layerDefinition.fields, function(field) {
+                                fieldInfos.push({'fieldname':field.name, 'label':field.name});
+                            });
+                            var layerInfo = {
+                                'featureLayer': uploadedLayer,
+                                'isEditable': false,
+                                'fieldInfos': fieldInfos
+                            };
+                            // aiCustom.layerInfos.push(layerInfo);
+                            // // console.log(aiCustom);
+                            // aiCustom.destroy();
+                            // initAttributes([layerInfo]);
                         });
-                        map.addLayers(layers);
+                        console.log(map);
+                        // map.addLayers(uploadedLayers);
+                        array.forEach(uploadedLayers, function (lyr){
+                            map.addLayer(lyr, 0);
+                        });
                         map.setExtent(fullExtent.expand(1.25), true);
                         
                     }
@@ -994,10 +1041,8 @@
                                 }
                                 else if (updateClass == "LS") {
                                     theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'DateUpdate':'" + t.toString() + "', 'RoadUnqID':" + feature.attributes.RoadUnqID + ", 'SN_PreMod':" + feature.attributes.SN_PreMod + ", 'SN_PreDir':" + feature.attributes.SN_PreDir + ", 'SN_PreType':" + feature.attributes.SN_PreType + ", 'StreetName':" + feature.attributes.StreetName + ", 'SN_PstType':" + feature.attributes.SN_PstType + ", 'SN_PstDir':" + feature.attributes.SN_PstDir + ", 'SN_PstMod':" + feature.attributes.SN_PstMod + ", 'FS_PreDir':" + feature.attributes.FS_PreDir + ", 'FS_PstType':" + feature.attributes.FS_PstType + ", 'FS_PstDir':" + feature.attributes.FS_PstDir + ", 'SpeedLimit':" + feature.attributes.SpeedLimit + ", 'RoadClass':" + feature.attributes.RoadClass + ", 'CHANGE':" + att + ", 'LENGTH':" + rounder + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + ", 'HWY_DESIGN':" + feature.attributes.HWY_DESIGN + ", 'COMMENT':" + feature.attributes.COMMENT + "}}";
-                                    //
                                 }
                                 theText = uploadURL + "[" + theText + "]";
-                                console.log(theText);
                                 var layersRequest = request({
                                     url: theText
                                     },{
@@ -1009,6 +1054,10 @@
                                         dom.byId('uploadMarquee').innerHTML = '<p style="color:green">' + counter.toString() + ' of ' + total.toString() + ' records uploaded to service.</p>';
                                         if (counter === total){
                                             dom.byId('uploadMarquee').innerHTML = '<p style="color:green">All records uploaded to service.</p>';
+                                            array.forEach(uploadedLayers, function (lyr) {
+                                                map.removeLayer(lyr);
+                                            });
+                                            refLayers[0].redraw();
                                         }
                                     }, function(error) {
                                         console.log("Ugh Error: ", error);
@@ -1046,6 +1095,7 @@
                                         updateClass = routeClass;
                                         org = organization;
                                         presentData();
+                                        $("#user").html($("#selectOrg option[value='" + org + "']").text());
                                     }
                                     else{
                                         alert("Invalid access code.");
@@ -1058,6 +1108,7 @@
                                         updateClass = routeClass;
                                         org = organization;
                                         presentData();
+                                        $("#user").html($("#selectOrg option[value='" + org + "']").text());
                                     }
                                     else{
                                         alert("Invalid access code.");
@@ -1191,11 +1242,13 @@
                             </div>
                             <div id="collapseThree" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Upload data here. Will go through geoprocessing verification first.</p>
+                                    <p>Upload a zipped shapefile to the map for display or for a bulk inventory submission.</p>
 
-                                    <div style='padding-left:4px;'>
-                                        <p>Add a zipped shapefile to the map.</p><!-- swamp thang -->
-                                        <p>Visit the<a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm"> Shapefiles </a>help topic for information and limitations.</p>
+                                    <div style='padding-left:4px;'><!-- swamp thang -->
+                                        <p>Visit the <a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles </a>help topic for information and limitations.</p>
+                                        <select class="form-control" id="chooseUpload">
+                                            <option value="DISPLAY" selected>Display Only</option> <option value="UPLOAD">Upload Submission</option>  
+                                        </select>
                                         <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
                                             <div class="form-group">
                                                 <span class="btn btn-default btn-file"><span class="glyphicon glyphicon-search"></span> Choose a File
@@ -1224,6 +1277,7 @@
                 </div>
             </div>
             <button id="menuBtn" type="button" class="btn btn-default"><span id="menuArrow" class="glyphicon glyphicon-chevron-down"></span></button>
+            <span id="user"></span>
             <span id="info"></span>
             <div id="basemapTrigger"></div>
                     <div id="basemapPanel">
