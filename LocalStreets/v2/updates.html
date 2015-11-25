@@ -217,6 +217,12 @@
                     var templateFields;
                     var serviceURL;
 
+                    var d = new Date();
+                    var m = d.getMonth() + 1;
+                    var day = d.getDate();
+                    var yr = d.getFullYear();
+                    var t = m.toString() + "/" + day.toString() + "/" + yr.toString();
+
                     parser.parse();
                     config.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";
                     var geomServ = new GeometryService("https://maps.dot.state.tx.us/arcgis/rest/services/Utilities/Geometry/GeometryServer");//swamp thang
@@ -656,11 +662,6 @@
                             }
                             else if (updateClass == "LS"){
                                 numb = org;
-                                var d = new Date();
-                                var m = d.getMonth() + 1;
-                                var day = d.getDate();
-                                var yr = d.getFullYear();
-                                var t = m.toString() + "/" + day.toString() + "/" + yr.toString();
                                 autoAttributes = lang.mixin(blankAttributes, {"SOURCE":numb, "LENGTH": rounder, "DateUpdate": t});
                             }
                             
@@ -769,12 +770,6 @@
                                 numb = org;
                                 evt.graphic.attributes.SOURCE = numb;
                                 evt.graphic.attributes.LENGTH = rounder;
-
-                                var d = new Date();
-                                var m = d.getMonth() + 1;
-                                var day = d.getDate();
-                                var yr = d.getFullYear();
-                                var t = m.toString() + "/" + day.toString() + "/" + yr.toString();
                                 evt.graphic.attributes.DateUpdate = t;
                             }
                             
@@ -928,6 +923,7 @@
                                         if (att == undefined || att == null || att == " " || att == "") {
                                            // attFlag = true;
                                            // badField = field;
+                                           feature.attributes[field] = 0;
                                         }
                                     }
                                     else {
@@ -949,7 +945,7 @@
                             }
                             else {
                                 addShapefileToMap(featureCollection);
-                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Submited shapefile has passed all validation checks.</p>';
+                                dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Submited shapefile has passed field requirement checks.</p>';
                                 serviceLoad(featureCollection);
                             }
                         }
@@ -975,93 +971,49 @@
                     }
 
                     function serviceLoad (featureCollection) {
-                        var uploadURL = serviceURL + "/addFeatures?f=json&features=";
-                        // var uploadURL = serviceURL + "/applyEdits?f=json&adds=";
-
-                             var xmlhttp;
-                            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
-                                xmlhttp=new XMLHttpRequest();
-                            }
-                            else {// code for IE6, IE5
-                                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-                            }
-                            xmlhttp.onreadystatechange = function() {
-                                if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
-                                   //document.getElementById("uploadStatus").innerHTML = xmlhttp.responseText;
-                                   console.log(xmlhttp.responseText);
-                                }
-                            };
-
+                        var uploadURL = serviceURL + "/applyEdits?f=json&adds=";
                         array.forEach(featureCollection.layers, function (layer) {
-                            var total = layer.featureSet.features;
+                            var total = layer.featureSet.features.length;
                             var counter = 0;
-                            // console.log(total);
-                            // updatesLyr.applyEdits(total, null, null);
-                            // console.log(layer);
-                                    // updatesLyr.applyEdits([newGraphic], null, null);
                             array.forEach(layer.featureSet.features, function (feature) {
-                                console.log(feature);
                                 var geom = feature.geometry;
                                 var paths = JSON.stringify(geom.paths);
+
                                 var theText;
+                                var fixed = webMercatorUtils.webMercatorToGeographic(geom);
+                                var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
+                                var rounder = parseFloat(lengther).toFixed(3);
+
+                                var att = feature.attributes.CHANGE;
+                                if (att == 0){
+                                    att = "Update";
+                                }
+
                                 if (updateClass == "CR") {
-                                   theText = "{'geometry':{'paths':" + paths + "},'attributes':{'COUNTY':" + org + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + "}}";
+                                   theText = "{'geometry':{'paths':" + paths + "},'attributes':{'LENGTH':" + rounder.toString() + ", 'NUM_LANES':" + feature.attributes.NUM_LANES  + ", 'HWY_DESIGN':" + feature.attributes.HWY_DESIGN + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + ", 'CHANGE':" + att + ", 'COMMENT':" + feature.attributes.COMMENT + ", 'COUNTY':" + org + ", 'CONTROLSEC':" + feature.attributes.CONTROLSEC + "}}";
                                 }
                                 else if (updateClass == "LS") {
-                                    theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'StreetName':" + feature.attributes.StreetName + "}}";
+                                    theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'DateUpdate':'" + t.toString() + "', 'RoadUnqID':" + feature.attributes.RoadUnqID + ", 'SN_PreMod':" + feature.attributes.SN_PreMod + ", 'SN_PreDir':" + feature.attributes.SN_PreDir + ", 'SN_PreType':" + feature.attributes.SN_PreType + ", 'StreetName':" + feature.attributes.StreetName + ", 'SN_PstType':" + feature.attributes.SN_PstType + ", 'SN_PstDir':" + feature.attributes.SN_PstDir + ", 'SN_PstMod':" + feature.attributes.SN_PstMod + ", 'FS_PreDir':" + feature.attributes.FS_PreDir + ", 'FS_PstType':" + feature.attributes.FS_PstType + ", 'FS_PstDir':" + feature.attributes.FS_PstDir + ", 'SpeedLimit':" + feature.attributes.SpeedLimit + ", 'RoadClass':" + feature.attributes.RoadClass + ", 'CHANGE':" + att + ", 'LENGTH':" + rounder + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + ", 'HWY_DESIGN':" + feature.attributes.HWY_DESIGN + ", 'COMMENT':" + feature.attributes.COMMENT + "}}";
+                                    //
                                 }
                                 theText = uploadURL + "[" + theText + "]";
-                                // var layersRequest = request({
-                                //     url: theText
-                                //     },{
-                                //     usePost: true
-                                // });
-                            //     layersRequest.then(
-                            //         function(response) {
-                            //             var res = response.addResults[0]["success"];
-                            //             if (res) {
-                            //                 counter += 1;
-                            //                 if (counter === total){
-                            //                     dom.byId('uploadMarquee').innerHTML = '<p style="color:green">Records uploaded to service.</p>';
-                            //                 }
-                            //                 console.log("Success: ", response.layers);
-                            //             } else {
-                            //                 dom.byId('uploadMarquee').innerHTML = "Upload Failed. Try again with an internet connection.";
-                            //                 alert("Upload Failed. Try again with an internet connection. (1)");
-                            //             }
-                            //         }, function(error) {
-                            //             console.log("Ugh Error: ", error);
-                            //     });
-                            
-                            console.log(theText);
-                            xmlhttp.open("POST",theText,false);
-                            try {
-                                xmlhttp.send();
-                                if (xmlhttp.status >= 200 && xmlhttp.status < 304) {
-                                    if (xmlhttp.responseText.slice(-7) === "true}]}"){
-                                        //counter += 1;
-                                        console.log("got a good one");
-                                    }
-                                } else {
-                                    // document.getElementById('overlay').style.display='none';
-                                    // document.getElementById('wait').style.display='none';
-                                    // x.innerHTML = 'Upload Failed. Try again with an internet connection.';
-                                    // for (var i = 0; i < Buttons.length; i++) {
-                                    //     Buttons[i].disabled = false;
-                                    // }
-                                    // alert("Upload Failed. Try again with an internet connection.");
-                                    console.log("shit");
-                                }
-                            } catch (e) {
-                                // document.getElementById('overlay').style.display='none';
-                                // document.getElementById('wait').style.display='none';
-                                // x.innerHTML = 'Upload Failed. Try again with an internet connection.';
-                                // for (var i = 0; i < Buttons.length; i++) {
-                                //     Buttons[i].disabled = false;
-                                // }
-                                // alert("Upload Failed. Try again with an internet connection.");
-                                console.log(e);
-                            }
+                                console.log(theText);
+                                var layersRequest = request({
+                                    url: theText
+                                    },{
+                                    usePost: true
+                                });
+                                layersRequest.then(
+                                    function(response) {
+                                        counter += 1;
+                                        dom.byId('uploadMarquee').innerHTML = '<p style="color:green">' + counter.toString() + ' of ' + total.toString() + ' records uploaded to service.</p>';
+                                        if (counter === total){
+                                            dom.byId('uploadMarquee').innerHTML = '<p style="color:green">All records uploaded to service.</p>';
+                                        }
+                                    }, function(error) {
+                                        console.log("Ugh Error: ", error);
+                                        dom.byId('uploadMarquee').innerHTML = '<p style="color:red">Uh-oh! Seems to be some kind of error...</p>';
+                                });
                             });
 
                         });
