@@ -1003,12 +1003,9 @@
                                 console.log(feature);
                                 var geom = feature.geometry;
                                 var paths = JSON.stringify(geom.paths);
-                                 var atts = feature.attributes;
                                 var theText;
                                 if (updateClass == "CR") {
                                    theText = "{'geometry':{'paths':" + paths + "},'attributes':{'COUNTY':" + org + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + "}}";
-                                    // var newGraphic = new Graphic(geom, null, atts);
-                                    // updatesLyr.applyEdits([newGraphic], null, null);
                                 }
                                 else if (updateClass == "LS") {
                                     theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'StreetName':" + feature.attributes.StreetName + "}}";
