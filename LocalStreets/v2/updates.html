@@ -69,7 +69,10 @@
                 width:100%;
                 max-height:133px;
             }
-
+            .slick-dots {
+                bottom: 0;
+                margin-bottom: 0;
+            }
             select {
                 cursor: pointer;
             }
@@ -418,7 +421,11 @@
 
                             map.addLayers([counties, countyroads, updatesLyr]);
 
-                            $("#resources").append("Resources:<br><a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
+                            var selectorLabel = $("#selectOrg option[value='" + org + "']").text();
+                            var pieces = selectorLabel.split(" - ");
+                            var theName = pieces[0];
+                            var caps = theName.toUpperCase();
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps + "_2015.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
                         
                             var queryTask = new QueryTask(countiesURL);
                             query.where = expression;
@@ -512,7 +519,7 @@
 
                             map.addLayers([ls_maintenance, localstreets, ls_updatesLyr]);
 
-                            $("#resources").append("Resources:<br><a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a>");
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a>");
                         
                             var queryTask = new QueryTask(ls_maintenanceURL);
                             query.where = expression;
@@ -1218,12 +1225,12 @@
                             </div>
                         </div>
                         <div class="panel panel-default">
-                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" style="cursor: pointer;">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" style="cursor: pointer;">
                                 <h4 class="panel-title">Download</h4>
                             </div>
-                            <div id="collapseTwo" class="panel-collapse collapse">
+                            <div id="collapseThree" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Download a copy of your data inventory or a schema template for editing and uploading changes.<br><p style="font-size: xx-small;">Note: Downloading your data inventory in the Shapefile format may truncate field names.</p></p>
+                                    <p>Download a copy of your data inventory or a schema template for editing and uploading changes. Preparing a copy of your data inventory may take several minutes for large datasets.<br><p style="font-size: xx-small;">Note: Downloading your data inventory in the Shapefile format may truncate field names.</p></p>
                                     <select class="form-control" id="chooseData">
                                         <option value="SCHEMA" selected>Schema Only</option> <option value="DATA">Data & Schema</option>  
                                     </select>
@@ -1237,10 +1244,10 @@
                             </div>
                         </div>
                         <div class="panel panel-default">
-                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" style="cursor: pointer;">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" style="cursor: pointer;">
                                 <h4 class="panel-title">Upload</h4>
                             </div>
-                            <div id="collapseThree" class="panel-collapse collapse">
+                            <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
                                     <p>Upload a zipped shapefile to the map for display or for a bulk inventory submission.</p>
 
@@ -1263,6 +1270,7 @@
                                 </div>
                             </div>
                         </div>
+                        
                         <div class="panel panel-default">
                             <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" style="cursor: pointer;">
                                 <h4 class="panel-title">Resources</h4>
