@@ -135,7 +135,6 @@
             var heady;
             var speedy;
             var d;
-            var t;
             var pos;		 
             var logger;		 
             var previewShow = false;
@@ -153,13 +152,7 @@
                 }
             }
 
-            function showPosition(position) {
-                d = new Date();
-                var m = d.getMonth() + 1;
-                var day = d.getDate();
-                var yr = d.getFullYear();
-                t = m.toString() + "/" + day.toString() + "/" + yr.toString();
-                
+            function showPosition(position) {                
                 pos = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
                 latt = position.coords.latitude;
                 long = position.coords.longitude;
@@ -187,7 +180,7 @@
                 var value = event.target.value;
                 var theNote = document.getElementById("notes").value;  
                 console.log(theNote); 
-                var POD=[value,theNote,t,latty,longy];
+                var POD=[value,theNote,latty,longy];
                 
                 if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
                     logger = localStorage.setItem(intKEY,JSON.stringify(POD));
@@ -272,7 +265,7 @@
 
                                 function districtQuery(pnt){
                                     var distURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Districts/FeatureServer/0";
-                                    var point = new Point(pnt[4],pnt[3]);
+                                    var point = new Point(pnt[3],pnt[2]);
                                     var query = new Query();
                                     query.geometry = point;
                                     query.outFields = ["DIST_NM"];
@@ -287,7 +280,7 @@
 
                                 function countyQuery(pnt){
                                     var cntyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";
-                                    var point = new Point(pnt[4],pnt[3]);
+                                    var point = new Point(pnt[3],pnt[2]);
                                     var query = new Query();
                                     query.geometry = point;
                                     query.outFields = ["CNTY_NM"];
@@ -302,7 +295,7 @@
 
                                 function maintenanceQuery(pnt){
                                     var maintenanceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceSections/FeatureServer/0";
-                                    var point = new Point(pnt[4],pnt[3]);
+                                    var point = new Point(pnt[3],pnt[2]);
                                     var query = new Query();
                                     query.geometry = point;
                                     query.outFields = ["OFFICE_NM"];
@@ -317,8 +310,8 @@
 
                                 function pusher(pnt){
                                     //var POD=[value,theNote,t,latty,longy];
-                                    var newPT = webMercatorUtils.lngLatToXY(pnt[4],pnt[3]);
-                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'Deficiency':'" + pnt[0] + "','Notes':'" + pnt[1] + "','Date':'" + pnt[2] + "','Latitude':'" + pnt[3] + "','Longitude':'" + pnt[4] + "','District':'" + pnt[5] + "','County':'" + pnt[6] + "','MaintenanceSection':'" + pnt[7] + "','Resolved':'No'}}";           
+                                    var newPT = webMercatorUtils.lngLatToXY(pnt[3],pnt[2]);
+                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'Deficiency':'" + pnt[0] + "','Notes':'" + pnt[1] + "','Latitude':'" + pnt[2] + "','Longitude':'" + pnt[3] + "','District':'" + pnt[4] + "','County':'" + pnt[5] + "','MaintenanceSection':'" + pnt[6] + "','Resolved':'No'}}";           
                                     theText = serviceURL + "[" + theText + "]";
                                     
                                     try {
@@ -490,6 +483,9 @@
                             <td><button id="delineators" class="asset" value="Delineators" type="button">Delineators</button></td>
                             <td><button id="signallight" class="asset" value="Signal Lights" type="button">Signal Light</button></td>
                         </tr>
+                        <tr>
+                            <td colspan=2><button id="concretetrafficbarrier" class="asset" value="Concrete Traffic Barrier" type="button">Concrete Traffic Barrier</button></td>
+                        </tr>
                     </table>
                 </div>
                 <div id="pane2" class="pane">
@@ -538,7 +534,7 @@
                             <td><button id="workrequest" class="asset" value="Work Request" type="button">Work Request</button></td>
                         </tr>
                         <tr class="shadow">
-                            <td colspan=2><button id="ckdokay" class="asset" value="Ck'd Okay" type="button">Ck'd Okay</button></td>
+                            <td colspan=2><button id="checkedokay" class="asset" value="Checked Okay" type="button">Checked Okay</button></td>
                         </tr>
                         <tr>
                             <td><button id="illuminationpoles" class="asset" value="Illumination Poles" type="button">Illumination Poles</button></td>
