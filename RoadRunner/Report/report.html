@@ -257,7 +257,7 @@ and open the template in the editor.
 
                         if (timeframe !== "specific") {
                             queryTimeFrame = " AND CreationDate >= '" + queryDate + "'";
-                            $("#chosenParameters").html("Counts from " + queryDate.split(" ")[0] + " to Report Date");
+                            $("#chosenParameters").html("Counts from " + queryDate.split(" ")[0] + " to Report Creation Date");
                         }
                         else {
                             var fromDate = queryDate.split("|")[0];
@@ -274,7 +274,11 @@ and open the template in the editor.
                         }
                         
                         $("#generationDateTime").html("Report Created: " + dateTime);
-                        console.log(queryTimeFrame);
+
+                        if (type == "Statewide") {
+                            type = "'Texas'";
+                        }
+
                         $.each(deficiencies, function (deficiency, value) {
                             queryResolved(deficiency, type, boundary, queryTimeFrame);
                         });
@@ -342,12 +346,22 @@ and open the template in the editor.
                         if (counter == length) {
                             keyList.sort();
                             var keyCounter = 0;
+                            var shaded = false;
                             $.each(keyList, function (position, value) {
                                 var values = deficiencies[value];
                                 var resolved = values["resolved"];
                                 var unresolved = values["unresolved"];
                                 var total = resolved + unresolved;
-                                var theText = "<tr><td>"+value+"</td><td>"+resolved+"</td><td>"+unresolved+"</td><td>"+total+"</td></tr>";
+                                var trPrfx;
+                                if (shaded ==  false) {
+                                    trPrfx = "<tr>";
+                                    shaded = true;
+                                }
+                                else {
+                                    trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
+                                    shaded = false;
+                                }
+                                var theText = trPrfx+"<td>"+value+"</td><td>"+resolved+"</td><td>"+unresolved+"</td><td>"+total+"</td></tr>";
                                 $("#reportBody").append(theText);
                                 keyCounter += 1;
                                 if (keyCounter == length) {
