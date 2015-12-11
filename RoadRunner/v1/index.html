@@ -59,7 +59,7 @@
         width: 90%;
         padding: 10px;
         margin: 20 auto;
-        font-size:60px;
+        font-size:4vw;
     }
     #user {
         font-size: 40px;
@@ -92,7 +92,8 @@
         padding: 6px;
     }
     .btn:focus {
-        background-color: inherit;
+        background-color: #fff;
+        border-color: #ccc;
     }
     .category {
         font-size: 4vw;
@@ -248,6 +249,7 @@
                         Buttons[i].disabled = true;
                         Buttons[i].style.display = "none";
                     }
+                    $(".panes").attr("style", "display:none;");
                     if (localStorage.length > 0) {
                         x.innerHTML = 'Uploading Data, please wait...';
                         document.getElementById('overlay').style.display='block';
@@ -348,8 +350,8 @@
                                                             Buttons[i].disabled = false;
                                                             Buttons[i].style.display = "block";
                                                         }
+                                                        $(".panes").attr("style", "display:block;");
                                                         alert("Data uploaded successfully");
-                                                        beep();
                                                         beep();
                                                         setTimeout(function(){
                                                             x.style.color = "initial";
@@ -365,6 +367,7 @@
                                                         Buttons[i].disabled = false;
                                                         Buttons[i].style.display = "block";
                                                     }
+                                                    $(".panes").attr("style", "display:block;");
                                                     alert("Upload Failed. Try again with an internet connection. (1)");
                                             }
                                             }, function(error) {
@@ -375,6 +378,7 @@
                                                     Buttons[i].disabled = false;
                                                     Buttons[i].style.display = "block";
                                                 }
+                                                $(".panes").attr("style", "display:block;");
                                                 alert("Upload Failed. Try again with an internet connection. (2)");
                                                 console.log("Error: ", error.message);
                                         });
@@ -387,6 +391,7 @@
                                             Buttons[i].disabled = false;
                                             Buttons[i].style.display = "block";
                                         }
+                                        $(".panes").attr("style", "display:block;");
                                         alert("Upload Failed. Try again with an internet connection. (3)");
                                     }
                                 }
@@ -402,6 +407,7 @@
                                 Buttons[i].disabled = false;
                                 Buttons[i].style.display = "block";
                             }
+                            $(".panes").attr("style", "display:block;");
                             x.style.color = "initial";
                             x.innerHTML = 'No data collected. Please collect data and try to upload again.';
                             setTimeout(function(){
