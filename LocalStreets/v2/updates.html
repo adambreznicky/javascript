@@ -73,6 +73,9 @@
                 bottom: 0;
                 margin-bottom: 0;
             }
+            div:focus {
+                outline:0px !important;
+            }
             select {
                 cursor: pointer;
             }
@@ -221,7 +224,7 @@
                 "dojo/dom-style",
                 "dijit/form/Button",
                 "dojo/domReady!"],
-            function($, $ui, slick,
+            function ($, $ui, slick,
                     Map, Graphic, Geomtery, Edit, Draw, Extent, Point, esriBasemaps,
                     request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
                     Geoprocessor, FeatureLayer, Basemap, BasemapGallery, GeometryService, Units,

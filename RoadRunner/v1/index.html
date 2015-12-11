@@ -3,6 +3,7 @@
 <html>
 <head>
 <title>Beep Beep!</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta content='user-scalable=0' name='viewport'>
 <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
 <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
@@ -10,19 +11,10 @@
 <link rel="stylesheet" type="text/css" href="http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick.css"/>
 <link rel="stylesheet" type="text/css" href="http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick-theme.css"/>
 <style type="text/css">
-/*    body {
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        -khtml-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        -o-user-select: none;
-    }*/
     #overlay {
         display: none;
         width: 100%;
-        height: 200%;
+        height: 150%;
         position: absolute;
         left: 0px;
         top: 0px;
@@ -38,21 +30,13 @@
         display: none;
         color: white;
         text-align: center;
+        font-size: 100px;
     }
     div {
         border-style: solid;
         border-width: 0px;
         text-align: center;
         font-size: 40px;
-    }
-    button {
-        display: block;
-        font-size:60px;
-        width: 90%;
-        padding: 10px;
-        margin: 20 auto;
-        /*-webkit-appearance: none;
-        -webkit-border-radius: 0;*/
     }
     td {
         width: 50%;
@@ -65,16 +49,23 @@
         margin-right:auto;
         width: 95%;
     }
-    button:ACTIVE {
-        background: red;
+    button:active {
+        background-color: red !important;
+    }
+    button:focus, div:focus {
+        outline:0px !important;
     }
     textarea {
         width: 90%;
         padding: 10px;
         margin: 20 auto;
         font-size:60px;
-        /*-webkit-appearance: none;
-        -webkit-border-radius: 0;*/
+    }
+    #user {
+        font-size: 40px;
+        float:left;
+        position: relative;
+        cursor: pointer;
     }
     #header {
         width: 100%;
@@ -91,12 +82,29 @@
         right: 30px;
     }
     .pane {
-        height: 900px;
-    }
-    .shadow {
+        height: auto;
         background-color: rgb(226,231,235);
     }
-
+    .btn {
+        font-size: 5vw;
+        margin: 20 auto;
+        width: 90%;
+        padding: 6px;
+    }
+    .btn:focus {
+        background-color: inherit;
+    }
+    .category {
+        font-size: 4vw;
+    }
+    .slick-dots li button:before {
+        font-size: 15px;
+        font-weight: bolder;
+    }
+    .slick-dots li.slick-active button:before {
+        font-size: 15px;
+        font-weight: bolder;
+    }
 </style>
 <link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
 <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
@@ -170,7 +178,7 @@
                 snd.play();
             }
 
-            dojo.query(".asset").forEach(function (result){
+            dojo.query(".asset.btn.btn-default").forEach(function (result){
                 on(result, "click", collectPoint);
             });
             function collectPoint(event) {
@@ -238,6 +246,7 @@
                     var Buttons = document.getElementsByTagName("button");
                     for (var i = 0; i < Buttons.length; i++) {
                         Buttons[i].disabled = true;
+                        Buttons[i].style.display = "none";
                     }
                     if (localStorage.length > 0) {
                         x.innerHTML = 'Uploading Data, please wait...';
@@ -332,13 +341,16 @@
                                                         totalpoints = 0;
                                                         var y = document.getElementById("pointStatus");
                                                         y.innerHTML=totalpoints + " point(s) logged.";
-                                                        beep();beep();
+
                                                         x.style.color = "green";
                                                         x.innerHTML = 'Data uploaded successfully!';
                                                         for (var i = 0; i < Buttons.length; i++) {
                                                             Buttons[i].disabled = false;
+                                                            Buttons[i].style.display = "block";
                                                         }
                                                         alert("Data uploaded successfully");
+                                                        beep();
+                                                        beep();
                                                         setTimeout(function(){
                                                             x.style.color = "initial";
                                                             x.innerHTML = '';
@@ -351,6 +363,7 @@
                                                     x.innerHTML = 'Upload Failed. Try again with an internet connection. (1)';
                                                     for (var i = 0; i < Buttons.length; i++) {
                                                         Buttons[i].disabled = false;
+                                                        Buttons[i].style.display = "block";
                                                     }
                                                     alert("Upload Failed. Try again with an internet connection. (1)");
                                             }
@@ -360,6 +373,7 @@
                                                 x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
                                                 for (var i = 0; i < Buttons.length; i++) {
                                                     Buttons[i].disabled = false;
+                                                    Buttons[i].style.display = "block";
                                                 }
                                                 alert("Upload Failed. Try again with an internet connection. (2)");
                                                 console.log("Error: ", error.message);
@@ -371,6 +385,7 @@
                                         x.innerHTML = 'Upload Failed. Try again with an internet connection. (3)';
                                         for (var i = 0; i < Buttons.length; i++) {
                                             Buttons[i].disabled = false;
+                                            Buttons[i].style.display = "block";
                                         }
                                         alert("Upload Failed. Try again with an internet connection. (3)");
                                     }
@@ -385,6 +400,7 @@
                             document.getElementById('wait').style.display='none';
                             for (var i = 0; i < Buttons.length; i++) {
                                 Buttons[i].disabled = false;
+                                Buttons[i].style.display = "block";
                             }
                             x.style.color = "initial";
                             x.innerHTML = 'No data collected. Please collect data and try to upload again.';
@@ -396,8 +412,17 @@
                 }
             );
 
-            $('.panes').slick({dots: true});
-            
+            $('.panes').slick({infinite: true, dots: true});
+
+            function resizeTableRows () {
+                var height = $("#sample").height();
+                $('.blankRow').height(height);
+                var doubleHeight = height * 2;
+                $('.doubleRow').height(doubleHeight);
+            }
+
+            $(window).resize(resizeTableRows);
+
             function start() {
                 startupGPS();
                 totalpoints = localStorage.length;
@@ -410,7 +435,8 @@
                 catch (e) {
                     alert('You are in Private Browsing mode. Please turn off Private Browsing to use this application.');
                 }
-              
+                
+                resizeTableRows();
             }
 
             var info = new OAuthInfo({
@@ -424,7 +450,7 @@
             new arcgisPortal.Portal(info.portalUrl).signIn().then(
                 function (portalUser){
                         username = portalUser.fullName;
-                        domAttr.set("user", "innerHTML", portalUser.fullName);
+                        domAttr.set("user", "innerHTML", "Log Out: " + portalUser.fullName);
                     }
             )
             on(dom.byId("user"), "click", function (){
@@ -443,7 +469,7 @@
         <div>
             <table>
                 <tr>
-                    <td style="border: 2px solid #0A1B2B;"><span id="user" style="display:block;"></span></td>
+                    <td><span id="user" style="display:block;"></span></td>
                     <td></td>
                 </tr>
             </table>
@@ -457,89 +483,112 @@
         </div>
         <div id="container">
             <div id="panes" class="panes">
-                <div id="pane1" class="pane">
+                <div id="pavementPane" class="pane">
                     <table>
-                        <tr class="shadow">
-                            <td><button id="pothole" class="asset" value="Pothole" type="button">Pothole</button></td>
-                            <td><button id="basefailure" class="asset" value="Base Failure" type="button">Base Failure</button></td>
-                        </tr>
-                        <tr class="shadow">
-                            <td><button id="outsideqtr" class="asset" value="Outside Qtr" type="button">Outside Qtr</button></td>
-                            <td><button id="edgedrop" class="asset" value="Edge Drop" type="button">Edge Drop</button></td>
-                        </tr>
-                        <tr class="shadow">
-                            <td><button id="highedges" class="asset" value="High Edges" type="button">High Edges</button></td>
-                            <td><button id="wheelrut" class="asset" value="Wheel Rut" type="button">Wheel Rut</button></td>
-                        </tr>
-                        <tr class="shadow">
-                            <td><button id="approachslab" class="asset" value="Approach Slab" type="button">Approach Slab</button></td>
-                            <td><button id="pavmarkers" class="asset" value="Pav Markers" type="button">Pav Markers</button></td>
+                        <tr>
+                            <td id="sample"><button id="pothole" class="asset btn btn-default" value="Pothole" type="button">Pothole</button></td>
+                            <td><button id="basefailure" class="asset btn btn-default btn btn-default" value="Base Failure" type="button">Base Failure</button></td>
                         </tr>
                         <tr>
-                            <td><button id="striping" class="asset" value="Striping" type="button">Striping</button></td>
-                            <td><button id="signs" class="asset" value="Signs" type="button">Signs</button></td>
+                            <td><button id="outsideqtr" class="asset btn btn-default" value="Outside Qtr" type="button">Outside Qtr</button></td>
+                            <td><button id="edgedrop" class="asset btn btn-default" value="Edge Drop" type="button">Edge Drop</button></td>
                         </tr>
                         <tr>
-                            <td><button id="delineators" class="asset" value="Delineators" type="button">Delineators</button></td>
-                            <td><button id="signallights" class="asset" value="Signal Lights" type="button">Signal Lights</button></td>
+                            <td><button id="highedges" class="asset btn btn-default" value="High Edges" type="button">High Edges</button></td>
+                            <td><button id="wheelrut" class="asset btn btn-default" value="Wheel Rut" type="button">Wheel Rut</button></td>
                         </tr>
                         <tr>
-                            <td colspan=2><button id="concretetrafficbarrier" class="asset" value="Concrete Traffic Barrier" type="button">Concrete Traffic Barrier</button></td>
+                            <td><button id="approachslab" class="asset btn btn-default" value="Approach Slab" type="button">Approach Slab</button></td>
+                            <td><button id="pavmarkers" class="asset btn btn-default" value="Pav Markers" type="button">Pav Markers</button></td>
                         </tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr><td class="category" colspan=2>PAVEMENT</td></tr>
                     </table>
                 </div>
-                <div id="pane2" class="pane">
+                <div id="trafficOpsPane" class="pane">
                     <table>
                         <tr>
-                            <td><button id="mowingherbicide" class="asset" value="Mowing/Herbicide" type="button">Mowing/Herbicide</button></td>
-                            <td><button id="trees" class="asset" value="Trees" type="button">Trees</button></td>
+                            <td><button id="striping" class="asset btn btn-default" value="Striping" type="button">Striping</button></td>
+                            <td><button id="signs" class="asset btn btn-default" value="Signs" type="button">Signs</button></td>
                         </tr>
                         <tr>
-                            <td><button id="litter" class="asset" value="Litter" type="button">Litter</button></td>
-                            <td><button id="guardrail" class="asset" value="Guardrail" type="button">Guardrail</button></td>
+                            <td><button id="delineators" class="asset btn btn-default" value="Delineators" type="button">Delineators</button></td>
+                            <td><button id="signallights" class="asset btn btn-default" value="Signal Lights" type="button">Signal Lights</button></td>
                         </tr>
                         <tr>
-                            <td><button id="sweeping" class="asset" value="Sweeping" type="button">Sweeping</button></td>
-                            <td><button id="illegalsign" class="asset" value="Illegal Sign" type="button">Illegal Sign</button></td>
+                            <td colspan=2><button id="concretetrafficbarrier" class="asset btn btn-default" value="Concrete Traffic Barrier" type="button">Concrete Traffic Barrier</button></td>
                         </tr>
-                        <tr>
-                            <td><button id="mailboxes" class="asset" value="Mailboxes" type="button">Mailboxes</button></td>
-                            <td><button id="encroachments" class="asset" value="Encroachments" type="button">Encroachments</button></td>
-                        </tr>
-                        <tr>
-                            <td><button id="erosion" class="asset" value="Erosion" type="button">Erosion</button></td>
-                            <td><button id="driveways" class="asset" value="Driveways" type="button">Driveways</button></td>
-                        </tr>
-                        <tr>
-                            <td colspan=2><button id="sightvisibility" class="asset" value="Sight Visibility" type="button">Sight Visibility</button></td>
-                        </tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr><td class="category" colspan=2>TRAFFIC OPS</td></tr>
                     </table>
                 </div>
-                <div id="pane3" class="pane">
+                <div id="roadsidePane" class="pane">
                     <table>
                         <tr>
-                            <td><button id="decks" class="asset" value="Decks" type="button">Decks</button></td>
-                            <td><button id="joints" class="asset" value="Joints" type="button">Joints</button></td>
+                            <td><button id="mowingherbicide" class="asset btn btn-default" value="Mowing/Herbicide" type="button">Mowing/Herbicide</button></td>
+                            <td><button id="trees" class="asset btn btn-default" value="Trees" type="button">Trees</button></td>
                         </tr>
                         <tr>
-                            <td><button id="rails" class="asset" value="Rails" type="button">Rails</button></td>
-                            <td><button id="debris" class="asset" value="Debris" type="button">Debris</button></td>
+                            <td><button id="litter" class="asset btn btn-default" value="Litter" type="button">Litter</button></td>
+                            <td><button id="guardrail" class="asset btn btn-default" value="Guardrail" type="button">Guardrail</button></td>
                         </tr>
                         <tr>
-                            <td><button id="drift" class="asset" value="Drift" type="button">Drift</button></td>
-                            <td><button id="culverts" class="asset" value="Culverts" type="button">Culverts</button></td>
-                        </tr>
-                        <tr class="shadow">
-                            <td><button id="incident" class="asset" value="Incident" type="button">Incident</button></td>
-                            <td><button id="workrequest" class="asset" value="Work Request" type="button">Work Request</button></td>
-                        </tr>
-                        <tr class="shadow">
-                            <td colspan=2><button id="checkedokay" class="asset" value="Checked Okay" type="button">Checked Okay</button></td>
+                            <td><button id="sweeping" class="asset btn btn-default" value="Sweeping" type="button">Sweeping</button></td>
+                            <td><button id="illegalsign" class="asset btn btn-default" value="Illegal Sign" type="button">Illegal Sign</button></td>
                         </tr>
                         <tr>
-                            <td><button id="illuminationpoles" class="asset" value="Illumination Poles" type="button">Illumination Poles</button></td>
-                            <td><button id="schoolzonebeacons" class="asset" value="School Zone Beacons" type="button">School Zone Beacons</button></td>
+                            <td><button id="mailboxes" class="asset btn btn-default" value="Mailboxes" type="button">Mailboxes</button></td>
+                            <td><button id="encroachments" class="asset btn btn-default" value="Encroachments" type="button">Encroachments</button></td>
                         </tr>
+                        <tr>
+                            <td><button id="erosion" class="asset btn btn-default" value="Erosion" type="button">Erosion</button></td>
+                            <td><button id="driveways" class="asset btn btn-default" value="Driveways" type="button">Driveways</button></td>
+                        </tr>
+                        <tr>
+                            <td colspan=2><button id="sightvisibility" class="asset btn btn-default" value="Sight Visibility" type="button">Sight Visibility</button></td>
+                        </tr>
+                        <tr><td class="category" colspan=2>ROADSIDE</td></tr>
+                    </table>
+                </div>
+                <div id="structuresPane" class="pane">
+                    <table>
+                        <tr>
+                            <td><button id="decks" class="asset btn btn-default" value="Decks" type="button">Decks</button></td>
+                            <td><button id="joints" class="asset btn btn-default" value="Joints" type="button">Joints</button></td>
+                        </tr>
+                        <tr>
+                            <td><button id="rails" class="asset btn btn-default" value="Rails" type="button">Rails</button></td>
+                            <td><button id="debris" class="asset btn btn-default" value="Debris" type="button">Debris</button></td>
+                        </tr>
+                        <tr>
+                            <td><button id="drift" class="asset btn btn-default" value="Drift" type="button">Drift</button></td>
+                            <td><button id="culverts" class="asset btn btn-default" value="Culverts" type="button">Culverts</button></td>
+                        </tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr><td class="category" colspan=2>STRUCTURES</td></tr>
+                    </table>
+                </div>
+                <div id="otherPane" class="pane">
+                    <table>
+                        <tr class="doubleRow">
+                            <td><button id="illuminationpoles" class="asset btn btn-default" value="Illumination Poles" type="button">Illumination<br>Poles</button></td>
+                            <td><button id="schoolzonebeacons" class="asset btn btn-default" value="School Zone Beacons" type="button">School Zone<br>Beacons</button></td>
+                        </tr>
+                        <tr>
+                            <td><button id="incident" class="asset btn btn-default" value="Incident" type="button">Incident</button></td>
+                            <td><button id="workrequest" class="asset btn btn-default" value="Work Request" type="button">Work Request</button></td>
+                        </tr>
+                        <tr>
+                            <td colspan=2><button id="checkedokay" class="asset btn btn-default" value="Checked Okay" type="button">Checked Okay</button></td>
+                        </tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr><td class="category" colspan=2>OTHER</td></tr>
                     </table>
                 </div>
             </div>
@@ -551,14 +600,14 @@
                     <td colspan=2><div style="font-weight: bold;"><hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;">  Options  <hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;"></div></td>
                 </tr>
                 <tr>
-                    <td><button id="cmdClearMyStorage" value="Clear Local Storage" type="button">Start Over</button></td>
-                    <td><button id="cmdDeleteLast" value="Delete Last Point" type="button">Delete Last Point</button></td>
+                    <td><button id="cmdClearMyStorage" class="btn btn-default" value="Clear Local Storage" type="button">Start Over</button></td>
+                    <td><button id="cmdDeleteLast" class="btn btn-default" value="Delete Last Point" type="button">Delete Last Point</button></td>
                 </tr>
                 <tr>
-                    <td colspan=2><button id="cmdUploadData" value="Upload Data" type="button">Upload Collected Data</button></td>
+                    <td colspan=2><button id="cmdUploadData" class="btn btn-default" value="Upload Data" type="button">Upload Collected Data</button></td>
                 </tr>
                 <tr>
-                    <td colspan=2><div id="uploadStatus"></div></td>
+                    <td colspan=2><div id="uploadStatus" style="min-height: 80px;"></div></td>
                 </tr>
             </table>
         </div>

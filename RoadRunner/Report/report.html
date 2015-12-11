@@ -141,14 +141,39 @@ and open the template in the editor.
 
                     $("#generate").click(generateReport);
 
-                    $(".date-picker").datepicker({
-                        onSelect: calendarRestriction
+                    $("#date-picker-1").datepicker({
+                        onSelect: calendarRestriction1
+                    });
+                    $("#date-picker-2").datepicker({
+                        onClose: calendarRestriction2
                     });
 
-                    $("#date-picker-1").focusout(calendarRestriction);
-                    $("#date-picker-2").focusout(calendarRestriction);
+                    $(".date-picker").focusout(calendarRestriction3);
 
-                    function calendarRestriction () {
+                    function calendarRestriction1 () {
+                        var date2 = $('#date-picker-1').datepicker('getDate');
+                        // date2.setDate(date2.getDate() + 1);
+                        $('#date-picker-2').datepicker('option', 'minDate', date2);
+
+                        var toDate = $("#date-picker-2").val();
+                        if (toDate == "") {
+                            $('#date-picker-2').datepicker('setDate', date2);
+                        }
+                        calendarRestriction3();
+                    }
+
+                    function calendarRestriction2 () {
+                        var dt1 = $('#date-picker-1').datepicker('getDate');
+                        var dt2 = $('#date-picker-2').datepicker('getDate');
+                        if (dt2 <= dt1) {
+                            var minDate = $('#date-picker-2').datepicker('option', 'minDate');
+                            $('#date-picker-2').datepicker('setDate', minDate);
+                        }
+                        $('#date-picker-1').datepicker('option', 'maxDate', dt2);
+                        calendarRestriction3();
+                    }
+
+                    function calendarRestriction3 () {
                         var fromDate = $("#date-picker-1").val();
                         var toDate = $("#date-picker-2").val();
                         if (fromDate !== "" && toDate !== "") {
@@ -231,8 +256,6 @@ and open the template in the editor.
                         else if (timeframe ==  "specific") {
                             var fromDate = $("#date-picker-1").val();
                             var toDate = $("#date-picker-2").val();
-                            console.log(fromDate);
-                            console.log(toDate);
                             queryDate = fromDate + " 00:00:00|" + toDate + " 23:59:59";
                         }
 
@@ -292,7 +315,6 @@ and open the template in the editor.
                         var query = new Query();
                         query.returnGeometry = false;
                         query.where = where;
-                        console.log(where);
                         maintenanceDeficiencies.queryIds(query, function (objectIds) {
                             theNumber = objectIds.length;
                             values["resolved"] = theNumber;
@@ -315,7 +337,6 @@ and open the template in the editor.
                         var query = new Query();
                         query.returnGeometry = false;
                         query.where = where;
-                        console.log(where);
                         maintenanceDeficiencies.queryIds(query, function (objectIds) {
                             theNumber = objectIds.length;
                             values["unresolved"] = theNumber;
