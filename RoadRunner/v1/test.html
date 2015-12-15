@@ -1,6 +1,5 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<!-- <html manifest="offlineCache.manifest"> -->
-<html>
+<html manifest="offlineCache.manifest">
 <head>
 <title>Beep Beep!</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -320,7 +319,6 @@
                                 }
 
                                 function pusher(pnt){
-                                    //var POD=[value,theNote,t,latty,longy];
                                     var newPT = webMercatorUtils.lngLatToXY(pnt[3],pnt[2]);
                                     theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'Deficiency':'" + pnt[0] + "','Notes':'" + pnt[1] + "','Latitude':'" + pnt[2] + "','Longitude':'" + pnt[3] + "','District':'" + pnt[4] + "','County':'" + pnt[5] + "','MaintenanceSection':'" + pnt[6] + "','Resolved':'No'}}";           
                                     theText = serviceURL + "[" + theText + "]";
