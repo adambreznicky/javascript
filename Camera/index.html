@@ -193,17 +193,41 @@
                 theNote = theNote.replace(/#/g, "?");
                 theNote = theNote.replace(/'/g, "?");
                 theNote = theNote.replace(/\\/g, "?");
-                var POD=[value,theNote,latty,longy];
-                
-                if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
-                    logger = localStorage.setItem(intKEY,JSON.stringify(POD));
-                    totalpoints += 1;
-                    y.innerHTML=totalpoints + " point(s) logged.";  
-                    document.getElementById("notes").value = "";  
+
+                var picture = document.getElementById("image").files[0];
+                if (picture) {
+                    var reader = new FileReader();
+                    reader.onloadend = function () {
+                        var POD=[value,theNote,latty,longy,reader.result];
+                        if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                            logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                            totalpoints += 1;
+                            y.innerHTML=totalpoints + " point(s) logged.";  
+                            document.getElementById("notes").value = "";  
+                            document.getElementById("image").value = "";
+                        }
+                        else {
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                        }
+                    }
+                    reader.readAsDataURL(picture);
+                    
                 }
                 else {
-                    y.innerHTML=totalpoints + " point(s) logged.";
+                    var POD=[value,theNote,latty,longy,"NONE"];
+                    
+                    if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                        logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                        totalpoints += 1;
+                        y.innerHTML=totalpoints + " point(s) logged.";  
+                        document.getElementById("notes").value = "";  
+                    }
+                    else {
+                        y.innerHTML=totalpoints + " point(s) logged.";
+                    }
                 }
+
+
             }
 
             on(dom.byId("cmdClearMyStorage"), "click", function clearStorage(){
@@ -342,7 +366,7 @@
 
                                 function pusher(pnt){
                                     var newPT = webMercatorUtils.lngLatToXY(pnt[3],pnt[2]);
-                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'Deficiency':'" + pnt[0] + "','Notes':'" + pnt[1] + "','Latitude':'" + pnt[2] + "','Longitude':'" + pnt[3] + "','District':'" + pnt[4] + "','County':'" + pnt[5] + "','MaintenanceSection':'" + pnt[6] + "','Resolved':'No'}}";           
+                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'Deficiency':'" + pnt[0] + "','Notes':'" + pnt[1] + "','Latitude':'" + pnt[2] + "','Longitude':'" + pnt[3] + "','District':'" + pnt[5] + "','County':'" + pnt[6] + "','MaintenanceSection':'" + pnt[7] + "','Resolved':'No'}}";           
                                     theText = serviceURL + "[" + theText + "]";
                                     
                                     try {
@@ -356,34 +380,86 @@
                                                 console.log(response);
                                                 var res = response.addResults[0]["success"];
                                                 if (res) {
-                                                    counter += 1;
+                                                    
+                                                    if (pnt[4] !== "NONE") {
+                                                        var OID = response.addResults[0]["objectId"];
+                                                        console.log(OID);
+                                                        console.log(pnt[4]);
+                                                        var attachURL = theURL + OID.toString() + "/addAttachment?f=json&attachment=" + pnt[4]
+                                                        console.log(attachURL);
+                                                        try {
+                                                            var layersRequest = esriRequest({
+                                                                url: attachURL
+                                                                },{
+                                                                usePost: true
+                                                            });
+                                                            layersRequest.then(
+                                                                function(response) {
+                                                                    console.log(response);
+                                                                    counter += 1;
+                                                                    if (counter === featureArray.length){
+                                                                        document.getElementById('overlay').style.display='none';
+                                                                        document.getElementById('wait').style.display='none';
+                                                                        localStorage.clear();
+                                                                        totalpoints = 0;
+                                                                        var y = document.getElementById("pointStatus");
+                                                                        y.innerHTML=totalpoints + " point(s) logged.";
 
-                                                    var OID = response.addResults[0]["objectId"];
-                                                    console.log(OID);
-                                                    var attachURL = theURL + OID.toString() + "/addAttachment?f=json&attachment="
-                                                    console.log(attachURL);
+                                                                        x.style.color = "green";
+                                                                        x.innerHTML = 'Data uploaded successfully!';
+                                                                        for (var i = 0; i < Buttons.length; i++) {
+                                                                            Buttons[i].disabled = false;
+                                                                            Buttons[i].style.display = "block";
+                                                                        }
+                                                                        $(".panes").attr("style", "display:block;");
+                                                                        alert("Data uploaded successfully");
+                                                                        beep();
+                                                                        setTimeout(function(){
+                                                                            x.style.color = "initial";
+                                                                            x.innerHTML = '';
+                                                                        }, 5000);
+                                                                    }
+                                                                }, function(error){
+                                                                    console.log(error);
+                                                                });
 
-                                                    if (counter === featureArray.length){
-                                                        document.getElementById('overlay').style.display='none';
-                                                        document.getElementById('wait').style.display='none';
-                                                        localStorage.clear();
-                                                        totalpoints = 0;
-                                                        var y = document.getElementById("pointStatus");
-                                                        y.innerHTML=totalpoints + " point(s) logged.";
 
-                                                        x.style.color = "green";
-                                                        x.innerHTML = 'Data uploaded successfully!';
-                                                        for (var i = 0; i < Buttons.length; i++) {
-                                                            Buttons[i].disabled = false;
-                                                            Buttons[i].style.display = "block";
+                                                        } catch (e) {
+                                                            document.getElementById('overlay').style.display='none';
+                                                            document.getElementById('wait').style.display='none';
+                                                            x.innerHTML = 'Upload Failed. Try again with an internet connection. (3)';
+                                                            for (var i = 0; i < Buttons.length; i++) {
+                                                                Buttons[i].disabled = false;
+                                                                Buttons[i].style.display = "block";
+                                                            }
+                                                            $(".panes").attr("style", "display:block;");
+                                                            alert("Upload Failed. Try again with an internet connection. (3)");
                                                         }
-                                                        $(".panes").attr("style", "display:block;");
-                                                        alert("Data uploaded successfully");
-                                                        beep();
-                                                        setTimeout(function(){
-                                                            x.style.color = "initial";
-                                                            x.innerHTML = '';
-                                                        }, 5000);
+                                                    }
+                                                    else {
+                                                        counter += 1;
+                                                        if (counter === featureArray.length){
+                                                            document.getElementById('overlay').style.display='none';
+                                                            document.getElementById('wait').style.display='none';
+                                                            localStorage.clear();
+                                                            totalpoints = 0;
+                                                            var y = document.getElementById("pointStatus");
+                                                            y.innerHTML=totalpoints + " point(s) logged.";
+
+                                                            x.style.color = "green";
+                                                            x.innerHTML = 'Data uploaded successfully!';
+                                                            for (var i = 0; i < Buttons.length; i++) {
+                                                                Buttons[i].disabled = false;
+                                                                Buttons[i].style.display = "block";
+                                                            }
+                                                            $(".panes").attr("style", "display:block;");
+                                                            alert("Data uploaded successfully");
+                                                            beep();
+                                                            setTimeout(function(){
+                                                                x.style.color = "initial";
+                                                                x.innerHTML = '';
+                                                            }, 5000);
+                                                        }
                                                     }
                                                 } else {
                                                     document.getElementById('overlay').style.display='none';
@@ -627,6 +703,9 @@
             <table>
                 <tr>
                     <td colspan=2><textarea id="notes" type="text" maxlength="250" value="" placeholder="Notes" rows="3" cols="30"></textarea></td>
+                </tr>
+                <tr>
+                    <td colspan=2><input type="file" accept="image/*" capture="camera" id="image"/></td>
                 </tr>
                 <tr>
                     <td colspan=2><div style="font-weight: bold;"><hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;">  Options  <hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;"></div></td>
