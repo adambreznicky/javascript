@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>TPP WebMap Template</title>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <style type="text/css">
+            html, body {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+        </style>
+        <script> var dojoConfig = {async: true};</script>
+        <script src="http://js.arcgis.com/3.14/"></script>
+        <script>
+            require(["esri/map",
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/on",
+                "dojo/dom",
+                "dojo/domReady!"],
+            function(Map, ready, parser, on, dom) {
+                ready(function(){
+                    parser.parse();
+                    // var map = new Map("divMap", {
+                    //   center: [-100, 32],
+                    //   zoom: 7,
+                    //   basemap: "topo"
+                    // });
+
+
+                    on(dom.byId("tester"), "click", test);
+                    function test() {
+                        if (navigator.getUserMedia) {
+                          alert('getUserMedia');
+                        }
+                        else if (navigator.webkitGetUserMedia) {
+                            alert('webkitGetUserMedia');
+                        }
+                        else if (navigator.mozGetUserMedia) {
+                            alert('mozGetUserMedia');
+                        }
+                        else if (navigator.msGetUserMedia) {
+                            alert('msGetUserMedia');
+                        }
+                        else {
+                          alert('getUserMedia() is not supported in your browser');
+                        }
+                        
+                    }
+
+
+                    on(dom.byId("displayLS"), "click", function () {
+                        document.getElementById("divMap").innerHTML = localStorage.getItem("photo_");
+                    });
+                    on(dom.byId("clear"), "click", function () {
+                        localStorage.clear();
+                        document.getElementById("divMap").innerHTML = localStorage.getItem("photo_");
+                    });
+
+
+
+
+                    on(dom.byId("image"), "change", saver);
+                    function saver (e) {
+                        // console.log(e);
+                        // console.log(document.getElementById("image").files[0]);
+                        var input = document.getElementById("image").files[0];
+                        // var theImage = new Image();
+                        // theImage.src = input;
+                        var name = "photo_"; 
+                        // var dataURL = getImageDataURL(theImage); 
+
+
+                        var reader = new FileReader();
+                        reader.onloadend = function () {
+                            localStorage.setItem(name, reader.result);
+                        }
+                        reader.readAsDataURL(input);
+
+                    }
+
+                    function getImageDataURL(img) {
+                      var canvas = document.createElement('canvas');
+                      canvas.width = img.width;
+                      canvas.height = img.height;
+                      var context = canvas.getContext('2d');
+                      context.drawImage(img, 0, 0);
+                      console.log(canvas);
+                      var dataURL = canvas.toDataURL('image/png');
+                      return dataURL;
+                    }
+
+                });
+            });
+        </script>
+    </head>
+    <body class="claro">
+        <button style="height: 150px;width:300px;" id="tester">TEST CAPABILITY</button>
+        <br>
+        <br>
+        <input type="file" accept="image/*" capture="camera" id="image"/>
+        <button id="displayLS">DISPLAY LOCAL STORAGE</button>
+        <br>
+
+        <div id="divMap"></div>
+        <br><br><br>
+        <button id="clear">Clear LOCAL STORAGE</button>
+    </body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"> 
+<html>   
+<head>     
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>     
+<meta http-equiv="X-UA-Compatible" content="IE=7,IE=9" />    
+ <!--The viewport meta tag is used to improve the presentation and behavior of the samples       on iOS devices-->     
+ <meta name="viewport" content="initial-scale=0.5, maximum-scale=1,user-scalable=no"/>     
+ <title>Test Add Attachment</title>         
+ <link rel="stylesheet" type="text/css" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.1/js/dojo/dijit/themes/claro/claro.css">     
+ <!--<script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script>-->  
+ <script type="text/javascript">   var djConfig = {         parseOnLoad: true       };     </script>    
+ <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/?v=3.1"></script>     
+ <script type="text/javascript">       
+ dojo.require("esri.map");    
+ dojo.require("esri.layers.FeatureLayer");    
+ dojo.require("dijit.form.TextBox");    
+ dojo.require("dijit.form.DateTextBox");    
+ dojo.require("dijit.form.TimeTextBox");    
+ dojo.require("dijit.form.MultiSelect");    
+ dojo.require("dijit.ProgressBar");    
+ dojo.require("dojo.parser");    
+ dojo.require("dojo.data.ItemFileReadStore");    
+ dojo.require("dijit.form.ComboBox");      
+ var featureLayer, map,  maxExtent,customExtentAndSR, tiledMapServiceLayer;    
+ //This function loads the map     
+ function init()   {       esri.config.defaults.io.proxyUrl = "http://svakil/JSProxyPage/proxy.ashx";   
+ 		esri.config.defaults.io.alwaysUseProxy = false;   
+ 		customExtentAndSR = new esri.geometry.Extent(-14091875,5638085,-12763165,6396109, new esri.SpatialReference({"wkid":3857}));  
+ 		map = new esri.Map("map");            
+ 		dojo.connect(map, "onLoad", function() {          
+ 			maxExtent = map.extent;      
+ 			dojo.connect(map, "onClick", function(evt){     
+ 				console.log(evt);     
+ 				map.graphics.clear();     
+ 				map.graphics.add(new esri.Graphic(evt.mapPoint,  new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_CROSS, 25,     new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,     new dojo.Color([255,0,0]), 4))));     
+ 				submitForm();    
+ 			});   
+ 		});   
+ 	var tiledMapServiceLayer = new esri.layers.ArcGISTiledMapServiceLayer("http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer");   
+ 	var featureServiceURL = "http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0";          
+ 	featureLayer = new esri.layers.FeatureLayer(featureServiceURL, {       
+ 		outFields: ["*"],       
+ 		visible: false       
+ 	});                  
+ 	map.addLayers([tiledMapServiceLayer, featureLayer]);  
+ 	          }         
+ function submitForm() {   
+ 	featureLayer.addAttachment(5176728, document.getElementById("myForm6") ,callback , function(err){console.log(err);});  
+ }     
+ function callback(result){   
+ 	console.log(result);  
+ }  
+ dojo.addOnLoad(init);  
+ </script>     
+ <body class="claro">  
+ <div id="map" style="position:relative; width:600px; height:400px; border:1px solid #000; margin:0px auto;"></div>   
+ <form id="myForm6"><input type="file" name="attachment"/></form> 
+ </body> 
+ </html>      
