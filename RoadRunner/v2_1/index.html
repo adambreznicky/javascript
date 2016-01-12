@@ -198,6 +198,7 @@
                 theNote = theNote.replace(/\\/g, "?");
 
                 var picture = document.getElementById("image").files[0];
+                var imgVal = $("#image").val();
                 if (picture) {
                     var reader = new FileReader();
                     reader.onloadend = function () {
@@ -206,8 +207,8 @@
                             logger = localStorage.setItem(intKEY,JSON.stringify(POD));
                             totalpoints += 1;
                             y.innerHTML=totalpoints + " point(s) logged.";  
-                            document.getElementById("notes").value = "";  
-                            document.getElementById("image").value = "";
+                            $("#notes").val("");  
+                            $("#image").val("").change();
                         }
                         else {
                             y.innerHTML=totalpoints + " point(s) logged.";
@@ -271,6 +272,45 @@
                     }
                 }
             );
+
+            function errorEjection (error, number) {
+                var x = document.getElementById("uploadStatus");
+                var Buttons = document.getElementsByTagName("button");
+                document.getElementById('overlay').style.display='none';
+                document.getElementById('wait').style.display='none';
+                x.innerHTML = 'Upload Failed. ' + number;
+                for (var i = 0; i < Buttons.length; i++) {
+                    Buttons[i].disabled = false;
+                    Buttons[i].style.display = "block";
+                }
+                $(".panes").attr("style", "display:block;");
+                alert('Upload Failed. ' + number);
+            }
+
+            function uploadSuccess () {
+                var x = document.getElementById("uploadStatus");
+                var Buttons = document.getElementsByTagName("button");
+                document.getElementById('overlay').style.display='none';
+                document.getElementById('wait').style.display='none';
+                localStorage.clear();
+                totalpoints = 0;
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+
+                x.style.color = "green";
+                x.innerHTML = 'Data uploaded successfully!';
+                for (var i = 0; i < Buttons.length; i++) {
+                    Buttons[i].disabled = false;
+                    Buttons[i].style.display = "block";
+                }
+                $(".panes").attr("style", "display:block;");
+                alert("Data uploaded successfully");
+                beep();
+                setTimeout(function(){
+                    x.style.color = "initial";
+                    x.innerHTML = '';
+                }, 5000);
+            }
 
             on(dom.byId("cmdUploadData"), "click", function uploadStorage() {
                     beep();
@@ -383,14 +423,10 @@
                                                 console.log(response);
                                                 var res = response.addResults[0]["success"];
                                                 if (res) {
-                                                    
                                                     if (pnt[4] !== "NONE") {
                                                         var OID = response.addResults[0]["objectId"];
-                                                        console.log(OID);
-                                                        console.log(pnt[4]);
-                                                        var attachURL = theURL + OID.toString() + "/addAttachment"
-                                                        console.log(attachURL);
-                                                        // try {
+                                                        var attachURL = theURL + OID.toString() + "/addAttachment";
+                                                        try {
                                                             var imageFormat;
                                                             function dataURItoBlob(dataURI) {
                                                                 // convert base64 to raw binary data held in a string
@@ -413,14 +449,12 @@
                                                                 return bb;
                                                             }
                                                             var blob = dataURItoBlob(pnt[4]);
-                                                            console.log(blob);
                                                             var formNode = put("form", {
                                                                 "method": "post",
                                                                 "enctype": "multipart/form-data"
                                                             });
                                                             var formData = new FormData(formNode);
                                                             formData.append("attachment", blob, "image." + imageFormat);
-                                                            console.log(formData);
                                                             var imageRequest = esriRequest({
                                                                 url: attachURL,
                                                                 form: formData,
@@ -434,113 +468,45 @@
                                                             imageRequest.then(
                                                                 function(response) {
                                                                     console.log(response);
-                                                                    counter += 1;
-                                                                    if (counter === featureArray.length){
-                                                                        document.getElementById('overlay').style.display='none';
-                                                                        document.getElementById('wait').style.display='none';
-                                                                        localStorage.clear();
-                                                                        totalpoints = 0;
-                                                                        var y = document.getElementById("pointStatus");
-                                                                        y.innerHTML=totalpoints + " point(s) logged.";
-
-                                                                        x.style.color = "green";
-                                                                        x.innerHTML = 'Data uploaded successfully!';
-                                                                        for (var i = 0; i < Buttons.length; i++) {
-                                                                            Buttons[i].disabled = false;
-                                                                            Buttons[i].style.display = "block";
+                                                                    var res = response.addAttachmentResult["success"];
+                                                                    if (res) {
+                                                                        counter += 1;
+                                                                        if (counter === featureArray.length){
+                                                                            uploadSuccess();
                                                                         }
-                                                                        $(".panes").attr("style", "display:block;");
-                                                                        alert("Data uploaded successfully");
-                                                                        beep();
-                                                                        setTimeout(function(){
-                                                                            x.style.color = "initial";
-                                                                            x.innerHTML = '';
-                                                                        }, 5000);
+                                                                    } else {
+                                                                        errorEjection(e, "(IMG-1) Request responded 'Success' = false.");
                                                                     }
                                                                 }, function(error){
                                                                     console.log(error);
-                                                                });
-
-
-                                                        // } catch (e) {
-                                                        //     document.getElementById('overlay').style.display='none';
-                                                        //     document.getElementById('wait').style.display='none';
-                                                        //     x.innerHTML = 'Upload Failed. Try again with an internet connection. (3)';
-                                                        //     for (var i = 0; i < Buttons.length; i++) {
-                                                        //         Buttons[i].disabled = false;
-                                                        //         Buttons[i].style.display = "block";
-                                                        //     }
-                                                        //     $(".panes").attr("style", "display:block;");
-                                                        //     alert("Upload Failed. Try again with an internet connection. (IMG)");
-                                                        // }
-                                                    }
-                                                    else {
+                                                                    errorEjection(error, "(IMG-2) Request error. Try again with an internet connection.");
+                                                                }
+                                                            );
+                                                        } catch (e) {
+                                                            errorEjection(e, "(IMG-3) Pre-request failure.");
+                                                        }
+                                                    } else {
                                                         counter += 1;
                                                         if (counter === featureArray.length){
-                                                            document.getElementById('overlay').style.display='none';
-                                                            document.getElementById('wait').style.display='none';
-                                                            localStorage.clear();
-                                                            totalpoints = 0;
-                                                            var y = document.getElementById("pointStatus");
-                                                            y.innerHTML=totalpoints + " point(s) logged.";
-
-                                                            x.style.color = "green";
-                                                            x.innerHTML = 'Data uploaded successfully!';
-                                                            for (var i = 0; i < Buttons.length; i++) {
-                                                                Buttons[i].disabled = false;
-                                                                Buttons[i].style.display = "block";
-                                                            }
-                                                            $(".panes").attr("style", "display:block;");
-                                                            alert("Data uploaded successfully");
-                                                            beep();
-                                                            setTimeout(function(){
-                                                                x.style.color = "initial";
-                                                                x.innerHTML = '';
-                                                            }, 5000);
+                                                            uploadSuccess();
                                                         }
                                                     }
                                                 } else {
-                                                    document.getElementById('overlay').style.display='none';
-                                                    document.getElementById('wait').style.display='none';
-                                                    x.innerHTML = 'Upload Failed. Try again with an internet connection. (1)';
-                                                    for (var i = 0; i < Buttons.length; i++) {
-                                                        Buttons[i].disabled = false;
-                                                        Buttons[i].style.display = "block";
-                                                    }
-                                                    $(".panes").attr("style", "display:block;");
-                                                    alert("Upload Failed. Try again with an internet connection. (1)");
-                                            }
-                                            }, function(error) {
-                                                document.getElementById('overlay').style.display='none';
-                                                document.getElementById('wait').style.display='none';
-                                                x.innerHTML = 'Upload Failed. Try again with an internet connection. (2)';
-                                                for (var i = 0; i < Buttons.length; i++) {
-                                                    Buttons[i].disabled = false;
-                                                    Buttons[i].style.display = "block";
+                                                    errorEjection(e, "(1) Request responded 'Success' = false.");
                                                 }
-                                                $(".panes").attr("style", "display:block;");
-                                                alert("Upload Failed. Try again with an internet connection. (2)");
-                                                console.log("Error: ", error.message);
-                                        });
-                                        
+                                            }, function(error){
+                                                console.log(error);
+                                                errorEjection(error, "(2) Request error. Try again with an internet connection.");
+                                            }
+                                        );
                                     } catch (e) {
-                                        document.getElementById('overlay').style.display='none';
-                                        document.getElementById('wait').style.display='none';
-                                        x.innerHTML = 'Upload Failed. Try again with an internet connection. (3)';
-                                        for (var i = 0; i < Buttons.length; i++) {
-                                            Buttons[i].disabled = false;
-                                            Buttons[i].style.display = "block";
-                                        }
-                                        $(".panes").attr("style", "display:block;");
-                                        alert("Upload Failed. Try again with an internet connection. (3)");
+                                        errorEjection(e, "(3) Pre-request failure.");
                                     }
                                 }
-
                                 districtQuery(pnt);
                             }
                             
-                        }
-                        else{
+                        } else {
                             document.getElementById('overlay').style.display='none';
                             document.getElementById('wait').style.display='none';
                             for (var i = 0; i < Buttons.length; i++) {
@@ -562,6 +528,7 @@
 
             $('#image').on('change', function () {
                 var value = $('#image').val();
+                var picture = document.getElementById("image").files[0];
                 if (value == "") {
                     $('#cameraButton').css({'background-color' : 'initial'});
                 }
