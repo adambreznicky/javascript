@@ -40,6 +40,15 @@ and open the template in the editor.
             #generate {
                 height: 46px;
             }
+            #curPos{
+                position: absolute;
+                top: 151%;
+                left: 22px;
+                z-index: 50;
+                color: #303030;
+                font-weight: bold;
+                text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+        	 }
         </style>
 
         <script data-dojo-config="async:true, aliases: [
@@ -64,6 +73,11 @@ and open the template in the editor.
                 "esri/layers/LabelLayer",
                 "esri/Color",
                 "esri/renderers/SimpleRenderer",
+                
+                "esri/geometry/Point", 
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/graphic",
 
                 "esri/arcgis/OAuthInfo",
                 "esri/IdentityManager",
@@ -75,6 +89,7 @@ and open the template in the editor.
             function($, $ui,
                     Map, Query, QueryTask, FeatureLayer, InfoTemplate,
                     TextSymbol, LabelLayer, Color, SimpleRenderer,
+                    Point, SimpleMarkerSymbol, SimpleLineSymbol, Graphic,
                     OAuthInfo, IdentityManager,
                     ready, parser, require) {
                 ready(function(){
@@ -82,7 +97,39 @@ and open the template in the editor.
                     parser.parse();
                     
                     var map;
+                    var latty;
+                    var longy;
+                    var graphic;
                     var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+                    
+                    function startupGPS () {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+                        }
+                        else {
+                            console.log("Geolocation is not supported by this browser.");	
+                        }
+                    }
+                    
+                    function showPosition(position) {
+                        latty = position.coords.latitude;
+                        longy = position.coords.longitude;
+                        if (map) {
+                            var pt = new Point(longy, latty);
+                            if ( !graphic ) {
+                                addGraphic(pt);
+                            } else {
+                                graphic.setGeometry(pt);
+                                $("#curPos").html(latty + "," + longy);
+                            }
+                        }
+                    }
+                    
+                    function addGraphic(pt){
+                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,12,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
+                        graphic = new Graphic(pt, symbol);
+                        map.graphics.add(graphic);
+                    }
 
                     $("#maintenanceSection").change(function () {
                         $("#deficiency").prop("disabled", false);
@@ -169,6 +216,7 @@ and open the template in the editor.
                     function generateReport () {
                         try {
                             map.destroy();
+                            map = undefined;
                         } catch (e) {
                             console.log(e);
                         }
@@ -242,7 +290,6 @@ and open the template in the editor.
                     function buildMap (where) {
                         $("#divMap").attr("style", "display:block;");
                         
-                        
                         map = new Map("divMap", {
                           logo: false,
                           basemap: "topo"
@@ -271,8 +318,7 @@ and open the template in the editor.
                         }, function (e) {
                             console.log(e);
                         });
-                        
-                        
+
                     }
 
                     var info = new OAuthInfo({
@@ -285,7 +331,7 @@ and open the template in the editor.
 
                     
 
-
+                    window.onload = startupGPS;
                 });
             });
         </script>
@@ -348,6 +394,6 @@ and open the template in the editor.
                 <tbody id="reportBody"></tbody>
             </table>
         </div>
-         <div id="divMap" style="display:none;"></div> 
+         <div id="divMap" style="display:none;"><span id="curPos">Position Not Acquired</span></div> 
     </body>
 </html>
