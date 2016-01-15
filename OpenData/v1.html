@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> </title>
+        <style type="text/css">
+                                .header-image{
+                        display:block;
+                        width:100%;
+                        height: 100%;
+                        padding: 0;
+                        margin: 0;
+                        position:relative;top:0;left:0;
+                    }
+                    .name-image{
+                        display:block;
+                        max-width:80%;
+                        height:auto;
+                        position:absolute; bottom:5%;left:4%;
+                    }
+                    .site-brand{
+                        display:block;
+                        width:100%;
+                        padding: 0;
+                        margin: 0;
+                    }
+                    .site-logo{
+                        display:block;
+                        width:100%;
+                        padding: 0;
+                        margin: 0;
+                    }
+                    #header{
+                        width:100%;
+                        height:auto;
+                        min-width:630px;
+                    }
+                    #footer{
+                        width:100%;
+                        background-color:white;
+                        min-width:630px;
+                        height: auto;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .container{
+                        position:relative;
+                        width:100%;
+                        padding:0;
+                    }
+                    .col-xs-12{
+                        padding:0;
+                        width:100%;
+                        position:relative;
+                    }
+                    #mapbar-controls .container{
+                        padding:2%;
+                    }
+                    #home-link-region{
+                        margin: 0;
+                    }
+                    #title-bar-region {
+                    box-shadow: none;
+                    border-left: #B1B8B8 1px solid;
+                    border-right: #B1B8B8 1px solid;
+                    box-sizing:border-box;
+                    width:100%;
+                    }
+                    #map-bar-region {
+                    box-shadow: none;
+                    border-left: #B1B8B8 1px solid;
+                    border-right: #B1B8B8 1px solid;
+                    box-sizing:border-box;
+                    width:100%;
+                    margin:0;
+                    }
+                    #slide-region {
+                    box-shadow: none;
+                    border-left: #B1B8B8 1px solid;
+                    border-right: #B1B8B8 1px solid;
+                    box-sizing:border-box;
+                    width:100%;
+                    padding:1%;
+                    }
+                    body {
+                    max-width:960px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    }
+                    .row.row{
+                        margin:0;
+                    }
+                    #dataset-attributes-region .attribute-stats{
+                        margin:0;
+                    }
+                    #map-bar-region #controls-region #controls{
+                        margin-right:0;
+                    }
+                    #locator-region .container{
+                        padding-left:15px;
+                        padding-top:0px;
+                    }
+        </style>
+    </head>
+    <body>
+              
+//header
+                <div class="site-brand"> 
+                	 <!--<span class="site-logo">-->
+                        <img class="header-image" src="http://www.txdot.gov/etc/designs/txdot/images/header_bg.jpg" alt="background" />
+                        <img class="name-image" src="http://www.txdot.gov/etc/designs/txdot/_jcr_content/global/header/logo.img.png/1346966705418.png" alt="logo" />
+                	 <!--</span>-->
+                </div>
+                
+                <!-- Skip-Nav should be placed ahead of links to allow non-sighted users to bypass navigation -->
+                <a href="#slide-region" class="skip-nav">Skip Navigation</a>
+                
+
+
+//layout
+                <div class="container">
+                    <div class="page-header" style="margin-top:0;padding:0;">
+                        <h2 class="title">GIS Data Categories</h2>
+                    </div><!-- /.page-header -->
+                      
+                    <div class="row">
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Boundaries"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/boundaries.png" alt="Boundaries" class="img-responsive center-block" /></a>
+                          <a href="/datasets?q=Boundaries">Boundaries</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Energy"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/energy.png" alt="Energy" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Energy">Energy</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Environmental"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/environmental.png" alt="Environmental" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Environmental">Environmental</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Geographical"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/geographical.png" alt="Geographical" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Geographical">Geographical</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Highway+Performance"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/hwy-performance.png" alt="Highway Performance" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Highway+Performance">Highway Performance</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Highway+Referencing+Systems"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/hwy-ref-sys.png" alt="Highway Referencing Systems" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Highway+Referencing+Systems">Highway Referencing Systems</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Imagery"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/imagery.png" alt="Imagery" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Imagery">Imagery</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Locations"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/locations.png" alt="Locations" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Locations">Locations</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Pavement"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/pavement.png" alt="Pavement" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Pavement">Pavement</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Planning"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/planning.png" alt="Planning" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Planning">Planning</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Political"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/political.png" alt="Political" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Political">Political</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Projects"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/projects.png" alt="Projects" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Projects">Projects</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Reports"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/reports.png" alt="Reports" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Reports">Reports</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Right+of+Way"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/right-of-way.png" alt="Right of Way" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Right+of+Way">Right of Way</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Safety"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/safety.png" alt="Safety" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Safety">Safety</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Society"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/society.png" alt="Society" class="img-responsive center-block" /></a>
+                          <a href="/datasets?q=Society">Society</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Structures"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/structures.png" alt="Structures" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Structures">Structures</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                        <a href="/datasets?q=Traffic"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/traffic.png" alt="Traffic" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Traffic">Traffic</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=Transportation"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/tranportation.png" alt="Transportation" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=Transportation">Transportation</a>
+                        </div>
+                        <div class="col-xs-4 col-sm-3 col-md-2 col-lg-2 category-grid text-center">
+                          <a href="/datasets?q=TxDOT+Infrastructure"><img src="ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/images/txdot-infrastructure.png" alt="TxDOT Infrastructure" class="img-responsive center-block"  /></a>
+                          <a href="/datasets?q=TxDOT+Infrastructure">TxDOT Infrastructure</a>
+                        </div>
+                      </div><!-- /.row --> 
+                      
+                      <hr>
+                
+                <div class="col-1 row-4 sizex-5 sizey-2">
+                <h2 id="example-h2">Example H2</h2>
+                <p>Text box that supports <a href="http://daringfireball.net/projects/markdown/basics">markdown</a> formatting.</p>
+                <ul>
+                <li>Bulleted list </li>
+                <li>use asterisks</li>
+                </ul>
+                </div>
+                  
+                <div class="col-6 row-4 sizex-2 sizey-2">
+                <h2 id="example-h2">Example H2</h2>
+                <p>Text box that supports <a href="http://daringfireball.net/projects/markdown/basics">markdown</a> formatting.</p>
+                <ul>
+                <li>Bulleted list </li>
+                <li>use asterisks</li>
+                </ul>
+                </div>
+                  
+                </div><!-- /.container -->
+
+
+
+
+
+
+//footer
+
+                  <div style="width:100%;padding:0;margin:0;">
+                    <img class="header-image" src="http://www.txdot.gov/etc/designs/txdot/images/header_bg.jpg" alt="background" style="display:block;width:100%;height:100%;position:relative;bottom:0;left:0;"/>
+                      <!--<p style="position:absolute;bottom:30px;left:40px;">© 2015 Texas Department of Transportation</p>-->
+                      <!--<div class="col-md-12 last">-->
+                        <!--<p style="position:absolute;bottom:3px;left:60px;color:white;">Address and Phone information for TPP?</p>-->
+                        <p style="display:block;position:absolute;bottom:1%;left:4%;color:white;">© 2015 Texas Department of Transportation</p>
+                
+                      <!--</div>-->
+                    
+                  </div>
+    </body>
+</html>
