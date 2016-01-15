@@ -17,7 +17,7 @@ and open the template in the editor.
 
 
         <style type="text/css">
-            html, body, #divMap {
+            html, body {
                 padding: 0;
                 margin: 0;
                 height: 100%;
@@ -27,6 +27,9 @@ and open the template in the editor.
                 margin-top: 0;
                 padding-top: 20px;
                 padding-left: 20px;
+            }
+            #divMap {
+                height: 90%;
             }
             #category {
                 padding-left: 20px;
@@ -55,6 +58,12 @@ and open the template in the editor.
                 "esri/tasks/query",
                 "esri/tasks/QueryTask",
                 "esri/layers/FeatureLayer",
+                "esri/InfoTemplate",
+                
+                "esri/symbols/TextSymbol",
+                "esri/layers/LabelLayer",
+                "esri/Color",
+                "esri/renderers/SimpleRenderer",
 
                 "esri/arcgis/OAuthInfo",
                 "esri/IdentityManager",
@@ -64,15 +73,16 @@ and open the template in the editor.
                 "dojo/require",
                 "dojo/domReady!"],
             function($, $ui,
-                    Map, Query, QueryTask, FeatureLayer,
+                    Map, Query, QueryTask, FeatureLayer, InfoTemplate,
+                    TextSymbol, LabelLayer, Color, SimpleRenderer,
                     OAuthInfo, IdentityManager,
                     ready, parser, require) {
                 ready(function(){
                     dojo.require("bootstrap");
                     parser.parse();
-
+                    
+                    var map;
                     var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
-                    var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL);
 
                     $("#maintenanceSection").change(function () {
                         $("#deficiency").prop("disabled", false);
@@ -157,6 +167,11 @@ and open the template in the editor.
                     }
 
                     function generateReport () {
+                        try {
+                            map.destroy();
+                        } catch (e) {
+                            console.log(e);
+                        }
                         $("#reportBody").html("");
                         $("#reportTable").attr("style", "display:block;");
                         var ms = $("#maintenanceSection").val();
@@ -178,47 +193,87 @@ and open the template in the editor.
                         var query = new Query();
                         query.returnGeometry = false;
                         query.where = where;
-                        query.outFields = ["OBJECTID", "Latitude", "Longitude", "Notes", "CreationDate"];
+                        query.outFields = ["OBJECTID", "Latitude", "Longitude", "Route", "Notes", "CreationDate"];
                         var queryTask = new QueryTask(maintenanceDeficiencyURL);
                         queryTask.execute(query, function (results) {
-                            var counter = 0;
-                            var shaded = false;
-                            $.each(results.features, function (position) {
-                                var def = results.features[position];
-                                
-                                var trPrfx;
-                                if (shaded ==  false) {
-                                    trPrfx = "<tr>";
-                                    shaded = true;
-                                }
-                                else {
-                                    trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
-                                    shaded = false;
-                                }
-                                var theText = trPrfx+"<td>"+def.attributes["OBJECTID"]+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+def.attributes["CreationDate"]+"</td></tr>";
-                                $("#reportBody").append(theText);
-                                counter += 1;
-                                if (counter == results.features.length) {
-                                    var finalText = "<tr><td></td><td></td><td></td><td><span style='font-weight:bold'>TOTAL</span></td><td><span style='font-weight:bold'>"+counter+"</span></td></tr>";
-                                    $("#reportBody").append(finalText);
-                                }
-                                
-                            });
+                            if (results.features.length !== 0) {
+                                var counter = 0;
+                                var shaded = false;
+                                $.each(results.features, function (position) {
+                                    var def = results.features[position];
+                                    
+                                    var d = new Date(def.attributes["CreationDate"]);
+                                    var formatDate = d.toLocaleString();
+                                    
+                                    var trPrfx;
+                                    if (shaded ==  false) {
+                                        trPrfx = "<tr>";
+                                        shaded = true;
+                                    }
+                                    else {
+                                        trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
+                                        shaded = false;
+                                    }//swamp thangs
+                                    var theText = trPrfx+"<td><a href='//maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td style='text-align:right;'>"+formatDate+"</td></tr>";
+                                    $("#reportBody").append(theText);
+                                    counter += 1;
+                                    if (counter == results.features.length) {
+                                        var finalText = "<tr><td></td><td></td><td></td><td></td><td></td><td><span style='font-weight:bold'>TOTAL: "+counter+"</span></td></tr>";
+                                        $("#reportBody").append(finalText);
+                                    }
+                                    
+                                });
+                                buildMap(where);
+                            } else {
+                                $("#reportTable").attr("style", "display:none;");
+                                $("#divMap").attr("style", "display:none;");
+                                alert("No deficiencies found using the selected parameters.");
+                            }
                         }, function (e) {
                             console.log(e);
                             $("#maintenanceSection").val("#").change();
+                            $("#reportTable").attr("style", "display:none;");
+                            $("#divMap").attr("style", "display:none;");
                             alert("Error generating report. Please try again.");
                         });
                         
                     }
 
-
-
-                    // var map = new Map("divMap", {
-                    //   center: [-100, 32],
-                    //   zoom: 7,
-                    //   basemap: "topo"
-                    // });
+                    function buildMap (where) {
+                        $("#divMap").attr("style", "display:block;");
+                        
+                        
+                        map = new Map("divMap", {
+                          logo: false,
+                          basemap: "topo"
+                        });
+                        
+                        var infoTemplate = new InfoTemplate($("#deficiency").val(), "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>CreationDate: ${CreationDate}");
+                        var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL, {
+                            infoTemplate: infoTemplate
+                        });
+                        maintenanceDeficiencies.setDefinitionExpression(where);
+                        map.addLayer(maintenanceDeficiencies);
+                        
+                        var labelField = "OBJECTID";
+                        var defLabel = new TextSymbol().setColor(new Color("black"));
+                        defLabel.font.setSize("10pt");
+                        defLabel.font.setFamily("Trebuchet MS");
+                        var defLabelRenderer = new SimpleRenderer(defLabel);
+                        var labels = new LabelLayer({id: "OID"});
+                        labels.addFeatureLayer(maintenanceDeficiencies, defLabelRenderer, "{" + labelField + "}");
+                        map.addLayer(labels);
+                        
+                        var query = new Query();
+                        query.where = where;
+                        maintenanceDeficiencies.queryExtent(query, function (result) {
+                            map.setExtent(result.extent);
+                        }, function (e) {
+                            console.log(e);
+                        });
+                        
+                        
+                    }
 
                     var info = new OAuthInfo({
                         appId: "8uLvntBpRf4N1Eiu",
@@ -284,13 +339,15 @@ and open the template in the editor.
                         <th>OBJECTID</th>
                         <th>Latitude</th>
                         <th>Longitude</th>
+                        <th>Route</th>
                         <th>Notes</th>
-                        <th>Creation Date</th>
+                        <th style='text-align:right;'>Creation Date</th>
+                        <!--<th></th>-->
                     </tr>
                 </thead>
                 <tbody id="reportBody"></tbody>
             </table>
         </div>
-        <!-- <div id="divMap"></div> -->
+         <div id="divMap" style="display:none;"></div> 
     </body>
 </html>
