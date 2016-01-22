@@ -27,9 +27,14 @@ and open the template in the editor.
                 padding-top: 20px;
                 padding-left: 20px;
             }
+            #mapContainer {
+                height:100%;
+            }
             #divMap {
-                height: 90%;
-                border-style: solid;
+                height: 100%;
+                width:100%;
+                padding:0;
+                margin:0;
                 page-break-before: always;
             }
             #category {
@@ -48,7 +53,32 @@ and open the template in the editor.
                 width:  50%;
                 z-index: 50;
                 color: #303030;
-             }
+            }
+            
+            @media print {
+                
+                body div.container {
+                     margin: 0;
+                     padding:0;
+                }
+                .esriSimpleSlider {
+                    display: none;
+                }
+                @page {
+                    size: auto;   /* auto is the current printer page size */
+                    margin: 5mm 0mm 0mm 0mm;  /* this affects the margin in the printer settings */
+                }
+        
+                body {
+                    /*background-color:#FFFFFF; */
+                    /*border: solid 1px black ;*/
+                    margin: 0px;  /* the margin on the content before printing */
+                }
+                #selector {
+                    display: none;
+                }
+            }
+             
         </style>
 
         <script data-dojo-config="async:true, aliases: [
@@ -224,12 +254,11 @@ and open the template in the editor.
                                     var def = results.features[position];
                                     
                                     var d = new Date(def.attributes["CreationDate"]);
-                                    var formatDate = d.toLocaleString();
+                                    var formatDate = d.toLocaleDateString();
                                     var objID = def.attributes["OBJECTID"];
                                     var curWhere = "OBJECTID = '"+objID+"'";
                                     var oidString = "map" + objID.toString();
                                     var reportBodyID = "#reportBody"+reportBodyNum.toString();
-                                    console.log(reportBodyID);
                                     var trPrfx;
                                     shaded = false;
 
@@ -242,7 +271,6 @@ and open the template in the editor.
                                     
                                     var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td style='text-align:right;'>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' style='border-style:solid;border-width:1px;border-color:lightgray;page-break-inside:avoid;'></div></td></tr>";
                                     $(reportBodyID).append(theText);
-                                    console.log(theText);
                                     counter += 1;
                                     pageBreaker += 1;
                                     if (pageBreaker == 3 && counter !== results.features.length) {
@@ -257,7 +285,7 @@ and open the template in the editor.
                                     
                                     buildMap(curWhere, oidString, def.geometry);
                                     if (counter == results.features.length) {
-                                        var finalText = "<tr><td></td><td></td><td></td><td></td><td></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";
+                                        var finalText = "<tr><td colspan=5></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";
                                         $(reportBodyID).append(finalText);
                                         buildMap(where, "divMap");
                                     }
@@ -315,6 +343,7 @@ and open the template in the editor.
                             maintenanceDeficiencies.queryExtent(query, function (result) {
                                 var ext = result.extent.expand(1.5);
                                 map.setExtent(ext);
+                                $("#divMap_container").attr("style", "border-style:solid;");
                             }, function (e) {
                                 console.log(e);
                             });
@@ -340,7 +369,7 @@ and open the template in the editor.
         <div class="page-header" style="background-color: rgb(20,56,92); margin-top:0;">
             <h1 id = "header">Maintenance Assignments <small>TxDOT Coyote</small></h1>
         </div>
-        <div class="container">
+        <div class="container" id="selector">
           <p>Assignment by:</p>
           <table class="table">
             <tbody>
@@ -378,7 +407,7 @@ and open the template in the editor.
         <div class="container" id="reportTable" style="display:none;">
             
         </div>
-        <div id="mapContainer" class="container" style="height:90%;display:none;">
+        <div id="mapContainer" class="container" style="display:none;">
             <div id="divMap" style="display:none;"></div> 
         </div>
     </body>
