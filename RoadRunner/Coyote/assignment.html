@@ -9,11 +9,11 @@ and open the template in the editor.
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Maintenance Assignments</title>
 <!--swamp thang-->
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
+        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
         <!--swamp thangs-->
-        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
 
         <style type="text/css">
             html, body {
@@ -52,10 +52,10 @@ and open the template in the editor.
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="http://js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
+            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="//js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
         </script>
 
         <script>
@@ -100,7 +100,7 @@ and open the template in the editor.
                     var latty;
                     var longy;
                     var graphic;
-                    var maintenanceDeficiencyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+                    var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
 
                     $("#maintenanceSection").change(function () {
                         $("#deficiency").prop("disabled", false);
@@ -111,7 +111,7 @@ and open the template in the editor.
                         $("#generate").val("#");
                         var ms = $("#maintenanceSection").val();
                         
-                        var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+                        var roadsURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
                         var query = new Query();
                         query.returnGeometry = false;
                         query.where = "OFFICE_NM = '" + ms + "'";
@@ -191,7 +191,7 @@ and open the template in the editor.
                         } catch (e) {
                             console.log(e);
                         }
-                        $("#dataTable").html("<thead><tr><th>OBJECTID</th><th>Latitude</th><th>Longitude</th><th>Route</th><th>Notes</th><th style='text-align:right;'>Creation Date</th></tr></thead><tbody id='reportBody0'></tbody>");
+                        $("#reportTable").html("<h2 id='reportTitle'></h2><p id='chosenParameters'></p><p id='generationDateTime'></p><table class='table'><thead><tr><th>OBJECTID</th><th>Latitude</th><th>Longitude</th><th>Route</th><th>Notes</th><th style='text-align:right;'>Creation Date</th></tr></thead><tbody id='reportBody0'></tbody></table>");
                         $("#reportTable").attr("style", "display:block;");
                         var ms = $("#maintenanceSection").val();
                         var deficiency = $("#deficiency").val();
@@ -245,7 +245,7 @@ and open the template in the editor.
                                     console.log(theText);
                                     counter += 1;
                                     pageBreaker += 1;
-                                    if (pageBreaker == 3) {
+                                    if (pageBreaker == 3 && counter !== results.features.length) {
                                         var nextReportBodyNum = reportBodyNum + 1;
                                         // var suffix = "</tbody></table><div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'>";
                                         // $("#reportTable").append(suffix);
@@ -326,7 +326,7 @@ and open the template in the editor.
 
                     var info = new OAuthInfo({
                         appId: "hM8gEmhxankEHGjD",
-                        portalUrl: "https://txdot.maps.arcgis.com",//swamp thangs
+                        portalUrl: "//txdot.maps.arcgis.com",//swamp thangs
                         popup: false
                     });
                     IdentityManager.registerOAuthInfos([info]);
@@ -376,10 +376,7 @@ and open the template in the editor.
           </table>
         </div>
         <div class="container" id="reportTable" style="display:none;">
-            <h2 id="reportTitle"></h2>
-            <p id="chosenParameters"></p>
-            <p id="generationDateTime"></p>
-            <table id="dataTable" class="table"></table>
+            
         </div>
         <div id="mapContainer" class="container" style="height:90%;display:none;">
             <div id="divMap" style="display:none;"></div> 
