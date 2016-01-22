@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Maintenance Coyote</title>
+<!--swamp thang-->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
+        <!--swamp thangs-->
+        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+
+
+        <style type="text/css">
+            html, body {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                font-size:3vw;
+            }
+            h1 {
+                color: white;
+                margin-top: 0;
+                padding-top: 20px;
+                padding-left: 20px;
+            }
+            select.form-control {
+                font-size: 2vw;
+                height: inherit;
+            }
+            td {
+                font-weight: bold;
+            }
+            #divMap {
+                height: 90%;
+                border-style: solid;
+            }
+            #category {
+                padding-left: 20px;
+            }
+            #selectDist {
+                width: 225px;
+            }
+            #generate {
+                font-size: 2vw;
+                height: 100%;
+                vertical-align: top;
+            }
+            #curPos{
+                position: relative;
+                top: 100%;
+                left: 22px;
+                width:  50%;
+                z-index: 50;
+                color: #303030;
+                font-size: 2vw;
+        	 }
+             .container {
+                width: 100%;
+             }
+        </style>
+
+        <script data-dojo-config="async:true, aliases: [
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
+        </script>
+
+        <script>
+            require([
+                "jquery",
+                "jqueryui",
+
+                "esri/map",
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                "esri/layers/FeatureLayer",
+                "esri/InfoTemplate",
+                
+                "esri/symbols/TextSymbol",
+                "esri/layers/LabelLayer",
+                "esri/Color",
+                "esri/renderers/SimpleRenderer",
+                
+                "esri/geometry/Point", 
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/graphic",
+
+                "esri/arcgis/OAuthInfo",
+                "esri/IdentityManager",
+
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/require",
+                "dojo/domReady!"],
+            function($, $ui,
+                    Map, Query, QueryTask, FeatureLayer, InfoTemplate,
+                    TextSymbol, LabelLayer, Color, SimpleRenderer,
+                    Point, SimpleMarkerSymbol, SimpleLineSymbol, Graphic,
+                    OAuthInfo, IdentityManager,
+                    ready, parser, require) {
+                ready(function(){
+                    dojo.require("bootstrap");
+                    parser.parse();
+                    
+                    var map;
+                    var latty;
+                    var longy;
+                    var graphic;
+                    var maintenanceDeficiencyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+                    
+                    function startupGPS () {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+                        }
+                        else {
+                            console.log("Geolocation is not supported by this browser.");	
+                        }
+                    }
+                    
+                    function showPosition(position) {
+                        latty = position.coords.latitude;
+                        longy = position.coords.longitude;
+                        if (map) {
+                            var pt = new Point(longy, latty);
+                            if ( !graphic ) {
+                                addGraphic(pt);
+                            } else {
+                                graphic.setGeometry(pt);
+                                $("#curPos").html(latty.toFixed(5) + "," + longy.toFixed(5));
+                            }
+                        }
+                    }
+                    
+                    function addGraphic(pt){
+                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,12,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
+                        graphic = new Graphic(pt, symbol);
+                        map.graphics.add(graphic);
+                    }
+
+                    $("#maintenanceSection").change(function () {
+                        $("#deficiency").prop("disabled", false);
+                        $("#route").prop("disabled", true);
+                        $("#generate").prop("disabled", true);
+                        $("#deficiency").val("#");
+                        $("#route").val("#");
+                        $("#generate").val("#");
+                        var ms = $("#maintenanceSection").val();
+                        
+                        var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = "OFFICE_NM = '" + ms + "'";
+                        query.outFields = ["RTE_NM"];
+                        var queryTask = new QueryTask(roadsURL);
+                        queryTask.execute(query, function (results) {
+                            var routes = [];
+                            $.each(results.features, function (position) {
+                                var rte = results.features[position];
+                                var rteName = rte.attributes["RTE_NM"];
+                                var pos = $.inArray(rteName, routes);
+                                if (pos === -1) {
+                                    routes.push(rteName);
+                                }
+                            });
+                            routes.sort();
+                            $('#route').find('option:gt(0)').remove();
+                            $('#route').append($('<option>', {
+                                    value: "",
+                                    text: "All Routes"
+                                }));
+                            $.each(routes, function (position) {
+                                var rte = routes[position];
+                                $('#route').append($('<option>', {
+                                    value: rte,
+                                    text: rte
+                                }));
+                            });
+                        }, function (e) {
+                            console.log(e);
+                            $("#maintenanceSection").val("#").change();
+                        });
+                    });
+
+                    $("#deficiency").change(function () {
+                        $("#route").prop("disabled", false);
+                    });
+
+                    $("#route").change(function (event) {
+                        $("#generate").prop("disabled", false);
+                            
+                    });
+
+                    $("#generate").click(generateReport);
+
+                    function getTime () {
+                        var d = new Date();
+                        var m = d.getMonth() + 1;
+                        var day = d.getDate();
+                        var yr = d.getFullYear();
+
+                        var theDate = m.toString() + "/" + day.toString() + "/" + yr.toString();
+
+                        var sfx = "AM";
+                        var h = d.getHours();
+                        if (h == 0) {
+                            h = 12;
+                        }
+                        else if (h > 12) {
+                            h = h - 12;
+                            sfx = "PM";
+                        }
+                        var min = d.getMinutes();
+                        if (min < 10) {
+                            min = "0" + min;
+                        }
+                        var theTime = h + ":" + min + " " + sfx;
+
+                        var generationDateTime = theDate + " " + theTime;
+                        return generationDateTime;
+                    }
+
+                    function generateReport () {
+                        try {
+                            map.destroy();
+                            map = undefined;
+                        } catch (e) {
+                            console.log(e);
+                        }
+                        $("#reportBody").html("");
+                        $("#reportTable").attr("style", "display:block;");
+                        var ms = $("#maintenanceSection").val();
+                        var deficiency = $("#deficiency").val();
+                        var route = $("#route").val();
+                        var dateTime = getTime();
+                        var where;
+
+                        $("#reportTitle").html(ms + " Maintenance Section: " + deficiency + " Repair Assignment");
+                        if (route === "") {
+                            $("#chosenParameters").html("All Routes");
+                            where = "Resolved = 'No' AND MaintenanceSection = '" + ms + "' AND Deficiency = '" + deficiency + "'";
+                        } else {
+                            $("#chosenParameters").html("Route: " + route);
+                            where = "Resolved = 'No' AND MaintenanceSection = '" + ms + "' AND Deficiency = '" + deficiency + "' AND Route = '" + route + "'";
+                        }
+                        $("#generationDateTime").html("Assignment Created: " + dateTime);
+
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = where;
+                        query.outFields = ["OBJECTID", "Latitude", "Longitude", "Route", "Notes", "CreationDate"];
+                        var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                        queryTask.execute(query, function (results) {
+                            if (results.features.length !== 0) {
+                                var counter = 0;
+                                var shaded = false;
+                                $.each(results.features, function (position) {
+                                    var def = results.features[position];
+                                    
+                                    var d = new Date(def.attributes["CreationDate"]);
+                                    var formatDate = d.toLocaleDateString();
+                                    
+                                    var trPrfx;
+                                    if (shaded ==  false) {
+                                        trPrfx = "<tr>";
+                                        shaded = true;
+                                    }
+                                    else {
+                                        trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
+                                        shaded = false;
+                                    }//swamp thangs
+                                    var theText = trPrfx+"<td><a href='https://maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td style='text-align:right;'>"+formatDate+"</td></tr>";
+                                    $("#reportBody").append(theText);
+                                    counter += 1;
+                                    if (counter == results.features.length) {
+                                        var finalText = "<tr><td></td><td></td><td></td><td></td><td></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";
+                                        $("#reportBody").append(finalText);
+                                    }
+                                    
+                                });
+                                buildMap(where);
+                            } else {
+                                $("#reportTable").attr("style", "display:none;");
+                                $("#divMap").attr("style", "display:none;");
+                                alert("No deficiencies found using the selected parameters.");
+                            }
+                        }, function (e) {
+                            console.log(e);
+                            $("#maintenanceSection").val("#").change();
+                            $("#reportTable").attr("style", "display:none;");
+                            $("#divMap").attr("style", "display:none;");
+                            alert("Error generating report. Please try again.");
+                        });
+                        
+                    }
+
+                    function buildMap (where) {
+                        $("#curPos").attr("style", "display:block;");
+                        $("#divMap").attr("style", "display:block;");
+
+                        map = new Map("divMap", {
+                          logo: false,
+                          basemap: "topo"
+                        });
+                        
+                        var infoTemplate = new InfoTemplate($("#deficiency").val(), "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>CreationDate: ${CreationDate}");
+                        var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL, {
+                            infoTemplate: infoTemplate,
+                            outFields: ["*"]
+                        });
+                        maintenanceDeficiencies.setDefinitionExpression(where);
+                        map.addLayer(maintenanceDeficiencies);
+                        
+                        var labelField = "OBJECTID";
+                        var defLabel = new TextSymbol().setColor(new Color("black"));
+                        defLabel.font.setSize("10pt");
+                        defLabel.font.setFamily("Trebuchet MS");
+                        var defLabelRenderer = new SimpleRenderer(defLabel);
+                        var labels = new LabelLayer({id: "OID"});
+                        labels.addFeatureLayer(maintenanceDeficiencies, defLabelRenderer, "{" + labelField + "}");
+                        map.addLayer(labels);
+                        
+                        var query = new Query();
+                        query.where = where;
+                        maintenanceDeficiencies.queryExtent(query, function (result) {
+                            map.setExtent(result.extent);
+                        }, function (e) {
+                            console.log(e);
+                        });
+
+                    }
+
+                    var info = new OAuthInfo({
+                        appId: "KghCdkvfNJMK9wcj",
+                        portalUrl: "https://txdot.maps.arcgis.com",//swamp thangs
+                        popup: false
+                    });
+                    IdentityManager.registerOAuthInfos([info]);
+                    IdentityManager.getCredential(info.portalUrl + "/sharing");
+
+                    
+
+                    window.onload = startupGPS;
+                });
+            });
+        </script>
+    </head>
+    <body class="tundra">
+        <div class="page-header" style="background-color: rgb(20,56,92); margin-top:0;">
+            <h1 id = "header">Maintenance Coyote <small>TxDOT Maintenance Assignments</small></h1>
+        </div>
+        <div class="container">
+          <p>Assignment by:</p>
+          <table class="table">
+            <tbody>
+              <tr>
+                <td>
+                    <div class="form-group">
+                        <select class="form-control" id="maintenanceSection">
+                            <option value="#" disabled selected>Maintenance Section</option>
+                            <option class='msOption' value='Alice'>Alice</option>   <option class='msOption' value='Alpine'>Alpine</option> <option class='msOption' value='Amarillo North Loop'>Amarillo North Loop</option>   <option class='msOption' value='Amarillo South E-Way'>Amarillo South E-Way</option> <option class='msOption' value='Anahuac'>Anahuac</option>   <option class='msOption' value='Andrews'>Andrews</option>   <option class='msOption' value='Archer'>Archer</option> <option class='msOption' value='Athens'>Athens</option> <option class='msOption' value='Austin Central'>Austin Central</option> <option class='msOption' value='Austin County'>Austin County</option>   <option class='msOption' value='Austin East'>Austin East</option>   <option class='msOption' value='Austin South'>Austin South</option> <option class='msOption' value='Ballinger'>Ballinger</option>   <option class='msOption' value='Balmorhea'>Balmorhea</option>   <option class='msOption' value='Bandera'>Bandera</option>   <option class='msOption' value='Bastrop'>Bastrop</option>   <option class='msOption' value='Beaumont'>Beaumont</option> <option class='msOption' value='Beeville'>Beeville</option> <option class='msOption' value='Belton'>Belton</option> <option class='msOption' value='Big Lake'>Big Lake</option> <option class='msOption' value='Boerne'>Boerne</option> <option class='msOption' value='Borden'>Borden</option> <option class='msOption' value='Borger'>Borger</option> <option class='msOption' value='Bovina'>Bovina</option> <option class='msOption' value='Bowie'>Bowie</option>   <option class='msOption' value='Bracketville'>Bracketville</option> <option class='msOption' value='Brazoria'>Brazoria</option> <option class='msOption' value='Brenham'>Brenham</option>   <option class='msOption' value='Bronson'>Bronson</option>   <option class='msOption' value='Brown'>Brown</option>   <option class='msOption' value='Brownfield'>Brownfield</option> <option class='msOption' value='Brownsville'>Brownsville</option>   <option class='msOption' value='Bryan'>Bryan</option>   <option class='msOption' value='Buffalo'>Buffalo</option>   <option class='msOption' value='Burnet'>Burnet</option> <option class='msOption' value='Caldwell'>Caldwell</option> <option class='msOption' value='Calhoun County'>Calhoun County</option> <option class='msOption' value='Callahan'>Callahan</option> <option class='msOption' value='Cameron'>Cameron</option>   <option class='msOption' value='Canadian'>Canadian</option> <option class='msOption' value='Canton'>Canton</option> <option class='msOption' value='Canyon'>Canyon</option> <option class='msOption' value='Carrizo Springs'>Carrizo Springs</option>   <option class='msOption' value='Carthage'>Carthage</option> <option class='msOption' value='Cedar Park'>Cedar Park</option> <option class='msOption' value='Center'>Center</option> <option class='msOption' value='Channing'>Channing</option> <option class='msOption' value='Childress'>Childress</option>   <option class='msOption' value='Clarendon'>Clarendon</option>   <option class='msOption' value='Claude'>Claude</option> <option class='msOption' value='Coleman'>Coleman</option>   <option class='msOption' value='Collin'>Collin</option> <option class='msOption' value='Colorado County'>Colorado County</option>   <option class='msOption' value='Comanche'>Comanche</option> <option class='msOption' value='Corpus Christi'>Corpus Christi</option> <option class='msOption' value='Cotulla'>Cotulla</option>   <option class='msOption' value='Crane'>Crane</option>   <option class='msOption' value='Crockett'>Crockett</option> <option class='msOption' value='Crowell'>Crowell</option>   <option class='msOption' value='Daingerfield'>Daingerfield</option> <option class='msOption' value='Dalhart'>Dalhart</option>   <option class='msOption' value='Darrouzett'>Darrouzett</option> <option class='msOption' value='De Witt County'>De Witt County</option> <option class='msOption' value='Decatur'>Decatur</option>   <option class='msOption' value='Del Rio'>Del Rio</option>   <option class='msOption' value='Dell City'>Dell City</option>   <option class='msOption' value='Delta County'>Delta County</option> <option class='msOption' value='Denton'>Denton</option> <option class='msOption' value='Dickens'>Dickens</option>   <option class='msOption' value='Dimmitt'>Dimmitt</option>   <option class='msOption' value='Dumas'>Dumas</option>   <option class='msOption' value='Eagle Pass'>Eagle Pass</option> <option class='msOption' value='East El Paso'>East El Paso</option> <option class='msOption' value='East Harris'>East Harris</option>   <option class='msOption' value='Eastland'>Eastland</option> <option class='msOption' value='Edcouch'>Edcouch</option>   <option class='msOption' value='Eden'>Eden</option> <option class='msOption' value='Electra'>Electra</option>   <option class='msOption' value='Ellis'>Ellis</option>   <option class='msOption' value='Fairfield'>Fairfield</option>   <option class='msOption' value='Fannin County'>Fannin County</option>   <option class='msOption' value='Fayette County'>Fayette County</option> <option class='msOption' value='Fisher'>Fisher</option> <option class='msOption' value='Floresville'>Floresville</option>   <option class='msOption' value='Floydada'>Floydada</option> <option class='msOption' value='Fort Bend'>Fort Bend</option>   <option class='msOption' value='Fort Davis'>Fort Davis</option> <option class='msOption' value='Fort Stockton'>Fort Stockton</option>   <option class='msOption' value='Franklin County'>Franklin County</option>   <option class='msOption' value='Fredericksburg'>Fredericksburg</option> <option class='msOption' value='Freer'>Freer</option>   <option class='msOption' value='Gainesville'>Gainesville</option>   <option class='msOption' value='Galveston'>Galveston</option>   <option class='msOption' value='Gatesville'>Gatesville</option> <option class='msOption' value='George West'>George West</option>   <option class='msOption' value='Georgetown'>Georgetown</option> <option class='msOption' value='Giddings'>Giddings</option> <option class='msOption' value='Gilmer'>Gilmer</option> <option class='msOption' value='Goliad'>Goliad</option> <option class='msOption' value='Gonzales County'>Gonzales County</option>   <option class='msOption' value='Graham'>Graham</option> <option class='msOption' value='Grayson County'>Grayson County</option> <option class='msOption' value='Groom'>Groom</option>   <option class='msOption' value='Groveton'>Groveton</option> <option class='msOption' value='Gruver'>Gruver</option> <option class='msOption' value='Hamilton'>Hamilton</option> <option class='msOption' value='Haskell'>Haskell</option>   <option class='msOption' value='Hearne'>Hearne</option> <option class='msOption' value='Hebbronville'>Hebbronville</option> <option class='msOption' value='Henderson'>Henderson</option>   <option class='msOption' value='Henrietta'>Henrietta</option>   <option class='msOption' value='Hereford'>Hereford</option> <option class='msOption' value='Hillsboro'>Hillsboro</option>   <option class='msOption' value='Hondo'>Hondo</option>   <option class='msOption' value='Hopkins County'>Hopkins County</option> <option class='msOption' value='Houston Central'>Houston Central</option>   <option class='msOption' value='Howard'>Howard</option> <option class='msOption' value='Hunt County'>Hunt County</option>   <option class='msOption' value='Huntsville'>Huntsville</option> <option class='msOption' value='Iraan'>Iraan</option>   <option class='msOption' value='Jackson County'>Jackson County</option> <option class='msOption' value='Jacksonville'>Jacksonville</option> <option class='msOption' value='Jasper'>Jasper</option> <option class='msOption' value='Jefferson'>Jefferson</option>   <option class='msOption' value='Johnson City'>Johnson City</option> <option class='msOption' value='Jones'>Jones</option>   <option class='msOption' value='Junction'>Junction</option> <option class='msOption' value='Karnes City'>Karnes City</option>   <option class='msOption' value='Kaufman-Rockwell'>Kaufman-Rockwell</option> <option class='msOption' value='Keene'>Keene</option>   <option class='msOption' value='Kent'>Kent</option> <option class='msOption' value='Kermit'>Kermit</option> <option class='msOption' value='Kerrville'>Kerrville</option>   <option class='msOption' value='Kingsville'>Kingsville</option> <option class='msOption' value='Kountze'>Kountze</option>   <option class='msOption' value='La Pryor'>La Pryor</option> <option class='msOption' value='Lamar County'>Lamar County</option> <option class='msOption' value='Lamesa'>Lamesa</option> <option class='msOption' value='Lampasas'>Lampasas</option> <option class='msOption' value='Laredo'>Laredo</option> <option class='msOption' value='Lavaca County'>Lavaca County</option>   <option class='msOption' value='Leakey'>Leakey</option> <option class='msOption' value='Levelland'>Levelland</option>   <option class='msOption' value='Liberty'>Liberty</option>   <option class='msOption' value='Linden'>Linden</option> <option class='msOption' value='Littlefield'>Littlefield</option>   <option class='msOption' value='Livingston'>Livingston</option> <option class='msOption' value='Llano'>Llano</option>   <option class='msOption' value='Lockhart'>Lockhart</option> <option class='msOption' value='Longview'>Longview</option> <option class='msOption' value='Lubbock A'>Lubbock A</option>   <option class='msOption' value='Lubbock B'>Lubbock B</option>   <option class='msOption' value='Lufkin'>Lufkin</option> <option class='msOption' value='Madisonville'>Madisonville</option> <option class='msOption' value='Marlin'>Marlin</option> <option class='msOption' value='Marshall'>Marshall</option> <option class='msOption' value='Mason'>Mason</option>   <option class='msOption' value='Matador'>Matador</option>   <option class='msOption' value='Matagorda County'>Matagorda County</option> <option class='msOption' value='McCamey'>McCamey</option>   <option class='msOption' value='McCulloch'>McCulloch</option>   <option class='msOption' value='Memphis'>Memphis</option>   <option class='msOption' value='Meridian'>Meridian</option> <option class='msOption' value='Mexia'>Mexia</option>   <option class='msOption' value='Midland'>Midland</option>   <option class='msOption' value='Mills'>Mills</option>   <option class='msOption' value='Mineola'>Mineola</option>   <option class='msOption' value='Mission'>Mission</option>   <option class='msOption' value='Mitchell'>Mitchell</option> <option class='msOption' value='Monahans'>Monahans</option> <option class='msOption' value='Montgomery'>Montgomery</option> <option class='msOption' value='Morton'>Morton</option> <option class='msOption' value='Mount Pleasant'>Mount Pleasant</option> <option class='msOption' value='Muleshoe'>Muleshoe</option> <option class='msOption' value='Munday'>Munday</option> <option class='msOption' value='Nacogdoches'>Nacogdoches</option>   <option class='msOption' value='Navarro'>Navarro</option>   <option class='msOption' value='Navasota'>Navasota</option> <option class='msOption' value='New Boston'>New Boston</option> <option class='msOption' value='New Braunfels'>New Braunfels</option>   <option class='msOption' value='Newton'>Newton</option> <option class='msOption' value='Nocona'>Nocona</option> <option class='msOption' value='Nolan'>Nolan</option>   <option class='msOption' value='North Harris'>North Harris</option> <option class='msOption' value='North Tarrant'>North Tarrant</option>   <option class='msOption' value='Northeast'>Northeast</option>   <option class='msOption' value='Northwest'>Northwest</option>   <option class='msOption' value='Odessa'>Odessa</option> <option class='msOption' value='Olney'>Olney</option>   <option class='msOption' value='Orange'>Orange</option> <option class='msOption' value='Ozona'>Ozona</option>   <option class='msOption' value='Paducah'>Paducah</option>   <option class='msOption' value='Palestine'>Palestine</option>   <option class='msOption' value='Pampa'>Pampa</option>   <option class='msOption' value='Panhandle'>Panhandle</option>   <option class='msOption' value='Pearsall'>Pearsall</option> <option class='msOption' value='Pecos'>Pecos</option>   <option class='msOption' value='Perryton'>Perryton</option> <option class='msOption' value='Plains'>Plains</option> <option class='msOption' value='Plainview'>Plainview</option>   <option class='msOption' value='Pleasanton'>Pleasanton</option> <option class='msOption' value='Port Arthur'>Port Arthur</option>   <option class='msOption' value='Post'>Post</option> <option class='msOption' value='Presidio'>Presidio</option> <option class='msOption' value='Quanah'>Quanah</option> <option class='msOption' value='Rains County'>Rains County</option> <option class='msOption' value='Ralls'>Ralls</option>   <option class='msOption' value='Raymondville'>Raymondville</option> <option class='msOption' value='Red River County'>Red River County</option> <option class='msOption' value='Refugio'>Refugio</option>   <option class='msOption' value='Robert Lee'>Robert Lee</option> <option class='msOption' value='Robstown'>Robstown</option> <option class='msOption' value='Rockport'>Rockport</option> <option class='msOption' value='Rocksprings'>Rocksprings</option>   <option class='msOption' value='Roma'>Roma</option> <option class='msOption' value='San Angelo'>San Angelo</option> <option class='msOption' value='San Antonio E'>San Antonio E</option>   <option class='msOption' value='San Antonio W'>San Antonio W</option>   <option class='msOption' value='San Augustine'>San Augustine</option>   <option class='msOption' value='San Benito'>San Benito</option> <option class='msOption' value='San Marcos'>San Marcos</option> <option class='msOption' value='San Saba'>San Saba</option> <option class='msOption' value='Sanderson'>Sanderson</option>   <option class='msOption' value='Scurry'>Scurry</option> <option class='msOption' value='Seguin'>Seguin</option> <option class='msOption' value='Seminole'>Seminole</option> <option class='msOption' value='Seymour'>Seymour</option>   <option class='msOption' value='Shackelford'>Shackelford</option>   <option class='msOption' value='Shamrock'>Shamrock</option> <option class='msOption' value='Shepherd'>Shepherd</option> <option class='msOption' value='Silverton'>Silverton</option>   <option class='msOption' value='Sinton'>Sinton</option> <option class='msOption' value='Sonora'>Sonora</option> <option class='msOption' value='South Harris'>South Harris</option> <option class='msOption' value='South Tarrant'>South Tarrant</option>   <option class='msOption' value='Southeast'>Southeast</option>   <option class='msOption' value='Southwest'>Southwest</option>   <option class='msOption' value='Stanton'>Stanton</option>   <option class='msOption' value='Stephens'>Stephens</option> <option class='msOption' value='Stephenville'>Stephenville</option> <option class='msOption' value='Sterling City'>Sterling City</option>   <option class='msOption' value='Stonewall'>Stonewall</option>   <option class='msOption' value='Stratford'>Stratford</option>   <option class='msOption' value='Tahoka'>Tahoka</option> <option class='msOption' value='Taylor-ABL'>Taylor-ABL</option> <option class='msOption' value='Taylor-AUS'>Taylor-AUS</option> <option class='msOption' value='Texarkana'>Texarkana</option>   <option class='msOption' value='Throckmorton'>Throckmorton</option> <option class='msOption' value='Tilden'>Tilden</option> <option class='msOption' value='Tulia'>Tulia</option>   <option class='msOption' value='Tyler'>Tyler</option>   <option class='msOption' value='Uvalde'>Uvalde</option> <option class='msOption' value='Van Horn'>Van Horn</option> <option class='msOption' value='Vega'>Vega</option> <option class='msOption' value='Vernon'>Vernon</option> <option class='msOption' value='Victoria County'>Victoria County</option>   <option class='msOption' value='Waco'>Waco</option> <option class='msOption' value='Waller'>Waller</option> <option class='msOption' value='Weatherford'>Weatherford</option>   <option class='msOption' value='Wellington'>Wellington</option> <option class='msOption' value='West El Paso'>West El Paso</option> <option class='msOption' value='West Harris'>West Harris</option>   <option class='msOption' value='Wharton County'>Wharton County</option> <option class='msOption' value='Wichita'>Wichita</option>   <option class='msOption' value='Woodville'>Woodville</option>
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <select class="form-control" id="deficiency" disabled="disabled">
+                            <option value="#" disabled selected>Deficiency</option>
+                            <option value='Approach Slab'>Approach Slab</option>	<option value='Base Failure'>Base Failure</option>	<option value='Checked Okay'>Checked Okay</option>	<option value='Concrete Traffic Barrier'>Concrete Traffic Barrier</option>	<option value='Culverts'>Culverts</option>	<option value='Debris'>Debris</option>	<option value='Decks'>Decks</option>	<option value='Delineators'>Delineators</option>	<option value='Drift'>Drift</option>	<option value='Driveways'>Driveways</option>	<option value='Edge Drop'>Edge Drop</option>	<option value='Encroachments'>Encroachments</option>	<option value='Erosion'>Erosion</option>	<option value='Guardrail'>Guardrail</option>	<option value='High Edges'>High Edges</option>	<option value='Illegal Sign'>Illegal Sign</option>	<option value='Illumination Poles'>Illumination Poles</option>	<option value='Incident'>Incident</option>	<option value='Joints'>Joints</option>	<option value='Litter'>Litter</option>	<option value='Mailboxes'>Mailboxes</option>	<option value='Mowing/Herbicide'>Mowing/Herbicide</option>	<option value='Other'>Other</option>	<option value='Outside Qtr'>Outside Qtr</option>	<option value='Pav Markers'>Pav Markers</option>	<option value='Pothole'>Pothole</option>	<option value='Rails'>Rails</option>	<option value='School Zone Beacons'>School Zone Beacons</option>	<option value='Sight Visibility'>Sight Visibility</option>	<option value='Signal Light'>Signal Light</option>	<option value='Signs'>Signs</option>	<option value='Striping'>Striping</option>	<option value='Sweeping'>Sweeping</option>	<option value='Trees'>Trees</option>	<option value='Wheel Rut'>Wheel Rut</option>	<option value='Work Request'>Work Request</option>
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <select class="form-control" id="route" disabled="disabled">
+                            <option value="#" disabled selected>Route</option>
+                        </select>
+                    </div>
+                </td>
+                <td align="center">
+                    <button type="button" class="btn btn-default" id="generate" disabled="disabled"><span class="glyphicon glyphicon-wrench"></span> Generate</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="container" id="reportTable" style="display:none;">
+            <h2 id="reportTitle" style="font-weight:bold;font-size:3vw;"></h2>
+            <p id="chosenParameters" style="font-size:2vw;"></p>
+            <p id="generationDateTime" style="font-size:2vw;"></p>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>OBJECTID</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Route</th>
+                        <th>Notes</th>
+                        <th style='text-align:right;'>Creation Date</th>
+                        <!--<th></th>-->
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+        <div style="width:100%;">
+            <span id="curPos" style="display:none;">Position Not Acquired</span>
+        </div>
+        <div id="divMap" style="display:none;"></div> 
+    </body>
+</html>
