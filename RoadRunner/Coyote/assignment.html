@@ -13,7 +13,7 @@ and open the template in the editor.
         <!--swamp thangs-->
         <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" media="all">
 
         <style type="text/css">
             html, body {
@@ -56,27 +56,38 @@ and open the template in the editor.
             }
             
             @media print {
-                
-                body div.container {
-                     margin: 0;
-                     padding:0;
-                }
+                /*#selector {*/
+                /*    display: none;*/
+                /*}*/
                 .esriSimpleSlider {
                     display: none;
                 }
-                @page {
-                    size: auto;   /* auto is the current printer page size */
-                    margin: 5mm 0mm 0mm 0mm;  /* this affects the margin in the printer settings */
-                }
+                
+                /*body div.container {*/
+                /*     margin: 0;*/
+                /*     padding:0;*/
+                /*}*/
+                
+                /*@page {*/
+                    /* auto is the current printer page size */
+                /*    size: auto;   */
+                    /* this affects the margin in the printer settings */
+                /*    margin: 5mm 0mm 0mm 0mm;  */
+                /*}*/
         
-                body {
+                /*body {*/
                     /*background-color:#FFFFFF; */
                     /*border: solid 1px black ;*/
-                    margin: 0px;  /* the margin on the content before printing */
-                }
-                #selector {
-                    display: none;
-                }
+                    
+                     /* the margin on the content before printing */
+                /*    margin: 0px; */
+                /*}*/
+                
+                
+                
+                /*#reportTable>table {*/
+                /*    width: auto;*/
+                /*}*/
             }
              
         </style>
@@ -221,7 +232,7 @@ and open the template in the editor.
                         } catch (e) {
                             console.log(e);
                         }
-                        $("#reportTable").html("<h2 id='reportTitle'></h2><p id='chosenParameters'></p><p id='generationDateTime'></p><table class='table'><thead><tr><th>OBJECTID</th><th>Latitude</th><th>Longitude</th><th>Route</th><th>Notes</th><th style='text-align:right;'>Creation Date</th></tr></thead><tbody id='reportBody0'></tbody></table>");
+                        $("#reportTable").html("<h2 id='reportTitle'></h2><p id='chosenParameters'></p><p id='generationDateTime'></p><table class='table'><tbody id='reportBody0'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody></table>");// style='text-align:right;'
                         $("#reportTable").attr("style", "display:block;");
                         var ms = $("#maintenanceSection").val();
                         var deficiency = $("#deficiency").val();
@@ -269,7 +280,7 @@ and open the template in the editor.
                                     // }
                                     
                                     
-                                    var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td style='text-align:right;'>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' style='border-style:solid;border-width:1px;border-color:lightgray;page-break-inside:avoid;'></div></td></tr>";
+                                    var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' style='border-style:solid;border-width:1px;border-color:lightgray;page-break-inside:avoid;'></div></td></tr>";  //style='text-align:right;'
                                     $(reportBodyID).append(theText);
                                     counter += 1;
                                     pageBreaker += 1;
@@ -277,7 +288,7 @@ and open the template in the editor.
                                         var nextReportBodyNum = reportBodyNum + 1;
                                         // var suffix = "</tbody></table><div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'>";
                                         // $("#reportTable").append(suffix);
-                                        $("#reportTable").append("<div style='page-break-after:always;'></div><table class='table'><thead><tr><th>OBJECTID</th><th>Latitude</th><th>Longitude</th><th>Route</th><th>Notes</th><th style='text-align:right;'>Creation Date</th></tr></thead><tbody id='reportBody"+nextReportBodyNum.toString()+"'></tbody>");
+                                        $("#reportTable").append("<div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody>");// style='text-align:right;'
                                         
                                         reportBodyNum += 1;
                                         pageBreaker = 0;
@@ -285,7 +296,7 @@ and open the template in the editor.
                                     
                                     buildMap(curWhere, oidString, def.geometry);
                                     if (counter == results.features.length) {
-                                        var finalText = "<tr><td colspan=5></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";
+                                        var finalText = "<tr><td colspan=5></td><td><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";// style='text-align:right;'
                                         $(reportBodyID).append(finalText);
                                         buildMap(where, "divMap");
                                     }
@@ -404,9 +415,7 @@ and open the template in the editor.
             </tbody>
           </table>
         </div>
-        <div class="container" id="reportTable" style="display:none;">
-            
-        </div>
+        <div class="container" id="reportTable" style="display:none;"></div>
         <div id="mapContainer" class="container" style="display:none;">
             <div id="divMap" style="display:none;"></div> 
         </div>
