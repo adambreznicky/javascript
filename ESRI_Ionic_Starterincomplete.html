@@ -11,7 +11,8 @@ and open the template in the editor.
 
         <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
         <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="http://code.ionicframework.com/1.2.4/css/ionic.css">
+        <link rel="stylesheet" href="http://code.ionicframework.com/1.2.4/css/ionic.min.css">
 
         <style type="text/css">
             html, body, #divMap {
@@ -22,16 +23,13 @@ and open the template in the editor.
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ['ionic', 'http://code.ionicframework.com/1.2.4/js/ionic.bundle.js']
             ]" src="http://js.arcgis.com/3.14/">
         </script>
 
         <script>
             require([
-                "jquery",
-                "jqueryui",
+                "ionic",
 
                 "esri/map",
 
@@ -39,11 +37,10 @@ and open the template in the editor.
                 "dojo/parser",
                 "dojo/require",
                 "dojo/domReady!"],
-            function($, $ui,
+            function($,
                     Map,
                     ready, parser, require) {
                 ready(function(){
-                    dojo.require("bootstrap");
                     parser.parse();
 
                     var map = new Map("divMap", {
