@@ -9,11 +9,11 @@ and open the template in the editor.
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Maintenance Coyote</title>
 <!--swamp thang-->
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
+        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
         <!--swamp thangs-->
-        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
 
 
         <style type="text/css">
@@ -36,12 +36,25 @@ and open the template in the editor.
                 margin: 3% auto 3% auto;
             }
             td {
-                /*font-weight: bold;*/
+                text-align: center;
                 border-top: 0 !important;
+                height: 12vw;
+            }
+            .table>tbody>tr>td {
+                vertical-align: middle;
             }
             li {
                 width: 33.33%;
                 text-align: center;
+            }
+            th {
+                text-align: center;
+                font-weight: inherit;
+            }
+            .resolver {
+                font-size:4vw;
+                width:9vw;
+                border-radius: 20px;
             }
             #category {
                 padding-left: 20px;
@@ -74,7 +87,7 @@ and open the template in the editor.
                 height: 12vw;
                 text-align: center;
                 padding: 13px 0;
-                border-radius: 150px;
+                border-radius: 50%;
             }
             #mapTab{
                 height: 100%;
@@ -109,10 +122,10 @@ and open the template in the editor.
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="http://js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
+            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="//js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
         </script>
 
         <script>
@@ -137,6 +150,7 @@ and open the template in the editor.
                 "esri/graphic",
 
                 "esri/geometry/webMercatorUtils",
+                "esri/request",
 
                 "esri/SpatialReference",
                 "esri/geometry/Extent",
@@ -151,7 +165,7 @@ and open the template in the editor.
                     Map, Query, QueryTask, FeatureLayer, InfoTemplate,
                     TextSymbol, LabelLayer, Color, SimpleRenderer,
                     Point, SimpleMarkerSymbol, SimpleLineSymbol, Graphic,
-                    webMercatorUtils,
+                    webMercatorUtils, esriRequest,
                     SpatialReference, Extent, OAuthInfo, IdentityManager,
                     ready, parser, require) {
                 ready(function(){
@@ -162,26 +176,31 @@ and open the template in the editor.
                     var latty;
                     var longy;
                     var graphic;
-                    var maintenanceDeficiencyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+                    // var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+                    var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CameraTest/FeatureServer/0";//swamp thang
 
                     map = new Map("divMap", {
                         logo: false,
-                        basemap: "topo"
+                        basemap: "topo",
+                        autoResize: true
                     });
                     var theExtent = new Extent(-107,25.27,-93,37.27, new SpatialReference({ wkid: 4269 }));
-                    map.setExtent(webMercatorUtils.geographicToWebMercator(theExtent));     
+                    map.setExtent(webMercatorUtils.geographicToWebMercator(theExtent)); 
 
-                    var infoTemplate = new InfoTemplate("${Deficiency}", "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>CreationDate: ${CreationDate}");
+                    // var infoTemplate = new InfoTemplate("${Deficiency}", "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>CreationDate: ${CreationDate}");
                     var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL, {
-                        infoTemplate: infoTemplate,
+                        // infoTemplate: infoTemplate,
                         definitionExpression: "1=2",
                         outFields: ["*"]
                     });
+                    var mdSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,40,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([0, 0, 255, 0.5]),8),new Color([0, 0, 255, 0.9]));
+                    var renderer = new SimpleRenderer(mdSymbol);
+                    maintenanceDeficiencies.setRenderer(renderer);
                     map.addLayer(maintenanceDeficiencies);
 
                     map.on("load", function () {
                         $('.nav.navbar-nav > li').removeClass('active');
-                        $(this).addClass('active');
+                        $("#selector").addClass('active');
                         switchTab("#selectTab");
                     });
                     
@@ -209,7 +228,7 @@ and open the template in the editor.
                     }
                     
                     function addGraphic(pt){
-                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,12,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
+                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,40,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
                         graphic = new Graphic(pt, symbol);
                         map.graphics.add(graphic);
                         map.centerAndZoom(graphic.geometry, 15);
@@ -220,7 +239,7 @@ and open the template in the editor.
 
                     $("#zoomLocation").click(function () {
                         var pt = new Point(longy, latty);
-                        map.centerAndZoom(pt, 16);
+                        map.centerAndZoom(pt, 18);
                     });
 
                     $("#maintenanceSection").change(function () {
@@ -232,7 +251,7 @@ and open the template in the editor.
                         $("#generate").val("#");
                         var ms = $("#maintenanceSection").val();
                         
-                        var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+                        var roadsURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
                         var query = new Query();
                         query.returnGeometry = false;
                         query.where = "OFFICE_NM = '" + ms + "'";
@@ -278,33 +297,6 @@ and open the template in the editor.
 
                     $("#generate").click(generateReport);
 
-                    function getTime () {
-                        var d = new Date();
-                        var m = d.getMonth() + 1;
-                        var day = d.getDate();
-                        var yr = d.getFullYear();
-
-                        var theDate = m.toString() + "/" + day.toString() + "/" + yr.toString();
-
-                        var sfx = "AM";
-                        var h = d.getHours();
-                        if (h == 0) {
-                            h = 12;
-                        }
-                        else if (h > 12) {
-                            h = h - 12;
-                            sfx = "PM";
-                        }
-                        var min = d.getMinutes();
-                        if (min < 10) {
-                            min = "0" + min;
-                        }
-                        var theTime = h + ":" + min + " " + sfx;
-
-                        var generationDateTime = theDate + " " + theTime;
-                        return generationDateTime;
-                    }
-
                     function generateReport () {
                         $("#loadSpinner").attr("style", "display:block;");
                         $("#reportBody").html("");
@@ -312,7 +304,6 @@ and open the template in the editor.
                         var ms = $("#maintenanceSection").val();
                         var deficiency = $("#deficiency").val();
                         var route = $("#route").val();
-                        var dateTime = getTime();
                         var where;
 
                         if (route === "") {
@@ -347,26 +338,78 @@ and open the template in the editor.
                                         trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
                                         shaded = false;
                                     }//swamp thangs
-                                    var theText = trPrfx+"<td><a href='https://maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td style='text-align:right;'>"+formatDate+"</td></tr>";
+                                    var theText = trPrfx+"<td><a class='btn btn-default' href='//maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign' style='font-size:5vw;border-radius:20px;'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td><td><button type='button' class='btn btn-default resolver' value="+def.attributes["OBJECTID"]+"><span class='glyphicon glyphicon-ok'></span></button></td></tr>";
                                     $("#reportBody").append(theText);
                                     counter += 1;
                                     if (counter == results.features.length) {
-                                        var finalText = "<tr><td colspan=3></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";
+                                        var finalText = "<tr><td colspan=3></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL:</span></td><td id='total' style='font-weight:bold;'>"+counter+"</td></tr>";
                                         $("#reportBody").append(finalText);
+                                        $(".resolver").click(function () {
+                                            var theNode = $(this);
+                                            var oid = $(this).val();
+                                            var update = confirm("Are you sure you want to resolve point " + oid + "?");
+                                            if (update == true) {
+                                                var query = new Query();
+                                                query.returnGeometry = true;
+                                                query.where = "OBJECTID = '" + oid + "'";
+                                                query.outFields = ["*"];
+                                                var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                                                queryTask.execute(query, function (results) {
+                                                    var point = results.features[0];
+                                                    point.attributes["Resolved"] = "Yes";
+                                                    
+                                                    var serviceURL = maintenanceDeficiencyURL + "/applyEdits?f=json&updates=["+JSON.stringify(point)+"]";
+                                                    try {
+                                                        var layersRequest = esriRequest({
+                                                            url: serviceURL
+                                                            },{
+                                                            usePost: true
+                                                        });
+                                                        layersRequest.then(
+                                                            function(response) {
+                                                                var res = response.updateResults[0]["success"];
+                                                                if (res) {
+                                                                    $(theNode).parent().parent().remove();
+                                                                    var total = $("#total").html();
+                                                                    $("#total").html(total - 1);
+                                                                    maintenanceDeficiencies.setDefinitionExpression(where);
+                                                                    maintenanceDeficiencies.redraw();
+                                                                } else {
+                                                                    alert("Error (1) Response. Resolve update failed. Please try again.");
+                                                                }
+                                                            }, function(error){
+                                                                console.log(error);
+                                                                alert("Error (2) Request. Resolve update failed. Please try again.");
+                                                            }
+                                                        );
+                                                    } catch (e) {
+                                                        console.log(e);
+                                                        alert("Error (3) Pre-Request. Resolve update failed. Please try again.");
+                                                    }
+                                                    
+                                                }, function (e) {
+                                                    console.log(e);
+                                                    alert("Error (4) Query Task. Resolve update failed. Please try again.");
+                                                });
+                                            } else {
+                                                return;
+                                            }
+                                            
+                                        });
                                     }
                                     
                                 });
                                 buildMap(where);
                             } else {
                                 $("#reportTable").attr("style", "display:none;");
-                                $("#divMap").attr("style", "display:none;");
+                                $("#loadSpinner").attr("style", "display:none;");
                                 alert("No deficiencies found using the selected parameters.");
                             }
                         }, function (e) {
                             console.log(e);
                             $("#maintenanceSection").val("#").change();
                             $("#reportTable").attr("style", "display:none;");
-                            $("#divMap").attr("style", "display:none;");
+                            $("#loadSpinner").attr("style", "display:none;");
                             alert("Error generating report. Please try again.");
                         });
                         
@@ -379,7 +422,7 @@ and open the template in the editor.
                         
                         var labelField = "OBJECTID";
                         var defLabel = new TextSymbol().setColor(new Color("black"));
-                        defLabel.font.setSize("30pt");
+                        defLabel.font.setSize("40pt");
                         defLabel.font.setFamily("Trebuchet MS");
                         var defLabelRenderer = new SimpleRenderer(defLabel);
                         var labels = new LabelLayer({id: "OID"});
@@ -400,7 +443,7 @@ and open the template in the editor.
 
                     var info = new OAuthInfo({
                         appId: "KghCdkvfNJMK9wcj",
-                        portalUrl: "https://txdot.maps.arcgis.com",//swamp thangs
+                        portalUrl: "//txdot.maps.arcgis.com",//swamp thangs
                         popup: false
                     });
                     IdentityManager.registerOAuthInfos([info]);
@@ -480,10 +523,11 @@ and open the template in the editor.
             <table class="table" style="margin-bottom:100px;">
                 <thead>
                     <tr>
-                        <th>OBJECTID</th>
+                        <th>ObjID</th>
                         <th>Route</th>
                         <th>Notes</th>
-                        <th style='text-align:right;'>Creation Date</th>
+                        <th>Date</th>
+                        <th>Resolve</th>
                     </tr>
                 </thead>
                 <tbody id="reportBody"></tbody>
@@ -500,7 +544,7 @@ and open the template in the editor.
             <div class="container-fluid" style="font-size: 8vw;">
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul class="nav navbar-nav" style="width:100%;">
-                        <li><a href="javascript:switchTab('#selectTab');"><span class="glyphicon glyphicon-filter"></span><span class="sr-only">(current)</span></a></li>
+                        <li id="selector"><a href="javascript:switchTab('#selectTab');"><span class="glyphicon glyphicon-filter"></span><span class="sr-only">(current)</span></a></li>
                         <li><a href="javascript:switchTab('#reportTab');"><span class="glyphicon glyphicon-list"></span></a></li>
                         <li class="active"><a href="javascript:switchTab('#mapTab');"><span class="glyphicon glyphicon-globe"></span></a></li>
                     </ul>
