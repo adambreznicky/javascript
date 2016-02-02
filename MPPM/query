@@ -1,0 +1,34 @@
+
+var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+var query = new Query();
+query.returnGeometry = false;
+query.where = "OFFICE_NM = '" + ms + "'";
+query.outFields = ["RTE_NM"];
+var queryTask = new QueryTask(roadsURL);
+queryTask.execute(query, function (results) {
+    var routes = [];
+    $.each(results.features, function (position) {
+        var rte = results.features[position];
+        var rteName = rte.attributes["RTE_NM"];
+        var pos = $.inArray(rteName, routes);
+        if (pos === -1) {
+            routes.push(rteName);
+        }
+    });
+    routes.sort();
+    $('#route').find('option:gt(0)').remove();
+    $('#route').append($('<option>', {
+            value: "",
+            text: "All Routes"
+        }));
+    $.each(routes, function (position) {
+        var rte = routes[position];
+        $('#route').append($('<option>', {
+            value: rte,
+            text: rte
+        }));
+    });
+}, function (e) {
+    console.log(e);
+    $("#maintenanceSection").val("#").change();
+});

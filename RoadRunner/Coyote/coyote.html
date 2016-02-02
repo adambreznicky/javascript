@@ -7,13 +7,14 @@ and open the template in the editor.
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta content='user-scalable=0' name='viewport'>
         <title>Maintenance Coyote</title>
 <!--swamp thang-->
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
         <!--swamp thangs-->
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
-        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
 
 
         <style type="text/css">
@@ -22,6 +23,7 @@ and open the template in the editor.
                 margin: 0;
                 height: 100%;
                 font-size:5vw;
+                overflow: auto;
             }
             h1 {
                 color: white;
@@ -50,6 +52,16 @@ and open the template in the editor.
             th {
                 text-align: center;
                 font-weight: inherit;
+            }
+            textarea:focus {
+                outline:0px !important;
+            }
+            textarea {
+                background-color: inherit;
+                border: none;
+                resize: none;
+                text-align: center;
+
             }
             .resolver {
                 font-size:4vw;
@@ -122,10 +134,10 @@ and open the template in the editor.
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="//js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
         </script>
 
         <script>
@@ -176,8 +188,9 @@ and open the template in the editor.
                     var latty;
                     var longy;
                     var graphic;
+                    var currentNote;
                     // var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
-                    var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CameraTest/FeatureServer/0";//swamp thang
+                    var maintenanceDeficiencyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CameraTest/FeatureServer/0";//swamp thang
 
                     map = new Map("divMap", {
                         logo: false,
@@ -193,7 +206,7 @@ and open the template in the editor.
                         definitionExpression: "1=2",
                         outFields: ["*"]
                     });
-                    var mdSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,40,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([0, 0, 255, 0.5]),8),new Color([0, 0, 255, 0.9]));
+                    var mdSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,34,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([0, 0, 255, 0.5]),8),new Color([0, 0, 255, 0.9]));
                     var renderer = new SimpleRenderer(mdSymbol);
                     maintenanceDeficiencies.setRenderer(renderer);
                     map.addLayer(maintenanceDeficiencies);
@@ -228,7 +241,7 @@ and open the template in the editor.
                     }
                     
                     function addGraphic(pt){
-                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,40,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
+                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,34,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
                         graphic = new Graphic(pt, symbol);
                         map.graphics.add(graphic);
                         map.centerAndZoom(graphic.geometry, 15);
@@ -251,7 +264,7 @@ and open the template in the editor.
                         $("#generate").val("#");
                         var ms = $("#maintenanceSection").val();
                         
-                        var roadsURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+                        var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
                         var query = new Query();
                         query.returnGeometry = false;
                         query.where = "OFFICE_NM = '" + ms + "'";
@@ -338,7 +351,7 @@ and open the template in the editor.
                                         trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
                                         shaded = false;
                                     }//swamp thangs
-                                    var theText = trPrfx+"<td><a class='btn btn-default' href='//maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign' style='font-size:5vw;border-radius:20px;'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td><td><button type='button' class='btn btn-default resolver' value="+def.attributes["OBJECTID"]+"><span class='glyphicon glyphicon-ok'></span></button></td></tr>";
+                                    var theText = trPrfx+"<td><a class='btn btn-default' href='https://maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign' style='font-size:5vw;border-radius:20px;'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Route"]+"</td><td><textarea id='note-"+def.attributes["OBJECTID"]+"' class='notes' type='text' maxlength='250' readonly>"+def.attributes["Notes"]+"</textarea></td><td>"+formatDate+"</td><td><button type='button' class='btn btn-default resolver' value="+def.attributes["OBJECTID"]+"><span class='glyphicon glyphicon-ok'></span></button></td></tr>";
                                     $("#reportBody").append(theText);
                                     counter += 1;
                                     if (counter == results.features.length) {
@@ -394,7 +407,75 @@ and open the template in the editor.
                                             } else {
                                                 return;
                                             }
-                                            
+                                        });
+                                        $(".notes").dblclick(function () {
+                                            var id = $(this).attr('id')
+                                            var oid = id.split("-")[1];
+                                            $(this).prop("readonly", false);
+                                            // $(this).focus();
+                                        });
+                                        $(".notes").focusin(function () {
+                                            currentNote = $(this).val();
+                                        });
+                                        $(".notes").focusout(function () {
+                                            $(this).prop("readonly", true);
+                                            var newNote = $(this).val();
+
+                                            if (newNote !== currentNote) {
+                                                newNote = newNote.replace(/%/g, "*");
+                                                newNote = newNote.replace(/&/g, "*");
+                                                newNote = newNote.replace(/#/g, "*");
+                                                newNote = newNote.replace(/'/g, "*");
+                                                newNote = newNote.replace(/\\/g, "*"); 
+
+                                                var id = $(this).attr('id')
+                                                var oid = id.split("-")[1];
+                                                
+
+                                                var query = new Query();
+                                                query.returnGeometry = true;
+                                                query.where = "OBJECTID = '" + oid + "'";
+                                                query.outFields = ["*"];
+                                                var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                                                queryTask.execute(query, function (results) {
+                                                    var point = results.features[0];
+                                                    point.attributes["Notes"] = newNote;
+                                                    
+                                                    var serviceURL = maintenanceDeficiencyURL + "/applyEdits?f=json&updates=["+JSON.stringify(point)+"]";
+                                                    try {
+                                                        var layersRequest = esriRequest({
+                                                            url: serviceURL
+                                                            },{
+                                                            usePost: true
+                                                        });
+                                                        layersRequest.then(
+                                                            function(response) {
+                                                                var res = response.updateResults[0]["success"];
+                                                                if (res) {
+                                                                    $("#"+id).attr("style", "color:green;");
+                                                                    setTimeout(function(){
+                                                                        $("#"+id).attr("style", "color:initial;");
+                                                                    }, 5000);
+                                                                    console.log("Note update success.")
+                                                                    return
+                                                                } else {
+                                                                    alert("Error (1) Response. Note update failed. Please try again.");
+                                                                }
+                                                            }, function(error){
+                                                                console.log(error);
+                                                                alert("Error (2) Request. Note update failed. Please try again.");
+                                                            }
+                                                        );
+                                                    } catch (e) {
+                                                        console.log(e);
+                                                        alert("Error (3) Pre-Request. Note update failed. Please try again.");
+                                                    }
+                                                    
+                                                }, function (e) {
+                                                    console.log(e);
+                                                    alert("Error (4) Query Task. Note update failed. Please try again.");
+                                                });
+                                            }
                                         });
                                     }
                                     
@@ -443,7 +524,7 @@ and open the template in the editor.
 
                     var info = new OAuthInfo({
                         appId: "KghCdkvfNJMK9wcj",
-                        portalUrl: "//txdot.maps.arcgis.com",//swamp thangs
+                        portalUrl: "https://txdot.maps.arcgis.com",//swamp thangs
                         popup: false
                     });
                     IdentityManager.registerOAuthInfos([info]);
