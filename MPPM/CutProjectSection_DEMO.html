@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Planned Projects Cut DEMO</title>    
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style>
+      html, body {
+        color: dimgray;
+        font-family: sans-serif;
+      }
+      h2 {
+        color:dimgray;
+        font-size: 12px;
+        text-align: center;
+        font-family: sans-serif;
+        background-color: #D0D2D6;
+        padding: 5px;
+        margin-top: 0px;
+      }
+      #divMap{
+        border: 2px solid;
+        border-radius: 8px;
+        border-color: white;   
+        height:99%;
+        position: absolute;
+        left: 2px;
+        bottom: 2px;
+        right: 2px;
+        top: 2px;
+        overflow: hidden;
+      }
+      #divTOC{
+        border-radius: 5px 0px 5px 5px;
+        width:200px;
+        position: absolute;
+        left: 10px;
+        top: 20px; 
+        overflow: auto;
+        padding-bottom: 5px;
+        z-index: 100;
+        width: 196px;
+        height: 300px;
+      }
+      #divTemplateContainer{
+        position: relative;
+        width: 196px;
+        height: 240px;
+        top: 2px;
+        border: 2px solid;
+        border-radius: 0px 0px 5px 5px;
+        border-color: #D0D2D6;
+        background-color: white;
+      }
+      #divLegendContainer {
+        position: relative;
+        width: 196px;
+        height: auto;
+        top: 5px;
+        border: 2px solid;
+        border-radius: 5px;
+        border-color: #D0D2D6;
+        font-family: sans-serif;
+        font-size: 12px;
+        text-align: center;
+        background-color: white;
+      }
+      #divLegendContainer h2 {
+        cursor: pointer;
+        margin-bottom: 0px;
+      }
+      #divLegend_graphicsLayer3 {
+        display: none;
+      }
+      #divLegend{
+        width: 150px;
+        top: 5px;
+        left: 25px;
+        text-align: center;
+        display: none;
+      }
+      #divBasemapToggle {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 50;
+        border: none;
+      }
+      #divEditor {
+        position: relative;
+        border-radius: 5px;
+        top: 0px;
+        left: 0px;
+        z-index: 50;
+        background-color: white;
+      }
+      #divTemplatePicker {
+        position: relative;
+        top: 0px;
+        left: 58px;
+        border: none;
+        padding: 0;
+      }
+      #templateMaskDiv {
+        position: absolute;
+        top: 30px;
+        width: 191px;
+        height: 210px;
+        left: 2px;
+        font-family: sans-serif;
+        font-size: 12px;
+        text-align: center;
+        background-color: white;
+        opacity: .6;
+        display: block;
+        z-index: 50;
+        border-radius: 5px;
+      }
+      #tocHeader {
+        background-color: #6699CC;
+        color: #FFFFFF;
+        cursor: default;
+        font-size: 16px;
+        font-family: sans-serif;
+        border-radius: 5px 5px 0px 0px; 
+        padding: 5px;
+        text-align: center;
+        vertical-align: middle;
+        margin-top: auto;
+        margin-bottom: auto;  
+      }
+      #btnHelp {
+        right: 20px;
+        bottom: 20px;
+        position: absolute;
+        text-align: center;
+        border: 1px solid white;
+        background-color: rgba(240, 240, 240, 0.5);
+        color: #0649FB;
+        border-radius: 50px;
+        width: 25px;
+        height: 25px;
+        font-size: 14px;
+        z-index: 51;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #btnClose {
+        right: 24px;
+        bottom: 25px;
+        position: fixed;
+        text-align: center;
+        border: 1px solid white;
+        background-color: rgba(240, 240, 240, .5);
+        color: #0649FB;
+        border-radius: 50px;
+        width: 25px;
+        height: 25px;
+        font-size: 14px;
+        z-index: 51;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #maskDiv{
+        height: 100%;
+        width: 100%;
+        top: 0;
+          left: 0;
+        background-color: rgba(0,0,0,.5);
+        position: fixed;
+        display: none;
+        z-index: 100;
+      }
+      #helpDiv{
+        height: 99%;
+        width: auto;
+        left: 25%;
+        margin: auto;
+        position: absolute;
+        overflow: auto;
+        display: none;
+        z-index: 101;
+      }   
+      .templatePicker .grid .dojoxGridHeader {
+        display:none;
+      }
+      .templatePicker .grid .item {
+        cursor: pointer;
+      }
+      }
+      .BasemapToggle .toggleButton {
+        border:none !important;
+      }  
+      .claro .dijitToolbar {
+        border-radius: 2px;
+        border-bottom: none;
+      }
+      #divLegend_graphicsLayer3 td{
+        text-align: center;
+      }
+      #divMap_zoom_slider {
+        left: 225px;
+      }
+
+    </style>
+    <script>
+        var dojoConfig = {
+          async : true
+        };
+    </script>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+    <script src="http://js.arcgis.com/3.14/"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script>
+        require([
+          "esri/map",
+          "esri/SpatialReference",
+          "esri/dijit/Legend",
+          "esri/dijit/BasemapToggle",
+          "esri/dijit/Basemap",
+          "esri/layers/ArcGISTiledMapServiceLayer",
+          "esri/dijit/BasemapLayer",
+          "esri/layers/FeatureLayer",
+          "esri/basemaps",
+          "esri/renderers/SimpleRenderer",
+          "esri/symbols/SimpleMarkerSymbol",
+          "esri/dijit/PopupTemplate",
+          "esri/tasks/QueryTask",
+          "esri/tasks/query",
+          "esri/dijit/InfoWindow",
+          "esri/dijit/editing/Editor",
+          "esri/InfoTemplate",
+          "esri/dijit/AttributeInspector",
+          "esri/dijit/editing/TemplatePicker",
+          "esri/tasks/GeometryService",
+          "esri/arcgis/OAuthInfo",
+          "esri/IdentityManager",
+          "dojo/parser",
+          "dojo/query",
+          "dojo",
+          "dojo/on",
+          "dojo/dom",
+          "esri/geometry/geodesicUtils",
+          "dojo/_base/array",
+          "esri/symbols/SimpleLineSymbol",
+          "esri/Color",
+          "esri/toolbars/edit",
+          "esri/renderers/UniqueValueRenderer",
+          "esri/layers/WMSLayer",
+          "esri/config",
+          "esri/SnappingManager",
+          "esri/toolbars/draw",
+          "esri/graphic",
+          "esri/graphicsUtils",
+          "esri/geometry/Polyline",
+          "esri/geometry/Point",
+          "esri/request",
+          "esri/layers/GraphicsLayer",
+          "dojo/domReady!"
+        ], function(
+          Map,
+          SpatialReference,
+          Legend,
+          BasemapToggle,
+          Basemap,
+          ArcGISTiledMapServiceLayer,
+          BasemapLayer,
+          FeatureLayer,
+          esriBasemaps,
+          SimpleRenderer,
+          SimpleMarkerSymbol,
+          PopupTemplate,
+          QueryTask,
+          Query,
+          InfoWindow,
+          Editor,
+          InfoTemplate,
+          AttributeInspector,
+          TemplatePicker,
+          GeometryService,
+          OAuthInfo,
+          IdentityManager,
+          parser,
+          query,
+          dojo,
+          on,
+          dom,
+          geodesicUtils,
+          array,
+          SimpleLineSymbol,
+          Color,
+          Edit,
+          UniqueValueRenderer,
+          WMSLayer,
+          esriConfig,
+          SnappingManager,
+          Draw,
+          Graphic,
+          graphicsUtils,
+          Polyline,
+          Point,
+          esriRequest,
+          GraphicsLayer
+        ) {
+
+          parser.parse();
+          var globalRoute = [];
+          var globalAttributes;
+          var green;
+          var red;
+          var clipped = [];
+          var droppedPoint;
+
+        // Add the Statewide Planning Map basemap to the JavaScript basemap library
+          esriBasemaps.SPM = {
+            baseMapLayers: [
+              {url: "http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer"}
+            ],
+            title : "TxDOT",
+            thumbnailUrl : "http://maps.dot.state.tx.us/AGO_Template/TxDOT_Viewer/images/Basemaps/SPM.png"
+          };
+
+        // Enables the use of the WMS Google Imagery layer - esriConfig.defaults.io.proxyUrl = "/proxy/";
+          esriConfig.defaults.io.corsEnabledServers = ["https://txgi.tnris.org"];
+
+        // Spatial reference for the map
+          var spatialReference = new SpatialReference(102100);
+
+        // Create the map
+          var map = new Map("divMap", {
+            basemap : "SPM",
+            center : [-100, 31.5],
+            zoom : 7,
+            logo : false, 
+            showAttribution : false,
+            spatialReference : spatialReference
+          });
+
+        // Add Google Imagery WMS layer
+          var wmsLayer = new WMSLayer("https://txgi.tnris.org/login/path/pegasus-horizon-castro-comrade/wms", {
+            format: "png",
+            visibleLayers: ["texas"]
+          });
+
+        // Add layers
+          lyrInterstates = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/InterstateCenterlines/FeatureServer/0";
+          lyrProjects = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MPPM_Geometry/FeatureServer/0";
+
+          var Interstates = new FeatureLayer (lyrInterstates,{              
+              outFields : ["*"]
+          });
+          var Projects = new FeatureLayer(lyrProjects,{
+              outFields : ["*"]
+          });
+
+          map.addLayers([Interstates, Projects]);
+
+          var layerList = [Interstates, Projects];                 
+
+        // Perform functions on load
+          map.on("load", function(){
+            map.disableDoubleClickZoom();        
+          });
+
+        // Turn on Google Imagery when zoomed past level 17
+          map.on("zoom-end", function(result){
+            var zoom = result.level;
+            if (zoom >= 17) {
+              map.addLayer(wmsLayer);
+            } else if (zoom < 17) {
+              map.removeLayer(wmsLayer);
+            }
+          });            
+
+        // Set up Snapping 
+          var layerInfo = [{
+            layer: Interstates,
+            snapToPoint: false,
+            snapToVertex: false
+          }];
+
+          // var options = {
+          //   alwaysSnap: true,
+          //   layerInfos: layerInfo,
+          //   map: map,
+          //   tolerance: 10000000000
+          // };          
+
+          // new SnappingManager(options);
+
+          map.on("load", createToolbar);
+
+          function createToolbar(themap) {
+            toolbar = new Draw(map);
+            toolbar.on("draw-complete", addToMap);
+            map.enableSnapping({
+              alwaysSnap: true
+            });    
+          }
+
+          var markerSymbol = new SimpleMarkerSymbol({
+            "color": [0,255,230,64],
+            "size": 12,
+            "xoffset": 0,
+            "yoffset": 0,
+            "type": "esriSMS",
+            "style": "esriSMSCross",
+            "outline": {
+            "color": [0,0,0,255],
+            "width": 1,
+            "type": "esriSLS",
+            "style": "esriSLSSolid"
+            }
+          });
+
+          var markerSymbol2 = new SimpleMarkerSymbol({
+            "color": [0,255,230,64],
+            "size": 12,
+            "xoffset": 0,
+            "yoffset": 0,
+            "type": "esriSMS",
+            "style": "esriSMSCross",
+            "outline": {
+            "color": [0,255,255],
+            "width": 1,
+            "type": "esriSLS",
+            "style": "esriSLSSolid"
+            }
+          });
+
+          function activateTool() {
+            console.log(droppedPoint);
+            toolbar.activate(Draw.POINT);
+            toolbar.setMarkerSymbol(markerSymbol);
+            map.hideZoomSlider();
+          }
+
+          function addToMap(evt) {
+            toolbar.deactivate();
+            map.showZoomSlider();
+            var graphic = new Graphic(evt.geometry, markerSymbol);
+            // console.log(evt.geometry);
+            map.graphics.add(graphic);
+
+            console.log(droppedPoint);
+            if (droppedPoint == "green") {
+              green = [evt.geometry.x, evt.geometry.y];
+              console.log("added " + green);
+              dropPoint(green);
+            }
+            else {
+              red = [evt.geometry.x, evt.geometry.y];
+              console.log("added " + red);
+              dropPoint(red);
+            }
+
+            
+          }
+
+          function dropPoint (color) {
+            var x1 = color[0];
+            var y1 = color[1];
+            var d = 999999999999999999999999999;
+            var slicedFlag = false;
+            var rx = 0;
+            var ry = 0;
+            var gx = 0;
+            var gy = 0;
+
+            if (red !== undefined) {
+              var rx = red[0];
+              var ry = red[1];
+            }
+            if (green !== undefined) {
+              var gx = green[0];
+              var gy = green[1];
+            }
+
+            $.each(globalRoute, function (position1) {
+                var part = globalRoute[position1];
+                // console.log(position1);
+                $.each(part, function (position) {
+                    var vertex = part[position];
+                    // console.log(vertex);
+                    // console.log(position);
+                    var x2 = vertex[0];
+                    var y2 = vertex[1];
+                    if ((rx == x2 && ry == y2) || (gx == x2 && gy == y2)) {
+                        return;
+                    } else {
+                        var calcD = Math.sqrt(((x2-x1)*(x2-x1)) + ((y2-y1)*(y2-y1)));
+
+                        if (calcD < d) {
+                          d = calcD;
+                          // console.log(position + " " + d)         
+                        }
+                        else {
+                          //insert color into array
+                          if (slicedFlag == false) {
+                            part.splice(position, 0, color); // do we want to use "part" here or "globalRoute" to insert into 
+                            // console.log("!!!!!"+position + " " +calcD);
+                            var point = new Point(vertex, new SpatialReference({ wkid:102100 }));
+                            map.graphics.add(new Graphic(point, markerSymbol2));
+                            slicedFlag = true;
+                          }
+                          return;
+                        }
+                    }
+                });
+            });
+          }
+
+          function clipProject () {
+            var captureFlag = false;
+            // console.log(red);
+            // console.log(green);
+            var rx = red[0];
+            var ry = red[1];
+            var gx = green[0];
+            var gy = green[1];
+            // console.log(globalRoute);
+            $.each(globalRoute, function (position) {
+                var part = globalRoute[position];
+                console.log("part: "+position);
+                $.each(part, function (position) {
+                    var vertex = part[position];
+                    var vx = vertex[0];
+                    var vy = vertex[1];
+
+                    // console.log("rx: "+rx);
+                    // below...how does it know that the vertex is red or green?
+                    if ((rx == vx && ry == vy) || (gx == vx && gy == vy)) {
+                        // console.log("something");
+                        if (captureFlag == false) {
+                          captureFlag = true;
+                          console.log("started");
+                        }
+                        else {
+                          captureFlag = false;
+                          clipped.push(vertex);
+                          console.log("stopped");
+                          insertGeometry();
+                          // rebuildGeometry();
+                        }
+                    }
+
+                    if (captureFlag == true) {
+                      clipped.push(vertex);
+                      // console.log(clipped);
+                    }
+
+                });
+            });
+          }
+
+          function rebuildGeometry () {
+            var rebuildFlag =false;
+            var counter = 0;
+            var total = clipped.length;
+            console.log(counter + "/" + total);
+            $.each(clipped, function (position) {
+                var coordPair = clipped[position];
+                var point = new Point(coordPair, new SpatialReference({ wkid:102100 }));
+                clipped[position] = point;
+                map.graphics.add(new Graphic(point, markerSymbol));
+                counter += 1;
+                console.log(counter);
+                console.log(point);
+                if (counter == total) {
+                  insertGeometry();
+                }
+
+            });
+
+          }
+
+          function insertGeometry () {
+            console.log(clipped);
+            console.log(map.graphics);
+            // var theText = lyrProjects + "/addFeatures?f=json&features=";
+
+            // // var stringGeom = JSON.stringify(clipped);
+            // // var stringGeom = JSON.stringify([[-100, 35],[-110, 36]])
+            // console.log(stringGeom);
+            // // var moreText = "{'geometry':{'paths':[" + stringGeom + "]},'attributes':"+JSON.stringify(globalAttributes)+"}";     
+            // var moreText = "{'geometry':{'paths':[" + stringGeom + "]}}";         
+            // theText = theText + "[" + moreText + "]";
+            // console.log(theText);
+            // try {
+            //     var layersRequest = esriRequest({
+            //         url: theText
+            //         },{
+            //         usePost: true
+            //     });
+            //     layersRequest.then(
+            //         function(response) {
+            //             console.log(response);
+            //           }, function(error) {console.log(error);}
+            //     );
+            // } catch (e) {
+            //   alert(e);
+            // }
+
+
+            var sls = new SimpleLineSymbol(
+              SimpleLineSymbol.STYLE_SOLID,
+              new Color([0,255,255]),
+              10
+            );
+            // var polylineJson = {
+            //   "paths":[clipped],
+            //   "spatialReference":{"wkid":4326}
+            // };
+            var projectLine = new Polyline(new SpatialReference ({wkid: 102100}));
+            projectLine.addPath(clipped);
+            console.log(projectLine);
+            var projectGraphic = new Graphic(projectLine, null, globalAttributes);
+            console.log(projectGraphic);
+            // projectGraphic.draw();
+            // map.graphics.add(projectGraphic);
+            // map.graphics.redraw();
+            
+            Projects.applyEdits([projectGraphic], null, null, function (response) {
+              console.log(response);
+              map.graphics.clear();
+              Projects.redraw();
+              globalRoute = [];
+              green = undefined;
+              red = undefined;
+              clipped = [];
+              });
+
+          }
+
+        
+
+        // Set up editor
+        // Set up layerInfos to use in editor widget popup dialog boxes for editing attributes
+          // var layerInfos = [{
+          //     featureLayer: Interstates, 
+          //     fieldInfos: [
+          //       {fieldName: "RTE_NM", isEditable: false, label: 'Route Name:'},
+          //       {fieldName: "CTRL_SECT_NBR", isEditable: false, label: 'Control Section:'}
+          //     ]
+          // }];
+
+        // Call in the AGO geometry service
+          var geomServ = new GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+
+        // Settings for editor widget
+          // var settings = {
+          //   map : map,
+          //   geometryService: geomServ,
+          //   templatePicker : template,
+          //   toolbarVisible : false,
+          //   layerInfos : layerInfos,
+          //   createOptions : {polygonDrawTools: [Editor.CREATE_TOOL_FREEHAND_POLYGON, Editor.CREATE_TOOL_RECTANGLE]},
+          //   toolbarOptions: {reshapeVisible: true}
+          // };
+
+          // var params = {settings : settings};
+
+        // Set up editor widget
+          // var editorWidget = new Editor(params, "divEditor");
+          // editorWidget.startup();
+      
+        // Set cursor to pointer when hovering over a feature in the map
+          // array.forEach(layerList, cursorPointer);
+          // array.forEach(layerList, cursorDefault);
+
+          // function cursorPointer(layer){
+          //   layer.on("mouse-over", function(){
+          //     map.setMapCursor ("pointer");
+          //   });
+          // }
+          // function cursorDefault(layer){
+          //   layer.on("mouse-out", function(){
+          //     map.setMapCursor ("default");
+          //   });
+          // }
+
+        // Fix padding problem on popup and remove the Delete button
+          map.infoWindow.on("show", changePopupStyling);
+          function changePopupStyling(){
+            dojo.query(".esriPopup .contentPane").style("padding-bottom", "8px");
+            // dojo.query(".atiButtons").style("display", "none");
+          }
+
+          document.getElementById("btnStart").onclick = function() {
+            droppedPoint = "green";
+            activateTool();
+          };
+          document.getElementById("btnEnd").onclick = function() {
+            droppedPoint = "red";
+            activateTool();
+          };
+          document.getElementById("btnCut").onclick = function() {
+            if (red !== undefined && green !== undefined) {
+              clipProject();
+            }
+            else {
+              alert("You gotta drop a red and green point foo!");
+            }
+          };
+
+
+
+          document.getElementById("sel1").onchange = function(value) { 
+            globalRoute = [];           
+            var selectedRoute = document.getElementById("sel1").value;
+            var exp = "RTE_NM = '" + selectedRoute + "'";
+            Interstates.setDefinitionExpression(exp);
+            query = new Query;
+            query.where = exp;
+            query.returnGeometry = true;
+            var queryTask = new QueryTask(lyrInterstates);
+            queryTask.execute(query, function(results){
+              console.log(results);
+              var features = results.features;
+              console.log(features);
+              var extent = new graphicsUtils.graphicsExtent(features);
+              var ext = extent.expand(1.5);
+              map.setExtent(ext);
+              $.each(features, function (position){
+
+                var feature = features[position];
+                  var geom = feature.geometry;
+                  var paths = geom.paths;
+                  var path = paths[0];
+                  globalRoute.push(path);
+                  globalAttributes = feature.attributes;
+                  console.log(globalAttributes);
+              });
+            });
+          }
+
+        });
+    </script>
+</head>
+
+<body class="claro" style='font-family="sans-serif"'>
+    <div id="divMap">
+      <div id="divTOC">
+        <div class="form-group">
+          <select class="form-control" id="sel1">
+            <option value="#" disabled selected>Choose a Route...</option>  <option value='IH0002'>IH0002</option>  <option value='IH0010'>IH0010</option>  <option value='IH0020'>IH0020</option>  <option value='IH0027'>IH0027</option>  <option value='IH0030'>IH0030</option>  <option value='IH0035'>IH0035</option>  <option value='IH0035E'>IH0035E</option>    <option value='IH0035W'>IH0035W</option>    <option value='IH0037'>IH0037</option>  <option value='IH0040'>IH0040</option>  <option value='IH0044'>IH0044</option>  <option value='IH0045'>IH0045</option>  <option value='IH0069'>IH0069</option>  <option value='IH0069C'>IH0069C</option>    <option value='IH0069E'>IH0069E</option>    <option value='IH0069W'>IH0069W</option>    <option value='IH0110'>IH0110</option>  <option value='IH0345'>IH0345</option>  <option value='IH0369'>IH0369</option>  <option value='IH0410'>IH0410</option>  <option value='IH0610'>IH0610</option>  <option value='IH0635'>IH0635</option>  <option value='IH0820'>IH0820</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-default" style="color: green; margin-bottom: 5px; margin-top: 5px;" id="btnStart">
+            <span class="glyphicon glyphicon-map-marker"></span> Start
+        </button>
+        <button type="button" class="btn btn-default" style="color: red; margin-bottom: 5px; margin-top: 5px;" id="btnEnd">
+            <span class="glyphicon glyphicon-map-marker"></span> End
+        </button>  
+        <button type="button" class="btn btn-success" id="btnCut"> Clip Segment </button>
+      </div>    
+    </div> 
+</body>
+</html>
