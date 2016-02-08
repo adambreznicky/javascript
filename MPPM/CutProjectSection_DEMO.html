@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/ -->
 <html>
 <head>
     <title>Planned Projects Cut DEMO</title>    
@@ -23,7 +24,7 @@
         border-color: white;   
         height:99%;
         position: absolute;
-        left: 2px;
+        left: 205px;
         bottom: 2px;
         right: 2px;
         top: 2px;
@@ -33,8 +34,8 @@
         border-radius: 5px 0px 5px 5px;
         width:200px;
         position: absolute;
-        left: 10px;
-        top: 20px; 
+        left: 5px;
+        top: 5px; 
         overflow: auto;
         padding-bottom: 5px;
         z-index: 100;
@@ -198,7 +199,25 @@
         text-align: center;
       }
       #divMap_zoom_slider {
-        left: 225px;
+        left: 5px;
+        top: 5px;
+      }
+      #btnStart{
+        color: green;
+        position: absolute;
+        left: 2px;
+        top: 50px;
+      }
+      #btnEnd{
+        color: red;
+        position: absolute;
+        left: 2px;
+        top: 100px;
+      }
+      #btnCut{
+        position: absolute;
+        left: 2px;
+        top: 150px;
       }
 
     </style>
@@ -307,6 +326,7 @@
 
           parser.parse();
           var globalRoute = [];
+          var globalRouteBackup = [];
           var globalAttributes;
           var green;
           var red;
@@ -443,7 +463,8 @@
             var graphic = new Graphic(evt.geometry, markerSymbol);
             // console.log(evt.geometry);
             map.graphics.add(graphic);
-
+            console.log(globalRoute);
+            console.log(globalRouteBackup);
             console.log(droppedPoint);
             if (droppedPoint == "green") {
               green = [evt.geometry.x, evt.geometry.y];
@@ -513,6 +534,8 @@
           }
 
           function clipProject () {
+            console.log(globalRoute);
+            console.log(globalRouteBackup);
             var captureFlag = false;
             // console.log(red);
             // console.log(green);
@@ -626,7 +649,10 @@
               console.log(response);
               map.graphics.clear();
               Projects.redraw();
+              console.log(globalRoute);
               globalRoute = [];
+              globalRoute.push(globalRouteBackup[0].slice(0));
+              console.log(globalRoute);
               green = undefined;
               red = undefined;
               clipped = [];
@@ -708,7 +734,8 @@
 
 
           document.getElementById("sel1").onchange = function(value) { 
-            globalRoute = [];           
+            globalRoute = [];
+            globalRouteBackup = [];           
             var selectedRoute = document.getElementById("sel1").value;
             var exp = "RTE_NM = '" + selectedRoute + "'";
             Interstates.setDefinitionExpression(exp);
@@ -729,9 +756,10 @@
                   var geom = feature.geometry;
                   var paths = geom.paths;
                   var path = paths[0];
+                  console.log(path);
                   globalRoute.push(path);
+                  globalRouteBackup.push(path.slice(0));
                   globalAttributes = feature.attributes;
-                  console.log(globalAttributes);
               });
             });
           }
@@ -742,20 +770,20 @@
 
 <body class="claro" style='font-family="sans-serif"'>
     <div id="divMap">
-      <div id="divTOC">
-        <div class="form-group">
-          <select class="form-control" id="sel1">
-            <option value="#" disabled selected>Choose a Route...</option>  <option value='IH0002'>IH0002</option>  <option value='IH0010'>IH0010</option>  <option value='IH0020'>IH0020</option>  <option value='IH0027'>IH0027</option>  <option value='IH0030'>IH0030</option>  <option value='IH0035'>IH0035</option>  <option value='IH0035E'>IH0035E</option>    <option value='IH0035W'>IH0035W</option>    <option value='IH0037'>IH0037</option>  <option value='IH0040'>IH0040</option>  <option value='IH0044'>IH0044</option>  <option value='IH0045'>IH0045</option>  <option value='IH0069'>IH0069</option>  <option value='IH0069C'>IH0069C</option>    <option value='IH0069E'>IH0069E</option>    <option value='IH0069W'>IH0069W</option>    <option value='IH0110'>IH0110</option>  <option value='IH0345'>IH0345</option>  <option value='IH0369'>IH0369</option>  <option value='IH0410'>IH0410</option>  <option value='IH0610'>IH0610</option>  <option value='IH0635'>IH0635</option>  <option value='IH0820'>IH0820</option>
-          </select>
-        </div>
-        <button type="button" class="btn btn-default" style="color: green; margin-bottom: 5px; margin-top: 5px;" id="btnStart">
-            <span class="glyphicon glyphicon-map-marker"></span> Start
-        </button>
-        <button type="button" class="btn btn-default" style="color: red; margin-bottom: 5px; margin-top: 5px;" id="btnEnd">
-            <span class="glyphicon glyphicon-map-marker"></span> End
-        </button>  
-        <button type="button" class="btn btn-success" id="btnCut"> Clip Segment </button>
-      </div>    
-    </div> 
+    </div>
+    <div id="divTOC">
+      <div class="form-group">
+        <select class="form-control" id="sel1">
+          <option value="#" disabled selected>Choose a Route...</option>  <option value='IH0002'>IH0002</option>  <option value='IH0010'>IH0010</option>  <option value='IH0020'>IH0020</option>  <option value='IH0027'>IH0027</option>  <option value='IH0030'>IH0030</option>  <option value='IH0035'>IH0035</option>  <option value='IH0035E'>IH0035E</option>    <option value='IH0035W'>IH0035W</option>    <option value='IH0037'>IH0037</option>  <option value='IH0040'>IH0040</option>  <option value='IH0044'>IH0044</option>  <option value='IH0045'>IH0045</option>  <option value='IH0069'>IH0069</option>  <option value='IH0069C'>IH0069C</option>    <option value='IH0069E'>IH0069E</option>    <option value='IH0069W'>IH0069W</option>    <option value='IH0110'>IH0110</option>  <option value='IH0345'>IH0345</option>  <option value='IH0369'>IH0369</option>  <option value='IH0410'>IH0410</option>  <option value='IH0610'>IH0610</option>  <option value='IH0635'>IH0635</option>  <option value='IH0820'>IH0820</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-default"  id="btnStart">
+          <span class="glyphicon glyphicon-map-marker"></span> Start
+      </button>
+      <button type="button" class="btn btn-default"  id="btnEnd">
+          <span class="glyphicon glyphicon-map-marker"></span> End
+      </button>  
+      <button type="button" class="btn btn-success" id="btnCut"> Define Segment </button>
+    </div>    
 </body>
 </html>
