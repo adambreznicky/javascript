@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/ -->
+<html manifest="coyoteCache.manifest">
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -185,8 +186,7 @@
                     var longy;
                     var graphic;
                     var currentNote;
-                    // var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
-                    var maintenanceDeficiencyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CameraTest/FeatureServer/0";//swamp thang
+                    var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
 
                     map = new Map("divMap", {
                         logo: false,
@@ -196,9 +196,7 @@
                     var theExtent = new Extent(-107,25.27,-93,37.27, new SpatialReference({ wkid: 4269 }));
                     map.setExtent(webMercatorUtils.geographicToWebMercator(theExtent)); 
 
-                    // var infoTemplate = new InfoTemplate("${Deficiency}", "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>CreationDate: ${CreationDate}");
                     var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL, {
-                        // infoTemplate: infoTemplate,
                         definitionExpression: "1=2",
                         outFields: ["*"]
                     });
@@ -207,6 +205,23 @@
                     maintenanceDeficiencies.setRenderer(renderer);
                     map.addLayer(maintenanceDeficiencies);
 
+                    var referenceMarkersURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Reference_Markers/FeatureServer/0";//swamp thang
+                    var referenceMarkers = new FeatureLayer(referenceMarkersURL, {
+                        outFields: ["*"],
+                        minScale: 80000
+                    });
+                    var rmSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,28,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([0, 128, 0, 0.5]),8),new Color([0, 128, 0, 0.9]));
+                    var rmRenderer = new SimpleRenderer(rmSymbol);
+                    referenceMarkers.setRenderer(rmRenderer);
+                    map.addLayer(referenceMarkers);
+                    var mkrLabel = new TextSymbol().setColor(new Color([0, 128, 0, 0.9]));
+                    mkrLabel.font.setSize("28pt");
+                    mkrLabel.font.setFamily("Trebuchet MS");
+                    var mkrLabelRenderer = new SimpleRenderer(mkrLabel);
+                    var mkrlabels = new LabelLayer();
+                    mkrlabels.addFeatureLayer(referenceMarkers, mkrLabelRenderer, "{MRKR_NBR}");
+                    map.addLayer(mkrlabels);
+                    
                     map.on("load", function () {
                         $('.nav.navbar-nav > li').removeClass('active');
                         $("#selector").addClass('active');
@@ -450,6 +465,7 @@
                                             var id = $(this).attr('id')
                                             var oid = id.split("-")[1];
                                             $(this).prop("readonly", false);
+                                            $(this).attr("style", "border:solid;");
                                             // $(this).focus();
                                         });
                                         $(".notes").focusin(function () {
@@ -457,6 +473,7 @@
                                         });
                                         $(".notes").focusout(function () {
                                             $(this).prop("readonly", true);
+                                            $(this).attr("style", "border:none;");
                                             var newNote = $(this).val();
 
                                             if (newNote !== currentNote) {
@@ -618,7 +635,7 @@
                         <div class="form-group">
                             <select class="form-control" id="deficiency" disabled="disabled">
                                 <option value="#" disabled selected>Deficiency</option>
-                                <option value='Approach Slab'>Approach Slab</option>	<option value='Base Failure'>Base Failure</option>	<option value='Checked Okay'>Checked Okay</option>	<option value='Concrete Traffic Barrier'>Concrete Traffic Barrier</option>	<option value='Culverts'>Culverts</option>	<option value='Debris'>Debris</option>	<option value='Decks'>Decks</option>	<option value='Delineators'>Delineators</option>	<option value='Drift'>Drift</option>	<option value='Driveways'>Driveways</option>	<option value='Edge Drop'>Edge Drop</option>	<option value='Encroachments'>Encroachments</option>	<option value='Erosion'>Erosion</option>	<option value='Guardrail'>Guardrail</option>	<option value='High Edges'>High Edges</option>	<option value='Illegal Sign'>Illegal Sign</option>	<option value='Illumination Poles'>Illumination Poles</option>	<option value='Incident'>Incident</option>	<option value='Joints'>Joints</option>	<option value='Litter'>Litter</option>	<option value='Mailboxes'>Mailboxes</option>	<option value='Mowing/Herbicide'>Mowing/Herbicide</option>	<option value='Other'>Other</option>	<option value='Outside Qtr'>Outside Qtr</option>	<option value='Pav Markers'>Pav Markers</option>	<option value='Pothole'>Pothole</option>	<option value='Rails'>Rails</option>	<option value='School Zone Beacons'>School Zone Beacons</option>	<option value='Sight Visibility'>Sight Visibility</option>	<option value='Signal Light'>Signal Light</option>	<option value='Signs'>Signs</option>	<option value='Striping'>Striping</option>	<option value='Sweeping'>Sweeping</option>	<option value='Trees'>Trees</option>	<option value='Wheel Rut'>Wheel Rut</option>	<option value='Work Request'>Work Request</option>
+                                <option value'Approach Slab'>Approach Slab</option> <option value'Attenuators'>Attenuators</option> <option value'Backwall'>Backwall</option>   <option value'Bleeding'>Bleeding</option>   <option value'Boat Ramp'>Boat Ramp</option> <option value'C.T.B.'>C.T.B.</option>   <option value'Cable Barrier'>Cable Barrier</option> <option value'Conc. Repair'>Conc. Repair</option>   <option value'Crack Seal'>Crack Seal</option>   <option value'Curb'>Curb</option>   <option value'Debris'>Debris</option>   <option value'Decks'>Decks</option> <option value'Delineation'>Delineation</option> <option value'Drainage'>Drainage</option>   <option value'Drift'>Drift</option> <option value'Encroachment'>Encroachment</option>   <option value'Erosion'>Erosion</option> <option value'Failures'>Failures</option>   <option value'Fenders'>Fenders</option> <option value'Flashing Beacons'>Flashing Beacons</option>   <option value'Fog Seal'>Fog Seal</option>   <option value'Graffiti'>Graffiti</option>   <option value'Guardrail'>Guardrail</option> <option value'Herbicide'>Herbicide</option> <option value'High Edge'>High Edge</option> <option value'Impact Damage'>Impact Damage</option> <option value'Inlet'>Inlet</option> <option value'Joint Seal'>Joint Seal</option>   <option value'Joints'>Joints</option>   <option value'Litter'>Litter</option>   <option value'Low Edge'>Low Edge</option>   <option value'Mailbox'>Mailbox</option> <option value'Milling'>Milling</option> <option value'Mowing'>Mowing</option>   <option value'Other Project'>Other Project</option> <option value'Outside Qtr'>Outside Qtr</option> <option value'Overlay'>Overlay</option> <option value'Picnic Area'>Picnic Area</option> <option value'Pothole'>Pothole</option> <option value'Railroad'>Railroad</option>   <option value'Rails'>Rails</option> <option value'Raveling'>Raveling</option>   <option value'Rest Area'>Rest Area</option> <option value'Rip Rap'>Rip Rap</option> <option value'RPMs'>RPMs</option>   <option value'S.E.T.s'>S.E.T.s</option> <option value'Safety Lighting'>Safety Lighting</option> <option value'Seal Coat'>Seal Coat</option> <option value'Side Road'>Side Road</option> <option value'Sight Visibility'>Sight Visibility</option>   <option value'Signals'>Signals</option> <option value'Signs'>Signs</option> <option value'Slope Failed'>Slope Failed</option>   <option value'Spalling'>Spalling</option>   <option value'Spot Mill'>Spot Mill</option> <option value'Striping'>Striping</option>   <option value'Sweeping'>Sweeping</option>   <option value'Trees'>Trees</option> <option value'Wheel Rut'>Wheel Rut</option> <option value'Widening'>Widening</option>
                             </select>
                         </div>
                     </td>
@@ -647,9 +664,6 @@
         </div>
 
         <div class="container" id="reportTab" style="display:none;">
-            <!-- <h2 id="reportTitle" style="font-weight:bold;font-size:3vw;"></h2>
-            <p id="chosenParameters" style="font-size:2vw;"></p>
-            <p id="generationDateTime" style="font-size:2vw;"></p> -->
             <table class="table" style="margin-bottom:100px;">
                 <thead>
                     <tr>

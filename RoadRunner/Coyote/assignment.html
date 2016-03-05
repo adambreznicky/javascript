@@ -58,32 +58,6 @@
                 .esriSimpleSlider {
                     display: none;
                 }
-                
-                /*body div.container {*/
-                /*     margin: 0;*/
-                /*     padding:0;*/
-                /*}*/
-                
-                /*@page {*/
-                    /* auto is the current printer page size */
-                /*    size: auto;   */
-                    /* this affects the margin in the printer settings */
-                /*    margin: 5mm 0mm 0mm 0mm;  */
-                /*}*/
-        
-                /*body {*/
-                    /*background-color:#FFFFFF; */
-                    /*border: solid 1px black ;*/
-                    
-                     /* the margin on the content before printing */
-                /*    margin: 0px; */
-                /*}*/
-                
-                
-                
-                /*#reportTable>table {*/
-                /*    width: auto;*/
-                /*}*/
             }
              
         </style>
@@ -312,12 +286,7 @@
                                     var trPrfx;
                                     shaded = false;
 
-                                    // if (pageBreaker == 3) {
-                                    //     trPrfx = "</tbody></table><div style='page-break-after:always;'></div><table><tbody id='"+reportBodyID+"'><tr style='background-color: rgb(226,231,235);'>";
-                                    // } else {
                                     trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
-                                    // }
-                                    
                                     
                                     var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' style='border-style:solid;border-width:1px;border-color:lightgray;page-break-inside:avoid;'></div></td></tr>";  //style='text-align:right;'
                                     $(reportBodyID).append(theText);
@@ -325,8 +294,6 @@
                                     pageBreaker += 1;
                                     if (pageBreaker == 3 && counter !== results.features.length) {
                                         var nextReportBodyNum = reportBodyNum + 1;
-                                        // var suffix = "</tbody></table><div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'>";
-                                        // $("#reportTable").append(suffix);
                                         $("#reportTable").append("<div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody>");// style='text-align:right;'
                                         
                                         reportBodyNum += 1;
@@ -443,7 +410,7 @@
                         <div class="form-group">
                             <select class="form-control input-lg" id="deficiency" disabled="disabled">
                                 <option value="#" disabled selected>Deficiency</option>
-                                <option value='Approach Slab'>Approach Slab</option>	<option value='Base Failure'>Base Failure</option>	<option value='Checked Okay'>Checked Okay</option>	<option value='Concrete Traffic Barrier'>Concrete Traffic Barrier</option>	<option value='Culverts'>Culverts</option>	<option value='Debris'>Debris</option>	<option value='Decks'>Decks</option>	<option value='Delineators'>Delineators</option>	<option value='Drift'>Drift</option>	<option value='Driveways'>Driveways</option>	<option value='Edge Drop'>Edge Drop</option>	<option value='Encroachments'>Encroachments</option>	<option value='Erosion'>Erosion</option>	<option value='Guardrail'>Guardrail</option>	<option value='High Edges'>High Edges</option>	<option value='Illegal Sign'>Illegal Sign</option>	<option value='Illumination Poles'>Illumination Poles</option>	<option value='Incident'>Incident</option>	<option value='Joints'>Joints</option>	<option value='Litter'>Litter</option>	<option value='Mailboxes'>Mailboxes</option>	<option value='Mowing/Herbicide'>Mowing/Herbicide</option>	<option value='Other'>Other</option>	<option value='Outside Qtr'>Outside Qtr</option>	<option value='Pav Markers'>Pav Markers</option>	<option value='Pothole'>Pothole</option>	<option value='Rails'>Rails</option>	<option value='School Zone Beacons'>School Zone Beacons</option>	<option value='Sight Visibility'>Sight Visibility</option>	<option value='Signal Light'>Signal Light</option>	<option value='Signs'>Signs</option>	<option value='Striping'>Striping</option>	<option value='Sweeping'>Sweeping</option>	<option value='Trees'>Trees</option>	<option value='Wheel Rut'>Wheel Rut</option>	<option value='Work Request'>Work Request</option>
+                                <option value'Approach Slab'>Approach Slab</option> <option value'Attenuators'>Attenuators</option> <option value'Backwall'>Backwall</option>   <option value'Bleeding'>Bleeding</option>   <option value'Boat Ramp'>Boat Ramp</option> <option value'C.T.B.'>C.T.B.</option>   <option value'Cable Barrier'>Cable Barrier</option> <option value'Conc. Repair'>Conc. Repair</option>   <option value'Crack Seal'>Crack Seal</option>   <option value'Curb'>Curb</option>   <option value'Debris'>Debris</option>   <option value'Decks'>Decks</option> <option value'Delineation'>Delineation</option> <option value'Drainage'>Drainage</option>   <option value'Drift'>Drift</option> <option value'Encroachment'>Encroachment</option>   <option value'Erosion'>Erosion</option> <option value'Failures'>Failures</option>   <option value'Fenders'>Fenders</option> <option value'Flashing Beacons'>Flashing Beacons</option>   <option value'Fog Seal'>Fog Seal</option>   <option value'Graffiti'>Graffiti</option>   <option value'Guardrail'>Guardrail</option> <option value'Herbicide'>Herbicide</option> <option value'High Edge'>High Edge</option> <option value'Impact Damage'>Impact Damage</option> <option value'Inlet'>Inlet</option> <option value'Joint Seal'>Joint Seal</option>   <option value'Joints'>Joints</option>   <option value'Litter'>Litter</option>   <option value'Low Edge'>Low Edge</option>   <option value'Mailbox'>Mailbox</option> <option value'Milling'>Milling</option> <option value'Mowing'>Mowing</option>   <option value'Other Project'>Other Project</option> <option value'Outside Qtr'>Outside Qtr</option> <option value'Overlay'>Overlay</option> <option value'Picnic Area'>Picnic Area</option> <option value'Pothole'>Pothole</option> <option value'Railroad'>Railroad</option>   <option value'Rails'>Rails</option> <option value'Raveling'>Raveling</option>   <option value'Rest Area'>Rest Area</option> <option value'Rip Rap'>Rip Rap</option> <option value'RPMs'>RPMs</option>   <option value'S.E.T.s'>S.E.T.s</option> <option value'Safety Lighting'>Safety Lighting</option> <option value'Seal Coat'>Seal Coat</option> <option value'Side Road'>Side Road</option> <option value'Sight Visibility'>Sight Visibility</option>   <option value'Signals'>Signals</option> <option value'Signs'>Signs</option> <option value'Slope Failed'>Slope Failed</option>   <option value'Spalling'>Spalling</option>   <option value'Spot Mill'>Spot Mill</option> <option value'Striping'>Striping</option>   <option value'Sweeping'>Sweeping</option>   <option value'Trees'>Trees</option> <option value'Wheel Rut'>Wheel Rut</option> <option value'Widening'>Widening</option>
                             </select>
                         </div>
                     </td>
