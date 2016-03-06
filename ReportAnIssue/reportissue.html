@@ -11,10 +11,35 @@
         <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
         <style type="text/css">
-            html, body, #divMap {
+            html, body{
                 padding: 0;
                 margin: 0;
                 height: 100%;
+                /*font-size: large;*/
+            }
+            #divMap{
+                margin-bottom:10%;
+                border-style: solid;
+            }
+            #invalidLocate {
+                display:none;
+                padding:6px 12px;
+                margin-left:12px;
+            }
+            #invalidType {
+                display:none;
+                padding:6px 12px;
+                margin-left:12px;
+            }
+            #invalidDesc {
+                display:none;
+                padding:6px 12px;
+                margin-left:12px;
+            }
+            .frmt {
+                text-align: center;
+                font-size: x-large;
+                padding: 0;
             }
         </style>
 
@@ -54,8 +79,7 @@
                     parser.parse();
                     
                     var mapGraphic;
-                    var geoLoc;
-                    var watchID;
+                    
 
                     var map = new Map("divMap", {
                       center: [-100, 32],
@@ -73,27 +97,28 @@
                     function mapDraw () {
                         var drawToolbar = new Draw(map, { showTooltips: true });
                         drawToolbar.activate(Draw.POINT);
+                        
                         $("#divMap").attr("style", "cursor:pointer;");
 
                         drawToolbar.on("draw-end", function(evt) {
                             drawToolbar.deactivate();
+                            $("#submit").prop("disabled", false);
                             $("#divMap").attr("style", "cursor:initial;");
                             
                             var sms = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_SQUARE).setColor(new Color([255,0,0,0.5]));
     
                             mapGraphic = new Graphic(evt.geometry, sms);
                             map.graphics.add(mapGraphic);
-                            //selectedTemplate.featureLayer.applyEdits([newGraphic], null, null);
+                            map.centerAndZoom(evt.geometry,14);
                         });
                     };
                     
                     function startupGPS () {
                         if (navigator.geolocation) {
-                            console.log(mapGraphic);
-                            geoLoc = navigator.geolocation;
-                            watchID = geoLoc.watchPosition(showPosition,null,{enableHighAccuracy:true});
+                            navigator.geolocation.getCurrentPosition(showPosition,null,{enableHighAccuracy:true});
                         }
                         else {
+                            alert("Geolocation is not supported by this browser. Please use the webmap to locate your issue.")
                             console.log("Geolocation is not supported by this browser.");	
                         }
                     }
@@ -101,7 +126,7 @@
                     function showPosition(position) {
                         var latty = position.coords.latitude;
                         var longy = position.coords.longitude;
-                        console.log(watchID);
+                        $("#submit").prop("disabled", false);
                         var pt = new Point(longy, latty);
                         if (!mapGraphic) {
                             var sms = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_SQUARE).setColor(new Color([255,0,0,0.5]));
@@ -109,10 +134,13 @@
                             map.graphics.add(mapGraphic);
                         } else {
                             mapGraphic.setGeometry(pt);
+                            map.graphics.redraw();
                         }
+                        map.centerAndZoom(pt,14);
                     }
                     
                     $("#locate").on("click", function () {
+                        $("#invalidLocate").attr("style", "display:none;");
                         
                         var sel = $('#selectedlocator input:radio:checked').val();
                         if (sel == "map") {
@@ -122,7 +150,7 @@
                             console.log("gps");
                             startupGPS();
                         } else {
-                            alert("You must select a 'Locate with' method.");
+                            $("#invalidLocate").attr("style", "display:block;");
                         }
                     });
 
@@ -137,23 +165,42 @@
                         var Email = $("#email").val();
                         var Type = $('#issuetype input:radio:checked').val();
                         var Description = $("#issuetext").val();
+                        console.log(Description);
                         
-                        var attributes = {"FirstName":FirstName, "LastName":LastName, "Address":Address, "City":City, "State":State, "ZipCode":ZipCode, "Phone":Phone, "Email":Email, "Type":Type, "Description":Description};
+                        if (Type !== undefined) {
+                            if (Type == "Other" && (Description == undefined || Description == "")) {
+                                $("#invalidDesc").attr("style", "display:block;");
+                            } else {
+                                $("#invalidDesc").attr("style", "display:none;");
+                                $("#standardDir").attr("style", "display:block;");
+                                $("#invalidType").attr("style", "display:none;");
+                                
+                                var attributes = {"FirstName":FirstName, "LastName":LastName, "Address":Address, "City":City, "State":State, "ZipCode":ZipCode, "Phone":Phone, "Email":Email, "Type":Type, "Description":Description};
+                                
+                                mapGraphic.setAttributes(attributes);
+                                issuesLyr.applyEdits([mapGraphic], null, null);
+                                
+                                mapGraphic = (function () { return; });
+                                $("#submit").prop("disabled", true);
+                                
+                                map.graphics.clear();
+                                map.graphics.redraw();
+                                issuesLyr.redraw();
+                            }
+                        } else {
+                            $("#standardDir").attr("style", "display:none;");
+                            $("#invalidType").attr("style", "display:block;");
+                        }
                         
-                        mapGraphic.setAttributes(attributes);
-                        issuesLyr.applyEdits([mapGraphic], null, null);
-                        map.graphics.clear();
-                        geoLoc.clearWatch(watchID);
-                        mapGraphic = (function () { return; });
-                        console.log(mapGraphic);
                     });
+                    
                     
                 });
             });
         </script>
     </head>
     <body class="claro">
-        <div class="page-header" style="background-color: rgb(20,56,92); margin-top:0;">
+        <div class="container" style="background-color: rgb(20,56,92); margin-top:0;">
             <h1 id = "header" style="color:white;">Report An Issue<small> This would be the standard header.</small></h1>
         </div>
         <div class="container">
@@ -204,17 +251,17 @@
                     <label class="col-sm-2 control-label">Phone</label>
                     <div class="col-sm-6">
                         <div class="form-group row">
-                            <div class="col-xs-1">(</div>
+                            <div class="frmt col-sm-1">(</div>
                             <div class="col-sm-1" style="padding:0;">
-                                <input type="text" class="form-control" id="areacode" placeholder="xxx">
+                                <input type="text" class="form-control" id="areacode" placeholder="xxx" maxlength="3" style="padding:6px;">
                             </div>
-                            <div class="col-xs-1">) - </div>
+                            <div class="frmt col-sm-1">) - </div>
                             <div class="col-sm-1" style="padding:0;">
-                                <input type="text" class="form-control" id="precode" placeholder="xxx">
+                                <input type="text" class="form-control" id="precode" placeholder="xxx" maxlength="3" style="padding:6px;">
                             </div>
-                            <div class="col-xs-1"> - </div>
+                            <div class="frmt col-sm-1"> - </div>
                             <div class="col-sm-1" style="padding:0;">
-                                <input type="text" class="form-control" id="postcode" placeholder="xxxx">
+                                <input type="text" class="form-control" id="postcode" placeholder="xxxx" maxlength="4" style="padding:6px;">
                             </div>
                         </div>
                     </div>
@@ -262,6 +309,7 @@
                     <div class="col-sm-6">
                         <textarea rows="4" class="form-control" id="issuetext" placeholder="Detailed description of the issue" maxlength="400"></textarea>
                     </div>
+                    <div id="invalidDesc" class="alert alert-danger col-sm-2" role="alert">You must provide an 'Issue Description' in order to submit an 'Other' type issue.</div>
                 </div>
                 <div class="form-group" id="selectedlocator">
                     <label for="locationtype" class="col-sm-2 control-label">Locate with:</label>
@@ -277,10 +325,13 @@
                 <div class="form-group">
                     <label for="idlocation" class="col-sm-2 control-label">Identify Location</label>
                     <button type="button" class="btn btn-default col-sm-2" id="locate">Locate</button>
+                    <div id="invalidLocate" class="alert alert-danger col-md-6" role="alert">You must select a 'Locate with' option to identify the issue location.</div>
                 </div>
                 <div class="form-group">
                     <div class="col-sm-2"></div>
-                    <button type="button" class="btn btn-default col-sm-2" id="submit">Submit</button>
+                    <button type="button" class="btn btn-default col-sm-2" id="submit" disabled="disabled">Submit</button>
+                    <div id="standardDir" class="col-md-5">The issue location must be identified within the map to Submit.</div>
+                    <div id="invalidType" class="alert alert-danger col-md-5" role="alert">You must select an 'Issue Type' in order to submit an issue.</div>
                 </div>
             </form>
         </div>
