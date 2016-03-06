@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/ -->
+<html manifest="coyoteCache.manifest">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta content='user-scalable=0' name='viewport'>
+        <title>Maintenance Coyote</title>
+<!--swamp thang-->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
+        <!--swamp thangs-->
+        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+
+
+        <style type="text/css">
+            html, body {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                font-size:5vw;
+                overflow: auto;
+            }
+            h1 {
+                color: white;
+                margin-top: 0;
+                padding-top: 20px;
+                padding-left: 20px;
+            }
+            select.form-control {
+                font-size: 8vw;
+                height: inherit;
+                width: 90%;
+                margin: 3% auto 3% auto;
+            }
+            td {
+                text-align: center;
+                border-top: 0 !important;
+                height: 12vw;
+            }
+            .table>tbody>tr>td {
+                vertical-align: middle;
+            }
+            li {
+                width: 33.33%;
+                text-align: center;
+            }
+            th {
+                text-align: center;
+                font-weight: inherit;
+            }
+            textarea:focus {
+                outline:0px !important;
+            }
+            textarea {
+                background-color: inherit;
+                border: none;
+                resize: none;
+                text-align: center;
+
+            }
+            .resolver {
+                font-size:4vw;
+                width:9vw;
+                border-radius: 20px;
+            }
+            #category {
+                padding-left: 20px;
+            }
+            #selectDist {
+                width: 225px;
+            }
+            #generate {
+                font-size: 8vw;
+                height: 100%;
+                width: 60%;
+                vertical-align: top;
+            }
+            #curPos{
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                z-index: 50;
+                color: #303030;
+                font-size: 5vw;
+                text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+        	}
+            #zoomLocation {
+                position: absolute;
+                top: 30px;
+                right: 30px;
+                z-index: 50;
+                font-size: 9vw;
+                width: 12vw;
+                height: 12vw;
+                text-align: center;
+                padding: 13px 0;
+                border-radius: 50%;
+            }
+            #mapTab{
+                height: 100%;
+                width: 100%;
+                padding: 0;
+            }
+            #divMap{
+                height: 100%;
+            }
+            #divMap_zoom_slider {
+                display: none;
+            }
+            .container {
+                width: 100%;
+            }
+            .container-fluid{
+                padding: 0;
+            }
+
+            .glyphicon-refresh-animate {
+                -animation: spin .7s infinite linear;
+                -webkit-animation: spin2 .7s infinite linear;
+            }
+            @-webkit-keyframes spin2 {
+                from { -webkit-transform: rotate(0deg);}
+                to { -webkit-transform: rotate(360deg);}
+            }
+            @keyframes spin {
+                from { transform: scale(1) rotate(0deg);}
+                to { transform: scale(1) rotate(360deg);}
+            }
+        </style>
+
+        <script data-dojo-config="async:true, aliases: [
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
+        </script>
+
+        <script>
+            require([
+                "jquery",
+                "jqueryui",
+
+                "esri/map",
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                "esri/layers/FeatureLayer",
+                "esri/InfoTemplate",
+                
+                "esri/symbols/TextSymbol",
+                "esri/layers/LabelLayer",
+                "esri/Color",
+                "esri/renderers/SimpleRenderer",
+                
+                "esri/geometry/Point", 
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/graphic",
+
+                "esri/geometry/webMercatorUtils",
+                "esri/request",
+
+                "esri/SpatialReference",
+                "esri/geometry/Extent",
+                "esri/arcgis/OAuthInfo",
+                "esri/IdentityManager",
+
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/require",
+                "dojo/domReady!"],
+            function($, $ui,
+                    Map, Query, QueryTask, FeatureLayer, InfoTemplate,
+                    TextSymbol, LabelLayer, Color, SimpleRenderer,
+                    Point, SimpleMarkerSymbol, SimpleLineSymbol, Graphic,
+                    webMercatorUtils, esriRequest,
+                    SpatialReference, Extent, OAuthInfo, IdentityManager,
+                    ready, parser, require) {
+                ready(function(){
+                    dojo.require("bootstrap");
+                    parser.parse();
+                    
+                    var map;
+                    var latty;
+                    var longy;
+                    var graphic;
+                    var currentNote;
+                    var maintenanceDeficiencyURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+
+                    map = new Map("divMap", {
+                        logo: false,
+                        basemap: "topo",
+                        autoResize: true
+                    });
+                    var theExtent = new Extent(-107,25.27,-93,37.27, new SpatialReference({ wkid: 4269 }));
+                    map.setExtent(webMercatorUtils.geographicToWebMercator(theExtent)); 
+
+                    var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL, {
+                        definitionExpression: "1=2",
+                        outFields: ["*"]
+                    });
+                    var mdSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,34,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([0, 0, 255, 0.5]),8),new Color([0, 0, 255, 0.9]));
+                    var renderer = new SimpleRenderer(mdSymbol);
+                    maintenanceDeficiencies.setRenderer(renderer);
+                    map.addLayer(maintenanceDeficiencies);
+
+                    var referenceMarkersURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/SPM_Reference_Markers/FeatureServer/0";//swamp thang
+                    var referenceMarkers = new FeatureLayer(referenceMarkersURL, {
+                        outFields: ["*"],
+                        minScale: 80000
+                    });
+                    var rmSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,28,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([0, 128, 0, 0.5]),8),new Color([0, 128, 0, 0.9]));
+                    var rmRenderer = new SimpleRenderer(rmSymbol);
+                    referenceMarkers.setRenderer(rmRenderer);
+                    map.addLayer(referenceMarkers);
+                    var mkrLabel = new TextSymbol().setColor(new Color([0, 128, 0, 0.9]));
+                    mkrLabel.font.setSize("28pt");
+                    mkrLabel.font.setFamily("Trebuchet MS");
+                    var mkrLabelRenderer = new SimpleRenderer(mkrLabel);
+                    var mkrlabels = new LabelLayer();
+                    mkrlabels.addFeatureLayer(referenceMarkers, mkrLabelRenderer, "{MRKR_NBR}");
+                    map.addLayer(mkrlabels);
+                    
+                    map.on("load", function () {
+                        $('.nav.navbar-nav > li').removeClass('active');
+                        $("#selector").addClass('active');
+                        switchTab("#selectTab");
+                    });
+                    
+                    function startupGPS () {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+                        }
+                        else {
+                            console.log("Geolocation is not supported by this browser.");	
+                        }
+                    }
+                    
+                    function showPosition(position) {
+                        latty = position.coords.latitude;
+                        longy = position.coords.longitude;
+                        if (map) {
+                            var pt = new Point(longy, latty);
+                            if ( !graphic ) {
+                                addGraphic(pt);
+                            } else {
+                                graphic.setGeometry(pt);
+                                $("#curPos").html(latty.toFixed(5) + "," + longy.toFixed(5));
+                            }
+                        }
+                    }
+                    
+                    function addGraphic(pt){
+                        var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE,34,new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,new Color([210, 105, 30, 0.5]),8),new Color([210, 105, 30, 0.9]));
+                        graphic = new Graphic(pt, symbol);
+                        map.graphics.add(graphic);
+                        map.centerAndZoom(graphic.geometry, 15);
+                        $("#curPos").html(latty.toFixed(5) + "," + longy.toFixed(5));
+                        $("#curPos").attr("style", "display:block;");
+                        $("#zoomLocation").attr("style", "display:block;");
+                    }
+
+                    $("#zoomLocation").click(function () {
+                        var pt = new Point(longy, latty);
+                        map.centerAndZoom(pt, 18);
+                    });
+
+                    $("#district").change(function () {
+                        $("#maintenanceSection").prop("disabled", false);
+                        $("#deficiency").prop("disabled", true);
+                        $("#route").prop("disabled", true);
+                        $("#generate").prop("disabled", true);
+                        $("#maintenanceSection").val("#");
+                        $("#deficiency").val("#");
+                        $("#route").val("#");
+                        $("#generate").val("#");
+                        var dist = $("#district").val();
+
+                        var msURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceSections/FeatureServer/0";//swamp thang
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = "DIST_NM = '" + dist + "'";
+                        query.outFields = ["OFFICE_NM"];
+                        var queryTask = new QueryTask(msURL);
+                        queryTask.execute(query, function (results) {
+                            var mSections = [];
+                            $.each(results.features, function (position) {
+                                var mSect = results.features[position];
+                                var sectName = mSect.attributes["OFFICE_NM"];
+                                var pos = $.inArray(sectName, mSections);
+                                if (pos === -1) {
+                                    mSections.push(sectName);
+                                }
+                            });
+                            mSections.sort();
+                            $('#maintenanceSection').find('option:gt(0)').remove();
+                            $.each(mSections, function (position) {
+                                var section = mSections[position];
+                                $('#maintenanceSection').append($('<option>', {
+                                    value: section,
+                                    text: section
+                                }));
+                            });
+                        }, function (e) {
+                            console.log(e);
+                            $("#district").val("#").change();
+                        });
+                    });
+
+                    $("#maintenanceSection").change(function () {
+                        $("#deficiency").prop("disabled", false);
+                        $("#route").prop("disabled", true);
+                        $("#generate").prop("disabled", true);
+                        $("#deficiency").val("#");
+                        $("#route").val("#");
+                        $("#generate").val("#");
+                        var ms = $("#maintenanceSection").val();
+                        
+                        var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = "OFFICE_NM = '" + ms + "'";
+                        query.outFields = ["RTE_NM"];
+                        var queryTask = new QueryTask(roadsURL);
+                        queryTask.execute(query, function (results) {
+                            var routes = [];
+                            $.each(results.features, function (position) {
+                                var rte = results.features[position];
+                                var rteName = rte.attributes["RTE_NM"];
+                                var pos = $.inArray(rteName, routes);
+                                if (pos === -1) {
+                                    routes.push(rteName);
+                                }
+                            });
+                            routes.sort();
+                            $('#route').find('option:gt(0)').remove();
+                            $('#route').append($('<option>', {
+                                    value: "",
+                                    text: "All Routes"
+                                }));
+                            $.each(routes, function (position) {
+                                var rte = routes[position];
+                                $('#route').append($('<option>', {
+                                    value: rte,
+                                    text: rte
+                                }));
+                            });
+                        }, function (e) {
+                            console.log(e);
+                            $("#maintenanceSection").val("#").change();
+                        });
+                    });
+
+                    $("#deficiency").change(function () {
+                        $("#route").prop("disabled", false);
+                    });
+
+                    $("#route").change(function (event) {
+                        $("#generate").prop("disabled", false);
+                            
+                    });
+
+                    $("#generate").click(generateReport);
+
+                    function generateReport () {
+                        $("#loadSpinner").attr("style", "display:block;");
+                        $("#reportBody").html("");
+                        $("#reportTable").attr("style", "display:block;");
+                        var ms = $("#maintenanceSection").val();
+                        var deficiency = $("#deficiency").val();
+                        var route = $("#route").val();
+                        var where;
+
+                        if (route === "") {
+                            $("#chosenParameters").html("All Routes");
+                            where = "Resolved = 'No' AND MaintenanceSection = '" + ms + "' AND Deficiency = '" + deficiency + "'";
+                        } else {
+                            $("#chosenParameters").html("Route: " + route);
+                            where = "Resolved = 'No' AND MaintenanceSection = '" + ms + "' AND Deficiency = '" + deficiency + "' AND Route = '" + route + "'";
+                        }
+
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = where;
+                        query.outFields = ["OBJECTID", "Latitude", "Longitude", "Route", "Notes", "CreationDate"];
+                        var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                        queryTask.execute(query, function (results) {
+                            if (results.features.length !== 0) {
+                                var counter = 0;
+                                var shaded = false;
+                                $.each(results.features, function (position) {
+                                    var def = results.features[position];
+                                    
+                                    var d = new Date(def.attributes["CreationDate"]);
+                                    var formatDate = d.toLocaleDateString();
+                                    
+                                    var trPrfx;
+                                    if (shaded ==  false) {
+                                        trPrfx = "<tr>";
+                                        shaded = true;
+                                    }
+                                    else {
+                                        trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
+                                        shaded = false;
+                                    }//swamp thangs
+                                    var theText = trPrfx+"<td><a class='btn btn-default' href='https://maps.google.com/?q="+def.attributes["Latitude"]+","+def.attributes["Longitude"]+"' target='defAssign' style='font-size:5vw;border-radius:20px;'>"+def.attributes["OBJECTID"]+"</a></td><td>"+def.attributes["Route"]+"</td><td><textarea id='note-"+def.attributes["OBJECTID"]+"' class='notes' type='text' maxlength='250' readonly>"+def.attributes["Notes"]+"</textarea></td><td>"+formatDate+"</td><td><button type='button' class='btn btn-default resolver' value="+def.attributes["OBJECTID"]+"><span class='glyphicon glyphicon-ok'></span></button></td></tr>";
+                                    $("#reportBody").append(theText);
+                                    counter += 1;
+                                    if (counter == results.features.length) {
+                                        var finalText = "<tr><td colspan=3></td><td style='text-align:right;'><span style='font-weight:bold;'>TOTAL:</span></td><td id='total' style='font-weight:bold;'>"+counter+"</td></tr>";
+                                        $("#reportBody").append(finalText);
+                                        $(".resolver").click(function () {
+                                            var theNode = $(this);
+                                            var oid = $(this).val();
+                                            var update = confirm("Are you sure you want to resolve point " + oid + "?");
+                                            if (update == true) {
+                                                var query = new Query();
+                                                query.returnGeometry = true;
+                                                query.where = "OBJECTID = '" + oid + "'";
+                                                query.outFields = ["*"];
+                                                var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                                                queryTask.execute(query, function (results) {
+                                                    var point = results.features[0];
+                                                    point.attributes["Resolved"] = "Yes";
+                                                    
+                                                    var serviceURL = maintenanceDeficiencyURL + "/applyEdits?f=json&updates=["+JSON.stringify(point)+"]";
+                                                    try {
+                                                        var layersRequest = esriRequest({
+                                                            url: serviceURL
+                                                            },{
+                                                            usePost: true
+                                                        });
+                                                        layersRequest.then(
+                                                            function(response) {
+                                                                var res = response.updateResults[0]["success"];
+                                                                if (res) {
+                                                                    $(theNode).parent().parent().remove();
+                                                                    var total = $("#total").html();
+                                                                    $("#total").html(total - 1);
+                                                                    maintenanceDeficiencies.setDefinitionExpression(where);
+                                                                    maintenanceDeficiencies.redraw();
+                                                                } else {
+                                                                    alert("Error (1) Response. Resolve update failed. Please try again.");
+                                                                }
+                                                            }, function(error){
+                                                                console.log(error);
+                                                                alert("Error (2) Request. Resolve update failed. Please try again.");
+                                                            }
+                                                        );
+                                                    } catch (e) {
+                                                        console.log(e);
+                                                        alert("Error (3) Pre-Request. Resolve update failed. Please try again.");
+                                                    }
+                                                    
+                                                }, function (e) {
+                                                    console.log(e);
+                                                    alert("Error (4) Query Task. Resolve update failed. Please try again.");
+                                                });
+                                            } else {
+                                                return;
+                                            }
+                                        });
+                                        $(".notes").dblclick(function () {
+                                            var id = $(this).attr('id')
+                                            var oid = id.split("-")[1];
+                                            $(this).prop("readonly", false);
+                                            $(this).attr("style", "border:solid;");
+                                            // $(this).focus();
+                                        });
+                                        $(".notes").focusin(function () {
+                                            currentNote = $(this).val();
+                                        });
+                                        $(".notes").focusout(function () {
+                                            $(this).prop("readonly", true);
+                                            $(this).attr("style", "border:none;");
+                                            var newNote = $(this).val();
+
+                                            if (newNote !== currentNote) {
+                                                newNote = newNote.replace(/%/g, "*");
+                                                newNote = newNote.replace(/&/g, "*");
+                                                newNote = newNote.replace(/#/g, "*");
+                                                newNote = newNote.replace(/'/g, "*");
+                                                newNote = newNote.replace(/\\/g, "*"); 
+
+                                                var id = $(this).attr('id')
+                                                var oid = id.split("-")[1];
+                                                
+
+                                                var query = new Query();
+                                                query.returnGeometry = true;
+                                                query.where = "OBJECTID = '" + oid + "'";
+                                                query.outFields = ["*"];
+                                                var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                                                queryTask.execute(query, function (results) {
+                                                    var point = results.features[0];
+                                                    point.attributes["Notes"] = newNote;
+                                                    
+                                                    var serviceURL = maintenanceDeficiencyURL + "/applyEdits?f=json&updates=["+JSON.stringify(point)+"]";
+                                                    try {
+                                                        var layersRequest = esriRequest({
+                                                            url: serviceURL
+                                                            },{
+                                                            usePost: true
+                                                        });
+                                                        layersRequest.then(
+                                                            function(response) {
+                                                                var res = response.updateResults[0]["success"];
+                                                                if (res) {
+                                                                    $("#"+id).attr("style", "color:green;");
+                                                                    setTimeout(function(){
+                                                                        $("#"+id).attr("style", "color:initial;");
+                                                                    }, 5000);
+                                                                    console.log("Note update success.")
+                                                                    return
+                                                                } else {
+                                                                    alert("Error (1) Response. Note update failed. Please try again.");
+                                                                }
+                                                            }, function(error){
+                                                                console.log(error);
+                                                                alert("Error (2) Request. Note update failed. Please try again.");
+                                                            }
+                                                        );
+                                                    } catch (e) {
+                                                        console.log(e);
+                                                        alert("Error (3) Pre-Request. Note update failed. Please try again.");
+                                                    }
+                                                    
+                                                }, function (e) {
+                                                    console.log(e);
+                                                    alert("Error (4) Query Task. Note update failed. Please try again.");
+                                                });
+                                            }
+                                        });
+                                    }
+                                    
+                                });
+                                buildMap(where);
+                            } else {
+                                $("#reportTable").attr("style", "display:none;");
+                                $("#loadSpinner").attr("style", "display:none;");
+                                maintenanceDeficiencies.setDefinitionExpression("1=2");
+                                maintenanceDeficiencies.redraw();
+                                alert("No deficiencies found using the selected parameters.");
+                            }
+                        }, function (e) {
+                            console.log(e);
+                            $("#maintenanceSection").val("#").change();
+                            $("#reportTable").attr("style", "display:none;");
+                            $("#loadSpinner").attr("style", "display:none;");
+                            alert("Error generating report. Please try again.");
+                        });
+                        
+                    }
+
+                    function buildMap (where) {
+
+                        maintenanceDeficiencies.setDefinitionExpression(where);
+                        maintenanceDeficiencies.redraw();
+                        
+                        var labelField = "OBJECTID";
+                        var defLabel = new TextSymbol().setColor(new Color("black"));
+                        defLabel.font.setSize("40pt");
+                        defLabel.font.setFamily("Trebuchet MS");
+                        var defLabelRenderer = new SimpleRenderer(defLabel);
+                        var labels = new LabelLayer({id: "OID"});
+                        labels.addFeatureLayer(maintenanceDeficiencies, defLabelRenderer, "{" + labelField + "}");
+                        map.addLayer(labels);
+                        
+                        var query = new Query();
+                        query.where = where;
+                        maintenanceDeficiencies.queryExtent(query, function (result) {
+                            var ext = result.extent.expand(1.5);
+                            map.setExtent(ext);
+                            $("#loadSpinner").attr("style", "display:none;");
+                        }, function (e) {
+                            console.log(e);
+                        });
+
+                    }
+
+                    var info = new OAuthInfo({
+                        appId: "KghCdkvfNJMK9wcj",
+                        portalUrl: "https://txdot.maps.arcgis.com",//swamp thangs
+                        popup: false
+                    });
+                    IdentityManager.registerOAuthInfos([info]);
+                    IdentityManager.getCredential(info.portalUrl + "/sharing");
+
+                    $('.nav.navbar-nav > li').on('click', function(e) {
+                        $('.nav.navbar-nav > li').removeClass('active');
+                        $(this).addClass('active');
+                    }); 
+                    
+
+                    window.onload = startupGPS;
+                });
+            });
+
+            function switchTab (tab) {
+                $("#selectTab").attr("style", "display:none;");
+                $("#reportTab").attr("style", "display:none;");
+                $("#mapTab").attr("style", "display:none;");
+                $(tab).attr("style", "display:block;");
+            }
+        </script>
+    </head>
+    <body class="tundra">
+        
+
+        <div class="container" id="selectTab" style="display:none;">
+          <table class="table">
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control" id="district">
+                                <option value="#" disabled selected>District</option>
+                                <option class='distOption' value='Abilene'>Abilene - 8</option> <option class='distOption' value='Amarillo'>Amarillo - 4</option>   <option class='distOption' value='Atlanta'>Atlanta - 19</option>    <option class='distOption' value='Austin'>Austin - 14</option>  <option class='distOption' value='Beaumont'>Beaumont - 20</option>  <option class='distOption' value='Brownwood'>Brownwood - 23</option>    <option class='distOption' value='Bryan'>Bryan - 17</option>    <option class='distOption' value='Childress'>Childress - 25</option>    <option class='distOption' value='Corpus Christi'>Corpus Christi - 16</option>  <option class='distOption' value='Dallas'>Dallas - 18</option>  <option class='distOption' value='El Paso'>El Paso - 24</option>    <option class='distOption' value='Fort Worth'>Fort Worth - 2</option>   <option class='distOption' value='Houston'>Houston - 12</option>    <option class='distOption' value='Laredo'>Laredo - 22</option>  <option class='distOption' value='Lubbock'>Lubbock - 5</option> <option class='distOption' value='Lufkin'>Lufkin - 11</option>  <option class='distOption' value='Odessa'>Odessa - 6</option>   <option class='distOption' value='Paris'>Paris - 1</option> <option class='distOption' value='Pharr'>Pharr - 21</option>    <option class='distOption' value='San Angelo'>San Angelo - 7</option>   <option class='distOption' value='San Antonio'>San Antonio - 15</option>    <option class='distOption' value='Tyler'>Tyler - 10</option>    <option class='distOption' value='Waco'>Waco - 9</option>   <option class='distOption' value='Wichita Falls'>Wichita Falls - 3</option> <option class='distOption' value='Yoakum'>Yoakum - 13</option>
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control" id="maintenanceSection" disabled="disabled">
+                                <option value="#" disabled selected>Maintenance Section</option>
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control" id="deficiency" disabled="disabled">
+                                <option value="#" disabled selected>Deficiency</option>
+                                <option value'Approach Slab'>Approach Slab</option> <option value'Attenuators'>Attenuators</option> <option value'Backwall'>Backwall</option>   <option value'Bleeding'>Bleeding</option>   <option value'Boat Ramp'>Boat Ramp</option> <option value'C.T.B.'>C.T.B.</option>   <option value'Cable Barrier'>Cable Barrier</option> <option value'Conc. Repair'>Conc. Repair</option>   <option value'Crack Seal'>Crack Seal</option>   <option value'Curb'>Curb</option>   <option value'Debris'>Debris</option>   <option value'Decks'>Decks</option> <option value'Delineation'>Delineation</option> <option value'Drainage'>Drainage</option>   <option value'Drift'>Drift</option> <option value'Encroachment'>Encroachment</option>   <option value'Erosion'>Erosion</option> <option value'Failures'>Failures</option>   <option value'Fenders'>Fenders</option> <option value'Flashing Beacons'>Flashing Beacons</option>   <option value'Fog Seal'>Fog Seal</option>   <option value'Graffiti'>Graffiti</option>   <option value'Guardrail'>Guardrail</option> <option value'Herbicide'>Herbicide</option> <option value'High Edge'>High Edge</option> <option value'Impact Damage'>Impact Damage</option> <option value'Inlet'>Inlet</option> <option value'Joint Seal'>Joint Seal</option>   <option value'Joints'>Joints</option>   <option value'Litter'>Litter</option>   <option value'Low Edge'>Low Edge</option>   <option value'Mailbox'>Mailbox</option> <option value'Milling'>Milling</option> <option value'Mowing'>Mowing</option>   <option value'Other Project'>Other Project</option> <option value'Outside Qtr'>Outside Qtr</option> <option value'Overlay'>Overlay</option> <option value'Picnic Area'>Picnic Area</option> <option value'Pothole'>Pothole</option> <option value'Railroad'>Railroad</option>   <option value'Rails'>Rails</option> <option value'Raveling'>Raveling</option>   <option value'Rest Area'>Rest Area</option> <option value'Rip Rap'>Rip Rap</option> <option value'RPMs'>RPMs</option>   <option value'S.E.T.s'>S.E.T.s</option> <option value'Safety Lighting'>Safety Lighting</option> <option value'Seal Coat'>Seal Coat</option> <option value'Side Road'>Side Road</option> <option value'Sight Visibility'>Sight Visibility</option>   <option value'Signals'>Signals</option> <option value'Signs'>Signs</option> <option value'Slope Failed'>Slope Failed</option>   <option value'Spalling'>Spalling</option>   <option value'Spot Mill'>Spot Mill</option> <option value'Striping'>Striping</option>   <option value'Sweeping'>Sweeping</option>   <option value'Trees'>Trees</option> <option value'Wheel Rut'>Wheel Rut</option> <option value'Widening'>Widening</option>
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control" id="route" disabled="disabled">
+                                <option value="#" disabled selected>Route</option>
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center">
+                        <button type="button" class="btn btn-default" id="generate" disabled="disabled"><span class="glyphicon glyphicon-wrench"></span> Generate</button>
+                    </td>
+                </tr>
+                <tr>
+                <td align="center">
+                    <div id="loadSpinner" style="display:none;"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</div>
+                </td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="container" id="reportTab" style="display:none;">
+            <table class="table" style="margin-bottom:100px;">
+                <thead>
+                    <tr>
+                        <th>ObjID</th>
+                        <th>Route</th>
+                        <th>Notes</th>
+                        <th>Date</th>
+                        <th>Resolve</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+
+        <div class="container" id="mapTab" style="display:block;">
+            <div id="divMap"></div> 
+            <span id="curPos"  style="display:none;"></span>
+            <button type="button" class="btn btn-default btn-circle-lg" id="zoomLocation" style="display:none;"><span class="glyphicon glyphicon-screenshot"></span></button>
+        </div>
+
+        <nav class="navbar navbar-default navbar-fixed-bottom">
+            <div class="container-fluid" style="font-size: 8vw;">
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav" style="width:100%;">
+                        <li id="selector"><a href="javascript:switchTab('#selectTab');"><span class="glyphicon glyphicon-filter"></span><span class="sr-only">(current)</span></a></li>
+                        <li><a href="javascript:switchTab('#reportTab');"><span class="glyphicon glyphicon-list"></span></a></li>
+                        <li class="active"><a href="javascript:switchTab('#mapTab');"><span class="glyphicon glyphicon-globe"></span></a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+    </body>
+</html>

@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/ -->
+<html manifest="rrCache.manifest">
+<html>
+<head>
+<title>Beep Beep!</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta content='user-scalable=0' name='viewport'>
+<link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
+<link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick.css"/>
+<link rel="stylesheet" type="text/css" href="http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick-theme.css"/>
+<style type="text/css">
+    #overlay {
+        display: none;
+        width: 100%;
+        height: 150%;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+        background-color:#000;
+        opacity: .75
+    }
+    #wait {
+        z-index:1001;
+        width: 100%;
+        position: absolute;
+        
+        top: 50%;
+        display: none;
+        color: white;
+        text-align: center;
+        font-size: 100px;
+    }
+    div {
+        border-style: solid;
+        border-width: 0px;
+        text-align: center;
+        font-size: 40px;
+    }
+    td {
+        width: 50%;
+    }
+    table {
+        border-style: solid;
+        border-width: 0px;
+        text-align: center;
+        margin-left:auto; 
+        margin-right:auto;
+        width: 95%;
+    }
+    button:active {
+        background-color: red !important;
+    }
+    button:focus, div:focus {
+        outline:0px !important;
+    }
+    textarea {
+        width: 75%;
+        height: 220px;
+        padding: 10px;
+        margin: 20 auto;
+        font-size:5vw;
+    }
+    #user {
+        font-size: 40px;
+        float:left;
+        position: relative;
+        cursor: pointer;
+    }
+    #header {
+        width: 100%;
+        height: 60px;
+    }
+    #outputLocation {
+        float:left;
+        position: relative;
+        left: 30px;
+    }
+    #pointStatus {
+        float:right;
+        position: relative;
+        right: 30px;
+    }
+    .pane {
+        height: auto;
+        background-color: rgb(226,231,235);
+    }
+    .btn {
+        font-size: 5vw;
+        margin: 20px auto;
+        width: 90%;
+        padding: 6px;
+    }
+    .btn:focus {
+        background-color: #fff;
+        border-color: #ccc;
+    }
+    .category {
+        font-size: 4vw;
+    }
+    .slick-dots li button:before {
+        font-size: 15px;
+        font-weight: bolder;
+    }
+    .slick-dots li.slick-active button:before {
+        font-size: 15px;
+        font-weight: bolder;
+    }
+
+</style>
+<link href="https://google-developers.appspot.com/maps/documentation/javascript/examples/default.css" rel="stylesheet">
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=true"></script>
+<script data-dojo-config="async:true, aliases: [
+    ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
+    ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+    ['slick', 'http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick.min.js'],
+    ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+    ]" src="http://js.arcgis.com/3.14/">
+</script>
+<script type="text/javascript">
+    require([
+        "jquery",
+        "jqueryui",
+        "slick",
+        "esri/geometry/Point",
+        "esri/SpatialReference",
+        "esri/geometry/webMercatorUtils",
+        "esri/tasks/query",
+        "esri/tasks/QueryTask",
+        "esri/geometry/Extent",
+        "esri/arcgis/OAuthInfo",
+        "esri/IdentityManager",
+        "esri/arcgis/Portal",
+        "esri/request",
+        "dojo/dom-attr",
+        "dojo/dom-class",
+        "dojo/dom",
+        "dojo/on",
+        "put-selector/put",
+        "dojo/domReady!"
+        ], function ($, $ui, slick, Point, SpatialReference, webMercatorUtils, Query, QueryTask, Extent, OAuthInfo, IdentityManager, arcgisPortal, esriRequest, domAttr, domClass, dom, on, put) {
+            var deviceinfo;
+            var latty=0;
+            var longy=0;
+            var accy;
+            var alty;
+            var heady;
+            var speedy;
+            var d;
+            var pos;		 
+            var logger;		 
+            var previewShow = false;
+            var totalpoints = 0;
+
+            function startupGPS () {
+                if (navigator.geolocation) {
+                        navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+
+                }
+                else {
+                    var x = document.getElementById("outputLocation");
+                    x.style.color = "red";
+                    x.innerHTML="Geolocation is not supported by this browser.";	
+                }
+            }
+
+            function showPosition(position) {                
+                pos = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+                latt = position.coords.latitude;
+                long = position.coords.longitude;
+                latty = latt.toFixed(5);
+                longy = long.toFixed(5);
+                if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                    var x = document.getElementById("outputLocation");
+                    x.style.color = "green";
+                    x.innerHTML = latty + "," + longy;
+                }
+            }
+            
+            function beep() {
+                var snd = new  Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");  
+                snd.play();
+            }
+
+            dojo.query(".asset.btn.btn-default").forEach(function (result){
+                on(result, "click", collectPoint);
+            });
+            function collectPoint(event) {
+                beep();	
+                var y = document.getElementById("pointStatus");	
+                var intKEY = totalpoints;
+                var value = event.target.value;
+                var theNote = document.getElementById("notes").value;
+                theNote = theNote.replace(/%/g, "*");
+                theNote = theNote.replace(/&/g, "*");
+                theNote = theNote.replace(/#/g, "*");
+                theNote = theNote.replace(/'/g, "*");
+                theNote = theNote.replace(/\\/g, "*");
+
+                var picture = document.getElementById("image").files[0];
+                var imgVal = $("#image").val();
+                if (picture) {
+                    var reader = new FileReader();
+                    reader.onloadend = function () {
+                        var img = document.createElement("img");
+                        img.onload = function() {
+                            if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                                var readerURL = reader.result;
+                                var mimeString = readerURL.split(',')[0].split(':')[1].split(';')[0];
+                                
+                                var canvas = document.createElement('canvas');
+                                var ctx = canvas.getContext("2d");
+                                ctx.drawImage(img, 0, 0);
+
+                                var MAX_WIDTH = 800;
+                                var MAX_HEIGHT = 800;
+                                var width = img.width;
+                                var height = img.height;
+
+                                if (width > height) {
+                                    if (width > MAX_WIDTH) {
+                                        height *= MAX_WIDTH / width;
+                                        width = MAX_WIDTH;
+                                    }
+                                } else {
+                                    if (height > MAX_HEIGHT) {
+                                        width *= MAX_HEIGHT / height;
+                                        height = MAX_HEIGHT;
+                                    }
+                                }
+                                canvas.width = width;
+                                canvas.height = height;
+                                var ctx = canvas.getContext("2d");
+                                ctx.drawImage(img, 0, 0, width, height);
+                                var dataurl = canvas.toDataURL(mimeString);
+
+                                var POD=[value,theNote,latty,longy,dataurl];
+                                try {
+                                    logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                                    totalpoints += 1;
+                                    y.innerHTML=totalpoints + " point(s) logged.";  
+                                    $("#notes").val("");  
+                                    $("#image").val("").change();
+                                } catch (e) {
+                                    console.log(e);
+                                    alert(e);
+                                }
+                            }
+                            else {
+                                y.innerHTML=totalpoints + " point(s) logged.";
+                            }
+                        }
+                        img.src = reader.result;
+                    }
+                    reader.readAsDataURL(picture);
+                }
+                else {
+                    var POD=[value,theNote,latty,longy,"NONE"];
+                    if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                        logger = localStorage.setItem(intKEY,JSON.stringify(POD));
+                        totalpoints += 1;
+                        y.innerHTML=totalpoints + " point(s) logged.";  
+                        document.getElementById("notes").value = "";  
+                    }
+                    else {
+                        y.innerHTML=totalpoints + " point(s) logged.";
+                    }
+                }
+            }
+
+            on(dom.byId("cmdClearMyStorage"), "click", function clearStorage(){
+                    var yes = confirm("Discard all logged points?");
+                    if (yes === true) {
+                        if (totalpoints > 0) {
+                            localStorage.clear();
+                            totalpoints = 0;
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                            beep();
+                        }
+                        else {
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                        }
+                    }
+                }
+            );
+
+            on(dom.byId("cmdDeleteLast"), "click", function DeleteLast() {
+                    var yes = confirm("Delete last logged point?");
+                    if (yes === true) {
+                        var last = localStorage.length;
+                        last = last - 1;
+                        var key = localStorage.key(last);
+                        localStorage.removeItem(key);
+                        if (totalpoints > 0) {
+                            totalpoints = totalpoints - 1;
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                            beep();
+                        }
+                        else {
+                            var y = document.getElementById("pointStatus");
+                            y.innerHTML=totalpoints + " point(s) logged.";
+                        }
+                    }
+                }
+            );
+
+            function errorEjection (error, number) {
+                var x = document.getElementById("uploadStatus");
+                var Buttons = document.getElementsByTagName("button");
+                document.getElementById('overlay').style.display='none';
+                document.getElementById('wait').style.display='none';
+                x.innerHTML = 'Upload Failed. ' + number;
+                for (var i = 0; i < Buttons.length; i++) {
+                    Buttons[i].disabled = false;
+                    Buttons[i].style.display = "block";
+                }
+                $(".panes").attr("style", "display:block;");
+                alert('Upload Failed. ' + number);
+            }
+
+            function uploadSuccess () {
+                var x = document.getElementById("uploadStatus");
+                var Buttons = document.getElementsByTagName("button");
+                document.getElementById('overlay').style.display='none';
+                document.getElementById('wait').style.display='none';
+                localStorage.clear();
+                totalpoints = 0;
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+
+                x.style.color = "green";
+                x.innerHTML = 'Data uploaded successfully!';
+                for (var i = 0; i < Buttons.length; i++) {
+                    Buttons[i].disabled = false;
+                    Buttons[i].style.display = "block";
+                }
+                $(".panes").attr("style", "display:block;");
+                alert("Data uploaded successfully");
+                beep();
+                setTimeout(function(){
+                    x.style.color = "initial";
+                    x.innerHTML = '';
+                }, 5000);
+            }
+
+            on(dom.byId("cmdUploadData"), "click", function uploadStorage() {
+                    beep();
+                    var x = document.getElementById("uploadStatus");
+                    var Buttons = document.getElementsByTagName("button");
+                    for (var i = 0; i < Buttons.length; i++) {
+                        Buttons[i].disabled = true;
+                        Buttons[i].style.display = "none";
+                    }
+                    $(".panes").attr("style", "display:none;");
+                    if (localStorage.length > 0) {
+                        x.innerHTML = 'Uploading Data, please wait...';
+                        document.getElementById('overlay').style.display='block';
+                        document.getElementById('wait').style.display='block';
+                    }
+                    setTimeout(function(){
+                        var counter = 0;
+
+                        if(localStorage.length > 0){
+                            //Service URL 
+                            var theURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";
+                            var serviceURL = theURL + "/applyEdits?f=json&adds=";
+
+                            //Build the String
+                            var theText = "";
+                            for (var i=0, len = localStorage.length; i  <  len; i++){
+                                var key = localStorage.key(i);
+                                var pntData = localStorage.getItem(key);
+
+                                var pnt = JSON.parse(pntData);
+
+                                function districtQuery(pnt){
+                                    var distURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Districts/FeatureServer/0";
+                                    var point = new Point(pnt[3],pnt[2]);
+                                    var query = new Query();
+                                    query.geometry = point;
+                                    query.outFields = ["DIST_NM"];
+                                    var queryTask = new QueryTask(distURL);
+                                    queryTask.execute(query, function(results){
+                                        var object = results.features[0];
+                                        var district = object.attributes.DIST_NM;
+                                        pnt.push(district);
+                                        countyQuery(pnt);
+                                    },function(error){
+                                        console.log(error);
+                                        x.innerHTML = 'District Query Failed.';
+                                        pnt.push("UNASSIGNED");
+                                        countyQuery(pnt);
+                                    });
+                                }
+
+                                function countyQuery(pnt){
+                                    var cntyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Political/FeatureServer/0";
+                                    var point = new Point(pnt[3],pnt[2]);
+                                    var query = new Query();
+                                    query.geometry = point;
+                                    query.outFields = ["CNTY_NM"];
+                                    var queryTask = new QueryTask(cntyURL);
+                                    queryTask.execute(query, function(results){
+                                        var object = results.features[0];
+                                        var county = object.attributes.CNTY_NM;
+                                        pnt.push(county);
+                                        maintenanceQuery(pnt);
+                                    },function(error){
+                                        console.log(error);
+                                        x.innerHTML = 'County Query Failed.';
+                                        pnt.push("UNASSIGNED");
+                                        maintenanceQuery(pnt);
+                                    });
+                                }
+
+                                function maintenanceQuery(pnt){
+                                    var maintenanceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceSections/FeatureServer/0";
+                                    var point = new Point(pnt[3],pnt[2]);
+                                    var query = new Query();
+                                    query.geometry = point;
+                                    query.outFields = ["OFFICE_NM"];
+                                    var queryTask = new QueryTask(maintenanceURL);
+                                    queryTask.execute(query, function(results){
+                                        var object = results.features[0];
+                                        var maintenance = object.attributes.OFFICE_NM;
+                                        pnt.push(maintenance);
+                                        routeQuery(pnt);
+                                    },function(error){
+                                        console.log(error);
+                                        x.innerHTML = 'Maintenance Section Query Failed.';
+                                        pnt.push("UNASSIGNED");
+                                        routeQuery(pnt);
+                                    });
+                                }
+
+                                function routeQuery(pnt){
+                                    var routeURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";
+                                    var point = new Point(pnt[3],pnt[2]);
+                                    var query = new Query();
+                                    var queryExtent = new Extent(1,1,1.00026,1.00026,new SpatialReference({ wkid:4326 }));
+                                    query.geometry = queryExtent.centerAt(point);
+                                    query.outFields = ["RTE_NM"];
+                                    var queryTask = new QueryTask(routeURL);
+                                    queryTask.execute(query, function(results){
+                                        var object = results.features[0];
+                                        var route = object.attributes.RTE_NM;
+                                        pnt.push(route);
+                                        pusher(pnt);
+                                    },function(error){
+                                        x.innerHTML = 'Route Query Failed. (2)';
+                                        var query = new Query();
+                                        var queryExtent = new Extent(1,1,1.00082,1.00082,new SpatialReference({ wkid:4326 }));
+                                        query.geometry = queryExtent.centerAt(point);
+                                        query.outFields = ["RTE_NM"];
+                                        var queryTask = new QueryTask(routeURL);
+                                        queryTask.execute(query, function(results){
+                                            var object = results.features[0];
+                                            var route = object.attributes.RTE_NM;
+                                            pnt.push(route);
+                                            pusher(pnt);
+                                        },function(error){
+                                            x.innerHTML = 'Route Query Failed. (3)';
+                                            var query = new Query();
+                                            var queryExtent = new Extent(1,1,1.0015,1.0015,new SpatialReference({ wkid:4326 }));
+                                            query.geometry = queryExtent.centerAt(point);
+                                            query.outFields = ["RTE_NM"];
+                                            var queryTask = new QueryTask(routeURL);
+                                            queryTask.execute(query, function(results){
+                                                var object = results.features[0];
+                                                var route = object.attributes.RTE_NM;
+                                                pnt.push(route);
+                                                pusher(pnt);
+                                            },function(error){
+                                                console.log(error);
+                                                x.innerHTML = 'Route Query Failed. (U)';
+                                                pnt.push("UNASSIGNED");
+                                                pusher(pnt);
+                                            });
+                                        });
+                                    });
+
+                                }
+
+                                function pusher(pnt){
+                                    var newPT = webMercatorUtils.lngLatToXY(pnt[3],pnt[2]);
+                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'Deficiency':'" + pnt[0] + "','Notes':'" + pnt[1] + "','Latitude':'" + pnt[2] + "','Longitude':'" + pnt[3] + "','District':'" + pnt[5] + "','County':'" + pnt[6] + "','MaintenanceSection':'" + pnt[7] + "','Route':'" + pnt[8]+ "','Resolved':'No'}}";           
+                                    theText = serviceURL + "[" + theText + "]";
+                                    
+                                    try {
+                                        var layersRequest = esriRequest({
+                                            url: theText
+                                            },{
+                                            usePost: true
+                                        });
+                                        layersRequest.then(
+                                            function(response) {
+                                                console.log(response);
+                                                var res = response.addResults[0]["success"];
+                                                if (res) {
+                                                    if (pnt[4] !== "NONE") {
+                                                        var OID = response.addResults[0]["objectId"];
+                                                        var attachURL = theURL + "/" + OID.toString() + "/addAttachment";
+                                                        try {
+                                                            var imageFormat;
+                                                            function dataURItoBlob(dataURI) {
+                                                                var byteString = atob(dataURI.split(',')[1]);
+                                                                var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+                                                                imageFormat = mimeString.split('/')[1];
+                                                                var ab = new ArrayBuffer(byteString.length);
+                                                                var ia = new Uint8Array(ab);
+                                                                for (var i = 0; i < byteString.length; i++) {
+                                                                    ia[i] = byteString.charCodeAt(i);
+                                                                }
+                                                                var bb = new Blob([ab, {type:mimeString}]);
+                                                                return bb;
+                                                            }
+                                                            var blob = dataURItoBlob(pnt[4]);
+                                                            var formNode = put("form", {
+                                                                "method": "post",
+                                                                "enctype": "multipart/form-data"
+                                                            });
+                                                            var formData = new FormData(formNode);
+                                                            formData.append("attachment", blob, "image." + imageFormat);
+                                                            var imageRequest = esriRequest({
+                                                                url: attachURL,
+                                                                form: formData,
+                                                                content: {f: "json"},
+                                                                handleAs: "json"
+                                                                },{
+                                                                usePost: true
+                                                            });
+
+
+                                                            imageRequest.then(
+                                                                function(response) {
+                                                                    console.log(response);
+                                                                    var res = response.addAttachmentResult["success"];
+                                                                    if (res) {
+                                                                        counter += 1;
+                                                                        if (counter === localStorage.length){
+                                                                            uploadSuccess();
+                                                                        }
+                                                                    } else {
+                                                                        errorEjection(e, "(IMG-1) Request responded 'Success' = false.");
+                                                                    }
+                                                                }, function(error){
+                                                                    console.log(error);
+                                                                    errorEjection(error, "(IMG-2) Request error.");
+                                                                }
+                                                            );
+                                                        } catch (e) {
+                                                            errorEjection(e, "(IMG-3) Pre-request failure. Try again with an internet connection.");
+                                                        }
+                                                    } else {
+                                                        counter += 1;
+                                                        if (counter === localStorage.length){
+                                                            uploadSuccess();
+                                                        }
+                                                    }
+                                                } else {
+                                                    errorEjection(e, "(1) Request responded 'Success' = false.");
+                                                }
+                                            }, function(error){
+                                                console.log(error);
+                                                errorEjection(error, "(2) Request error. Try again with an internet connection.");
+                                            }
+                                        );
+                                    } catch (e) {
+                                        errorEjection(e, "(3) Pre-request failure. Try again with an internet connection.");
+                                    }
+                                }
+                                districtQuery(pnt);
+                            }
+                            
+                        } else {
+                            document.getElementById('overlay').style.display='none';
+                            document.getElementById('wait').style.display='none';
+                            for (var i = 0; i < Buttons.length; i++) {
+                                Buttons[i].disabled = false;
+                                Buttons[i].style.display = "block";
+                            }
+                            $(".panes").attr("style", "display:block;");
+                            x.style.color = "initial";
+                            x.innerHTML = 'No data collected. Please collect data and try to upload again.';
+                            setTimeout(function(){
+                                x.innerHTML = '';
+                            }, 5000);
+                        }
+                    }, 1);
+                }
+            );
+
+            $('.panes').slick({infinite: true, dots: true});
+
+            $('#image').on('change', function () {
+                var value = $('#image').val();
+                var picture = document.getElementById("image").files[0];
+                if (value == "") {
+                    $('#cameraButton').css({'background-color' : 'initial'});
+                }
+                else {
+                    $('#cameraButton').css({'background-color' : 'green'});
+                }
+            });
+
+            function resizeTableRows () {
+                var height = $("#sample").height();
+                $('.blankRow').height(height);
+            }
+
+            $(window).resize(resizeTableRows);
+
+            function start() {
+                startupGPS();
+                totalpoints = localStorage.length;
+                var y = document.getElementById("pointStatus");
+                y.innerHTML=totalpoints + " point(s) logged.";
+                try {
+                    localStorage.setItem('mod', 'mod');
+                    localStorage.removeItem('mod');
+                }
+                catch (e) {
+                    alert('You are in Private Browsing mode. Please turn off Private Browsing to use this application.');
+                }
+                
+                resizeTableRows();
+            }
+
+            var info = new OAuthInfo({
+                    appId: "6YcZuduribUcC3sa",
+                    portalUrl: "https://txdot.maps.arcgis.com",
+                    popup: false
+                });
+            IdentityManager.registerOAuthInfos([info]);
+            IdentityManager.getCredential(info.portalUrl + "/sharing");
+
+            new arcgisPortal.Portal(info.portalUrl).signIn().then(
+                function (portalUser){
+                        username = portalUser.fullName;
+                        domAttr.set("user", "innerHTML", "Log Out: " + portalUser.fullName);
+                    }
+            )
+            on(dom.byId("user"), "click", function (){
+                var yes = confirm("Would you like to sign out?");
+                if (yes === true) {
+                    IdentityManager.destroyCredentials();
+                    window.location.reload();
+                }
+            });
+
+            window.onload = start;
+            });
+</script>
+</head>
+    <body ontouchstart="">
+        <div>
+            <table>
+                <tr>
+                    <td><span id="user" style="display:block;"></span></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+        <div>
+        <div id="wait">Uploading Data, please wait...</div>
+        <div id="overlay"></div>
+        <div id="header">
+            <div id="outputLocation"></div>
+            <div id="pointStatus"></div>
+        </div>
+        <div id="container">
+            <div id="panes" class="panes">
+                <div id="pavementPane" class="pane">
+                    <table>
+                        <tr>
+                            <td id='sample'><button class='asset btn btn-default' value='Pothole' type='button'>Pothole</button></td>
+                            <td><button class='asset btn btn-default' value='Outside Qtr' type='button'>Outside Qtr</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='High Edge' type='button'>High Edge</button></td>
+                            <td><button class='asset btn btn-default' value='Low Edge' type='button'>Low Edge</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Wheel Rut' type='button'>Wheel Rut</button></td>
+                            <td><button class='asset btn btn-default' value='Failures' type='button'>Failures</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Spot Mill' type='button'>Spot Mill</button></td>
+                            <td><button class='asset btn btn-default' value='Sweeping' type='button'>Sweeping</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='C.T.B.' type='button'>C.T.B.</button></td>
+                            <td><button class='asset btn btn-default' value='Raveling' type='button'>Raveling</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Bleeding' type='button'>Bleeding</button></td>
+                            <td><button class='asset btn btn-default' value='Railroad' type='button'>Railroad</button></td>
+                        </tr>
+                        <tr><td class="category" colspan=2>PAVEMENT</td></tr>
+                    </table>
+                </div>
+                <div id="trafficOpsPane" class="pane">
+                    <table>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Striping' type='button'>Striping</button></td>
+                            <td><button class='asset btn btn-default' value='Delineation' type='button'>Delineation</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Signs' type='button'>Signs</button></td>
+                            <td><button class='asset btn btn-default' value='Signals' type='button'>Signals</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Safety Lighting' type='button'>Safety Lighting</button></td>
+                            <td><button class='asset btn btn-default' value='Attenuators' type='button'>Attenuators</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Graffiti' type='button'>Graffiti</button></td>
+                            <td><button class='asset btn btn-default' value='RPMs' type='button'>RPMs</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Mailbox' type='button'>Mailbox</button></td>
+                            <td><button class='asset btn btn-default' value='Encroachment' type='button'>Encroachment</button></td>
+                        </tr>
+                        <tr>
+                            <td colspan=2><button class='asset btn btn-default' value='Flashing Beacons' type='button'>Flashing Beacons</button></td>
+                        </tr>
+                        <tr><td class="category" colspan=2>TRAFFIC OPS</td></tr>
+                    </table>
+                </div>
+                <div id="roadsidePane" class="pane">
+                    <table>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Mowing' type='button'>Mowing</button></td>
+                            <td><button class='asset btn btn-default' value='Herbicide' type='button'>Herbicide</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Trees' type='button'>Trees</button></td>
+                            <td><button class='asset btn btn-default' value='Litter' type='button'>Litter</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Guardrail' type='button'>Guardrail</button></td>
+                            <td><button class='asset btn btn-default' value='Cable Barrier' type='button'>Cable Barrier</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Erosion' type='button'>Erosion</button></td>
+                            <td><button class='asset btn btn-default' value='Curb' type='button'>Curb</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Inlet' type='button'>Inlet</button></td>
+                            <td><button class='asset btn btn-default' value='Drainage' type='button'>Drainage</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Sight Visibility' type='button'>Sight Visibility</button></td>
+                            <td><button class='asset btn btn-default' value='Side Road' type='button'>Side Road</button></td>
+                        </tr>
+                        <tr><td class="category" colspan=2>ROADSIDE</td></tr>
+                    </table>
+                </div>
+                <div id="structuresPane" class="pane">
+                    <table>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Decks' type='button'>Decks</button></td>
+                            <td><button class='asset btn btn-default' value='Joints' type='button'>Joints</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Rails' type='button'>Rails</button></td>
+                            <td><button class='asset btn btn-default' value='Debris' type='button'>Debris</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Drift' type='button'>Drift</button></td>
+                            <td><button class='asset btn btn-default' value='Approach Slab' type='button'>Approach Slab</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Spalling' type='button'>Spalling</button></td>
+                            <td><button class='asset btn btn-default' value='Impact Damage' type='button'>Impact Damage</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='S.E.T.s' type='button'>S.E.T.s</button></td>
+                            <td><button class='asset btn btn-default' value='Slope Failed' type='button'>Slope Failed</button></td>
+                        </tr>
+                        <tr>
+                            <td colspan=2>
+                                <div style="width:33.33%;float:left;">
+                                    <button class='asset btn btn-default' value='Rip Rap' type='button'>Rip Rap</button>
+                                </div>
+                                <div style="width:33.33%;float:left;">
+                                    <button class='asset btn btn-default' value='Backwall' type='button'>Backwall</button>
+                                </div>
+                                <div style="width:33.33%;float:left;">
+                                    <button class='asset btn btn-default' value='Fenders' type='button'>Fenders</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr><td class="category" colspan=2>STRUCTURES</td></tr>
+                    </table>
+                </div>
+                <div id="planningPane" class="pane">
+                    <table>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Seal Coat' type='button'>Seal Coat</button></td>
+                            <td><button class='asset btn btn-default' value='Overlay' type='button'>Overlay</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Milling' type='button'>Milling</button></td>
+                            <td><button class='asset btn btn-default' value='Joint Seal' type='button'>Joint Seal</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Crack Seal' type='button'>Crack Seal</button></td>
+                            <td><button class='asset btn btn-default' value='Fog Seal' type='button'>Fog Seal</button></td>
+                        </tr>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Conc. Repair' type='button'>Conc. Repair</button></td>
+                            <td><button class='asset btn btn-default' value='Widening' type='button'>Widening</button></td>
+                        </tr>
+                        <tr>
+                            <td colspan=2><button class='asset btn btn-default' value='Other Project' type='button'>Other Project</button></td>
+                        </tr>
+                        <tr class="blankRow"></tr>
+                        <tr><td class="category" colspan=2>PLANNING</td></tr>
+                    </table>
+                </div>
+                <div id="otherPane" class="pane">
+                    <table>
+                        <tr>
+                            <td><button class='asset btn btn-default' value='Boat Ramp' type='button'>Boat Ramp</button></td>
+                            <td><button class='asset btn btn-default' value='Picnic Area' type='button'>Picnic Area</button></td>
+                        </tr>
+                        <tr>
+                            <td colspan=2><button class='asset btn btn-default' value='Rest Area' type='button'>Rest Area</button></td>
+                        </tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr class="blankRow"></tr>
+                        <tr><td class="category" colspan=2>OTHER</td></tr>
+                    </table>
+                </div>
+            </div>
+            <table>
+                <tr>
+                    <td colspan=2>
+                        <div style="margin-top: 20px;">
+                            <textarea id="notes" type="text" maxlength="250" value="" placeholder="Notes" rows="3" cols="30"></textarea>
+                            <label for="image" style="vertical-align: top;height: 220px;width:20%;">
+                                    <span class="btn btn-default btn-file" style="margin:0;width:100%;height:100%;" id="cameraButton">
+                                        <span class="glyphicon glyphicon-camera" style="line-height:200px;font-size:10vw;"></span>
+                                        <input type="file" accept="image/*" capture="camera" id="image" style="display:none;"/>
+                                        
+                                    </span>
+                            </label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan=2><div style="font-weight: bold;"><hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;">  Options  <hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;"></div></td>
+                </tr>
+                <tr>
+                    <td><button id="cmdClearMyStorage" class="btn btn-default" value="Clear Local Storage" type="button">Start Over</button></td>
+                    <td><button id="cmdDeleteLast" class="btn btn-default" value="Delete Last Point" type="button">Delete Last Point</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><button id="cmdUploadData" class="btn btn-default" value="Upload Data" type="button">Upload Collected Data</button></td>
+                </tr>
+                <tr>
+                    <td colspan=2><div id="uploadStatus" style="min-height: 80px;"></div></td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

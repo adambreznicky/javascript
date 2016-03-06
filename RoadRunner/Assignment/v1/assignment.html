@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/ -->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Maintenance Assignments</title>
+<!--swamp thang-->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css">
+        <!--swamp thangs-->
+        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet" media="all">
+
+        <style type="text/css">
+            html, body {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+            h1 {
+                color: white;
+                margin-top: 0;
+                padding-top: 20px;
+                padding-left: 20px;
+            }
+            #mapContainer {
+                height:100%;
+            }
+            #divMap {
+                height: 100%;
+                width:100%;
+                padding:0;
+                margin:0;
+                page-break-before: always;
+            }
+            #category {
+                padding-left: 20px;
+            }
+            #selectDist {
+                width: 225px;
+            }
+            #generate {
+                height: 46px;
+            }
+            #curPos{
+                position: relative;
+                top: 100%;
+                left: 22px;
+                width:  50%;
+                z-index: 50;
+                color: #303030;
+            }
+            
+            @media print {
+                #selector {
+                    display: none;
+                }
+                .esriSimpleSlider {
+                    display: none;
+                }
+            }
+             
+        </style>
+
+        <script data-dojo-config="async:true, aliases: [
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">//arc swamp thang //swamp thangs
+        </script>
+
+        <script>
+            require([
+                "jquery",
+                "jqueryui",
+
+                "esri/map",
+                "esri/tasks/query",
+                "esri/tasks/QueryTask",
+                "esri/layers/FeatureLayer",
+                "esri/InfoTemplate",
+                
+                "esri/symbols/TextSymbol",
+                "esri/layers/LabelLayer",
+                "esri/Color",
+                "esri/renderers/SimpleRenderer",
+                
+                "esri/geometry/Point", 
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/graphic",
+
+                "esri/arcgis/OAuthInfo",
+                "esri/IdentityManager",
+
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/require",
+                "dojo/domReady!"],
+            function($, $ui,
+                    Map, Query, QueryTask, FeatureLayer, InfoTemplate,
+                    TextSymbol, LabelLayer, Color, SimpleRenderer,
+                    Point, SimpleMarkerSymbol, SimpleLineSymbol, Graphic,
+                    OAuthInfo, IdentityManager,
+                    ready, parser, require) {
+                ready(function(){
+                    dojo.require("bootstrap");
+                    parser.parse();
+                    
+                    var map;
+                    var latty;
+                    var longy;
+                    var graphic;
+                    var maintenanceDeficiencyURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceDeficiencies/FeatureServer/0";//swamp thang
+
+                    $("#district").change(function () {
+                        $("#maintenanceSection").prop("disabled", false);
+                        $("#deficiency").prop("disabled", true);
+                        $("#route").prop("disabled", true);
+                        $("#generate").prop("disabled", true);
+                        $("#maintenanceSection").val("#");
+                        $("#deficiency").val("#");
+                        $("#route").val("#");
+                        $("#generate").val("#");
+                        var dist = $("#district").val();
+
+                        var msURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceSections/FeatureServer/0";//swamp thang
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = "DIST_NM = '" + dist + "'";
+                        query.outFields = ["OFFICE_NM"];
+                        var queryTask = new QueryTask(msURL);
+                        queryTask.execute(query, function (results) {
+                            var mSections = [];
+                            $.each(results.features, function (position) {
+                                var mSect = results.features[position];
+                                var sectName = mSect.attributes["OFFICE_NM"];
+                                var pos = $.inArray(sectName, mSections);
+                                if (pos === -1) {
+                                    mSections.push(sectName);
+                                }
+                            });
+                            mSections.sort();
+                            $('#maintenanceSection').find('option:gt(0)').remove();
+                            $.each(mSections, function (position) {
+                                var section = mSections[position];
+                                $('#maintenanceSection').append($('<option>', {
+                                    value: section,
+                                    text: section
+                                }));
+                            });
+                        }, function (e) {
+                            console.log(e);
+                            $("#district").val("#").change();
+                        });
+                    });
+
+
+                    $("#maintenanceSection").change(function () {
+                        $("#deficiency").prop("disabled", false);
+                        $("#route").prop("disabled", true);
+                        $("#generate").prop("disabled", true);
+                        $("#deficiency").val("#");
+                        $("#route").val("#");
+                        $("#generate").val("#");
+                        var ms = $("#maintenanceSection").val();
+                        
+                        var roadsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MaintenanceRoadways/FeatureServer/0";//swamp thang
+                        var query = new Query();
+                        query.returnGeometry = false;
+                        query.where = "OFFICE_NM = '" + ms + "'";
+                        query.outFields = ["RTE_NM"];
+                        var queryTask = new QueryTask(roadsURL);
+                        queryTask.execute(query, function (results) {
+                            var routes = [];
+                            $.each(results.features, function (position) {
+                                var rte = results.features[position];
+                                var rteName = rte.attributes["RTE_NM"];
+                                var pos = $.inArray(rteName, routes);
+                                if (pos === -1) {
+                                    routes.push(rteName);
+                                }
+                            });
+                            routes.sort();
+                            $('#route').find('option:gt(0)').remove();
+                            $('#route').append($('<option>', {
+                                    value: "",
+                                    text: "All Routes"
+                                }));
+                            $.each(routes, function (position) {
+                                var rte = routes[position];
+                                $('#route').append($('<option>', {
+                                    value: rte,
+                                    text: rte
+                                }));
+                            });
+                        }, function (e) {
+                            console.log(e);
+                            $("#maintenanceSection").val("#").change();
+                        });
+                    });
+
+                    $("#deficiency").change(function () {
+                        $("#route").prop("disabled", false);
+                    });
+
+                    $("#route").change(function (event) {
+                        $("#generate").prop("disabled", false);
+                            
+                    });
+
+                    $("#generate").click(generateReport);
+
+                    function getTime () {
+                        var d = new Date();
+                        var m = d.getMonth() + 1;
+                        var day = d.getDate();
+                        var yr = d.getFullYear();
+
+                        var theDate = m.toString() + "/" + day.toString() + "/" + yr.toString();
+
+                        var sfx = "AM";
+                        var h = d.getHours();
+                        if (h == 0) {
+                            h = 12;
+                        }
+                        else if (h > 12) {
+                            h = h - 12;
+                            sfx = "PM";
+                        }
+                        var min = d.getMinutes();
+                        if (min < 10) {
+                            min = "0" + min;
+                        }
+                        var theTime = h + ":" + min + " " + sfx;
+
+                        var generationDateTime = theDate + " " + theTime;
+                        return generationDateTime;
+                    }
+
+                    function generateReport () {
+                        try {
+                            map.destroy();
+                            map = undefined;
+                        } catch (e) {
+                            console.log(e);
+                        }
+                        $("#reportTable").html("<h2 id='reportTitle'></h2><p id='chosenParameters'></p><p id='generationDateTime'></p><table class='table'><tbody id='reportBody0'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody></table>");// style='text-align:right;'
+                        $("#reportTable").attr("style", "display:block;");
+                        var ms = $("#maintenanceSection").val();
+                        var deficiency = $("#deficiency").val();
+                        var route = $("#route").val();
+                        var dateTime = getTime();
+                        var where;
+
+                        $("#reportTitle").html(ms + " Maintenance Section: " + deficiency + " Repair Assignment");
+                        if (route === "") {
+                            $("#chosenParameters").html("All Routes");
+                            where = "Resolved = 'No' AND MaintenanceSection = '" + ms + "' AND Deficiency = '" + deficiency + "'";
+                        } else {
+                            $("#chosenParameters").html("Route: " + route);
+                            where = "Resolved = 'No' AND MaintenanceSection = '" + ms + "' AND Deficiency = '" + deficiency + "' AND Route = '" + route + "'";
+                        }
+                        $("#generationDateTime").html("Assignment Created: " + dateTime);
+
+                        var query = new Query();
+                        query.returnGeometry = true;
+                        query.where = where;
+                        query.outFields = ["OBJECTID", "Latitude", "Longitude", "Route", "Notes", "CreationDate"];
+                        var queryTask = new QueryTask(maintenanceDeficiencyURL);
+                        queryTask.execute(query, function (results) {
+                            if (results.features.length !== 0) {
+                                var counter = 0;
+                                var reportBodyNum = 0;
+                                var pageBreaker = 1;
+                                var shaded = false;
+                                $.each(results.features, function (position) {
+                                    var def = results.features[position];
+                                    
+                                    var d = new Date(def.attributes["CreationDate"]);
+                                    var formatDate = d.toLocaleDateString();
+                                    var objID = def.attributes["OBJECTID"];
+                                    var curWhere = "OBJECTID = '"+objID+"'";
+                                    var oidString = "map" + objID.toString();
+                                    var reportBodyID = "#reportBody"+reportBodyNum.toString();
+                                    var trPrfx;
+                                    shaded = false;
+
+                                    trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
+                                    
+                                    var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' style='border-style:solid;border-width:1px;border-color:lightgray;page-break-inside:avoid;'></div></td></tr>";  //style='text-align:right;'
+                                    $(reportBodyID).append(theText);
+                                    counter += 1;
+                                    pageBreaker += 1;
+                                    if (pageBreaker == 3 && counter !== results.features.length) {
+                                        var nextReportBodyNum = reportBodyNum + 1;
+                                        $("#reportTable").append("<div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody>");// style='text-align:right;'
+                                        
+                                        reportBodyNum += 1;
+                                        pageBreaker = 0;
+                                    }
+                                    
+                                    buildMap(curWhere, oidString, def.geometry);
+                                    if (counter == results.features.length) {
+                                        var finalText = "<tr><td colspan=5></td><td><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr>";// style='text-align:right;'
+                                        $(reportBodyID).append(finalText);
+                                        buildMap(where, "divMap");
+                                    }
+                                    
+                                });
+                                
+                            } else {
+                                $("#reportTable").attr("style", "display:none;");
+                                $("#divMap").attr("style", "display:none;");
+                                $("#mapContainer").attr("style", "display:none;");
+                                alert("No deficiencies found using the selected parameters.");
+                            }
+                        }, function (e) {
+                            console.log(e);
+                            $("#maintenanceSection").val("#").change();
+                            $("#reportTable").attr("style", "display:none;");
+                            $("#divMap").attr("style", "display:none;");
+                            $("#mapContainer").attr("style", "display:none;");
+                            alert("Error generating report. Please try again.");
+                        });
+                        
+                    }
+
+                    function buildMap (where, div, geom) {
+                        $("#curPos").attr("style", "display:block;");
+                        $("#mapContainer").attr("style", "display:block;");
+                        $("#divMap").attr("style", "display:block;");
+
+                        map = new Map(div, {
+                          logo: false,
+                          basemap: "topo",
+                          showAttribution: false
+                        });
+                        
+                        var infoTemplate = new InfoTemplate($("#deficiency").val(), "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>CreationDate: ${CreationDate}");
+                        var maintenanceDeficiencies = new FeatureLayer(maintenanceDeficiencyURL, {
+                            infoTemplate: infoTemplate,
+                            outFields: ["*"]
+                        });
+                        maintenanceDeficiencies.setDefinitionExpression(where);
+                        map.addLayer(maintenanceDeficiencies);
+                        
+                        var labelField = "OBJECTID";
+                        var defLabel = new TextSymbol().setColor(new Color("black"));
+                        defLabel.font.setSize("10pt");
+                        defLabel.font.setFamily("Trebuchet MS");
+                        var defLabelRenderer = new SimpleRenderer(defLabel);
+                        var labels = new LabelLayer({id: "OID"});
+                        labels.addFeatureLayer(maintenanceDeficiencies, defLabelRenderer, "{" + labelField + "}");
+                        map.addLayer(labels);
+
+                        if (div == "divMap") {
+                            var query = new Query();
+                            query.where = where;
+                            maintenanceDeficiencies.queryExtent(query, function (result) {
+                                var ext = result.extent.expand(1.5);
+                                map.setExtent(ext);
+                                $("#divMap_container").attr("style", "border-style:solid;");
+                            }, function (e) {
+                                console.log(e);
+                            });
+                        } else {
+                            map.centerAndZoom(geom, 15);
+                        }
+
+                    }
+
+                    var info = new OAuthInfo({
+                        appId: "hM8gEmhxankEHGjD",
+                        portalUrl: "https://txdot.maps.arcgis.com",//swamp thangs
+                        popup: false
+                    });
+                    IdentityManager.registerOAuthInfos([info]);
+                    IdentityManager.getCredential(info.portalUrl + "/sharing");
+
+                });
+            });
+        </script>
+    </head>
+    <body class="tundra">
+        <div class="page-header" style="background-color: rgb(20,56,92); margin-top:0;">
+            <h1 id = "header">Maintenance Assignments <small>TxDOT Coyote</small></h1>
+        </div>
+        <div class="container" id="selector">
+          <p>Assignment by:</p>
+          <table class="table">
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control input-lg" id="district">
+                                <option value="#" disabled selected>District</option>
+                                <option class='distOption' value='Abilene'>Abilene - 8</option> <option class='distOption' value='Amarillo'>Amarillo - 4</option>   <option class='distOption' value='Atlanta'>Atlanta - 19</option>    <option class='distOption' value='Austin'>Austin - 14</option>  <option class='distOption' value='Beaumont'>Beaumont - 20</option>  <option class='distOption' value='Brownwood'>Brownwood - 23</option>    <option class='distOption' value='Bryan'>Bryan - 17</option>    <option class='distOption' value='Childress'>Childress - 25</option>    <option class='distOption' value='Corpus Christi'>Corpus Christi - 16</option>  <option class='distOption' value='Dallas'>Dallas - 18</option>  <option class='distOption' value='El Paso'>El Paso - 24</option>    <option class='distOption' value='Fort Worth'>Fort Worth - 2</option>   <option class='distOption' value='Houston'>Houston - 12</option>    <option class='distOption' value='Laredo'>Laredo - 22</option>  <option class='distOption' value='Lubbock'>Lubbock - 5</option> <option class='distOption' value='Lufkin'>Lufkin - 11</option>  <option class='distOption' value='Odessa'>Odessa - 6</option>   <option class='distOption' value='Paris'>Paris - 1</option> <option class='distOption' value='Pharr'>Pharr - 21</option>    <option class='distOption' value='San Angelo'>San Angelo - 7</option>   <option class='distOption' value='San Antonio'>San Antonio - 15</option>    <option class='distOption' value='Tyler'>Tyler - 10</option>    <option class='distOption' value='Waco'>Waco - 9</option>   <option class='distOption' value='Wichita Falls'>Wichita Falls - 3</option> <option class='distOption' value='Yoakum'>Yoakum - 13</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control input-lg" id="maintenanceSection"  disabled="disabled">
+                                <option value="#" disabled selected>Maintenance Section</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control input-lg" id="deficiency" disabled="disabled">
+                                <option value="#" disabled selected>Deficiency</option>
+                                <option value'Approach Slab'>Approach Slab</option> <option value'Attenuators'>Attenuators</option> <option value'Backwall'>Backwall</option>   <option value'Bleeding'>Bleeding</option>   <option value'Boat Ramp'>Boat Ramp</option> <option value'C.T.B.'>C.T.B.</option>   <option value'Cable Barrier'>Cable Barrier</option> <option value'Conc. Repair'>Conc. Repair</option>   <option value'Crack Seal'>Crack Seal</option>   <option value'Curb'>Curb</option>   <option value'Debris'>Debris</option>   <option value'Decks'>Decks</option> <option value'Delineation'>Delineation</option> <option value'Drainage'>Drainage</option>   <option value'Drift'>Drift</option> <option value'Encroachment'>Encroachment</option>   <option value'Erosion'>Erosion</option> <option value'Failures'>Failures</option>   <option value'Fenders'>Fenders</option> <option value'Flashing Beacons'>Flashing Beacons</option>   <option value'Fog Seal'>Fog Seal</option>   <option value'Graffiti'>Graffiti</option>   <option value'Guardrail'>Guardrail</option> <option value'Herbicide'>Herbicide</option> <option value'High Edge'>High Edge</option> <option value'Impact Damage'>Impact Damage</option> <option value'Inlet'>Inlet</option> <option value'Joint Seal'>Joint Seal</option>   <option value'Joints'>Joints</option>   <option value'Litter'>Litter</option>   <option value'Low Edge'>Low Edge</option>   <option value'Mailbox'>Mailbox</option> <option value'Milling'>Milling</option> <option value'Mowing'>Mowing</option>   <option value'Other Project'>Other Project</option> <option value'Outside Qtr'>Outside Qtr</option> <option value'Overlay'>Overlay</option> <option value'Picnic Area'>Picnic Area</option> <option value'Pothole'>Pothole</option> <option value'Railroad'>Railroad</option>   <option value'Rails'>Rails</option> <option value'Raveling'>Raveling</option>   <option value'Rest Area'>Rest Area</option> <option value'Rip Rap'>Rip Rap</option> <option value'RPMs'>RPMs</option>   <option value'S.E.T.s'>S.E.T.s</option> <option value'Safety Lighting'>Safety Lighting</option> <option value'Seal Coat'>Seal Coat</option> <option value'Side Road'>Side Road</option> <option value'Sight Visibility'>Sight Visibility</option>   <option value'Signals'>Signals</option> <option value'Signs'>Signs</option> <option value'Slope Failed'>Slope Failed</option>   <option value'Spalling'>Spalling</option>   <option value'Spot Mill'>Spot Mill</option> <option value'Striping'>Striping</option>   <option value'Sweeping'>Sweeping</option>   <option value'Trees'>Trees</option> <option value'Wheel Rut'>Wheel Rut</option> <option value'Widening'>Widening</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="form-group">
+                            <select class="form-control input-lg" id="route" disabled="disabled">
+                                <option value="#" disabled selected>Route</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td align="center">
+                        <button type="button" class="btn btn-default" id="generate" disabled="disabled"><span class="glyphicon glyphicon-wrench"></span> Generate Assignments</button>
+                    </td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="container" id="reportTable" style="display:none;"></div>
+        <div id="mapContainer" class="container" style="display:none;">
+            <div id="divMap" style="display:none;"></div> 
+        </div>
+    </body>
+</html>
