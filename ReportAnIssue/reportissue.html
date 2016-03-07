@@ -15,11 +15,12 @@
                 padding: 0;
                 margin: 0;
                 height: 100%;
-                /*font-size: large;*/
+                background-color: lightgray;
             }
             #divMap{
-                margin-bottom:10%;
+                margin-bottom:5%;
                 border-style: solid;
+                height:800px;
             }
             #invalidLocate {
                 display:none;
@@ -40,6 +41,9 @@
                 text-align: center;
                 font-size: x-large;
                 padding: 0;
+            }
+            .container {
+                background-color:white;
             }
         </style>
 
@@ -78,7 +82,7 @@
                     dojo.require("bootstrap");
                     parser.parse();
                     
-                    var mapGraphic;
+                    var mapGraphic = null;
                     
 
                     var map = new Map("divMap", {
@@ -98,12 +102,12 @@
                         var drawToolbar = new Draw(map, { showTooltips: true });
                         drawToolbar.activate(Draw.POINT);
                         
-                        $("#divMap").attr("style", "cursor:pointer;");
+                        $("#divMap_container").attr("style", "cursor:crosshair;");
 
                         drawToolbar.on("draw-end", function(evt) {
                             drawToolbar.deactivate();
                             $("#submit").prop("disabled", false);
-                            $("#divMap").attr("style", "cursor:initial;");
+                            $("#divMap_container").attr("style", "cursor:initial;");
                             
                             var sms = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_SQUARE).setColor(new Color([255,0,0,0.5]));
     
@@ -128,7 +132,7 @@
                         var longy = position.coords.longitude;
                         $("#submit").prop("disabled", false);
                         var pt = new Point(longy, latty);
-                        if (!mapGraphic) {
+                        if (mapGraphic == null) {
                             var sms = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_SQUARE).setColor(new Color([255,0,0,0.5]));
                             mapGraphic = new Graphic(pt, sms);
                             map.graphics.add(mapGraphic);
@@ -147,7 +151,6 @@
                             map.graphics.clear();
                             mapDraw();
                         } else if (sel == "gps") {
-                            console.log("gps");
                             startupGPS();
                         } else {
                             $("#invalidLocate").attr("style", "display:block;");
@@ -155,6 +158,8 @@
                     });
 
                     $("#submit").on("click", function(){
+                        $("#success").attr("style", "display:none;");
+                        
                         var FirstName = $("#firstName").val();
                         var LastName = $("#lastName").val();
                         var Address = $("#address").val();
@@ -165,7 +170,7 @@
                         var Email = $("#email").val();
                         var Type = $('#issuetype input:radio:checked').val();
                         var Description = $("#issuetext").val();
-                        console.log(Description);
+                        var Route = $("#route").val();
                         
                         if (Type !== undefined) {
                             if (Type == "Other" && (Description == undefined || Description == "")) {
@@ -175,23 +180,33 @@
                                 $("#standardDir").attr("style", "display:block;");
                                 $("#invalidType").attr("style", "display:none;");
                                 
-                                var attributes = {"FirstName":FirstName, "LastName":LastName, "Address":Address, "City":City, "State":State, "ZipCode":ZipCode, "Phone":Phone, "Email":Email, "Type":Type, "Description":Description};
+                                var attributes = {"FirstName":FirstName, "LastName":LastName, "Address":Address, "City":City, "State":State, "ZipCode":ZipCode, "Phone":Phone, "Email":Email, "Type":Type, "Description":Description, "Route":Route};
                                 
                                 mapGraphic.setAttributes(attributes);
                                 issuesLyr.applyEdits([mapGraphic], null, null);
                                 
-                                mapGraphic = (function () { return; });
+                                mapGraphic = null;
                                 $("#submit").prop("disabled", true);
                                 
                                 map.graphics.clear();
                                 map.graphics.redraw();
                                 issuesLyr.redraw();
+                                
+                                $("#success").attr("style", "display:block;");
+                                setTimeout(function(){
+                                    $("#success").attr("style", "display:none;");
+                                }, 15000);
                             }
                         } else {
                             $("#standardDir").attr("style", "display:none;");
                             $("#invalidType").attr("style", "display:block;");
                         }
                         
+                    });
+                    
+                    $('input[type=radio][name=locateoption]').change(function() {
+                        map.graphics.clear();
+                        mapGraphic = null;
                     });
                     
                     
@@ -204,37 +219,37 @@
             <h1 id = "header" style="color:white;">Report An Issue<small> This would be the standard header.</small></h1>
         </div>
         <div class="container">
-            <p>Some information about the size of Texas and how extensive the road network is. Maybe even some information about how many employees TxDOT has actively working to maintain the roads every day. Then an invitation to the user to help us keep the roads as safe as possible by reporting an issue and identifying it's location so we can alleviate the problem as quickly as possible. We value the publics opinion and strive to satisfy their needs.</p>
+            <p style="padding:30px;">Some information about the size of Texas and how extensive the road network is. Maybe even some information about how many employees TxDOT has actively working to maintain the roads every day. Then an invitation to the user to help us keep the roads as safe as possible by reporting an issue and identifying it's location so we can alleviate the problem as quickly as possible. We value the publics opinion and strive to satisfy their needs.</p>
         </div>
         <div class="container">
             <form class="form-horizontal">
                 <div class="form-group">
-                    <label for="firstName" class="col-sm-2 control-label">First Name</label>
-                    <div class="col-sm-6">
-                        <input type="text" class="form-control" id="firstName" placeholder="First Name">
+                    <label for="firstName" class="col-sm-4 control-label">First Name</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="firstName" placeholder="First Name" maxlength="50">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="lastName" class="col-sm-2 control-label">Last Name</label>
-                    <div class="col-sm-6">
-                        <input type="text" class="form-control" id="lastName" placeholder="Last Name">
+                    <label for="lastName" class="col-sm-4 control-label">Last Name</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="lastName" placeholder="Last Name" maxlength="50">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="address" class="col-sm-2 control-label">Address</label>
-                    <div class="col-sm-6">
+                    <label for="address" class="col-sm-4 control-label">Address</label>
+                    <div class="col-sm-4">
                         <input type="text" class="form-control" id="address" placeholder="Address" maxlength="100">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="city" class="col-sm-2 control-label">City</label>
-                    <div class="col-sm-6">
-                        <input type="text" class="form-control" id="city" placeholder="City">
+                    <label for="city" class="col-sm-4 control-label">City</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="city" placeholder="City" maxlength="50">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="state" class="col-sm-2 control-label">State</label>
-                    <div class="col-sm-6">
+                    <label for="state" class="col-sm-4 control-label">State</label>
+                    <div class="col-sm-4">
                         <select class="form-control" id="state">
                             <option value="#" disabled selected>Select a State...</option>
                             <option value='Alabama'>Alabama</option>	<option value='Alaska'>Alaska</option>	<option value='Arizona'>Arizona</option>	<option value='Arkansas'>Arkansas</option>	<option value='California'>California</option>	<option value='Colorado'>Colorado</option>	<option value='Connecticut'>Connecticut</option>	<option value='Delaware'>Delaware</option>	<option value='District of Columbia'>District of Columbia</option>	<option value='Florida'>Florida</option>	<option value='Georgia'>Georgia</option>	<option value='Hawaii'>Hawaii</option>	<option value='Idaho'>Idaho</option>	<option value='Illinois'>Illinois</option>	<option value='Indiana'>Indiana</option>	<option value='Iowa'>Iowa</option>	<option value='Kansas'>Kansas</option>	<option value='Kentucky'>Kentucky</option>	<option value='Louisiana'>Louisiana</option>	<option value='Maine'>Maine</option>	<option value='Maryland'>Maryland</option>	<option value='Massachusetts'>Massachusetts</option>	<option value='Michigan'>Michigan</option>	<option value='Minnesota'>Minnesota</option>	<option value='Mississippi'>Mississippi</option>	<option value='Missouri'>Missouri</option>	<option value='Montana'>Montana</option>	<option value='Nebraska'>Nebraska</option>	<option value='Nevada'>Nevada</option>	<option value='New Hampshire'>New Hampshire</option>	<option value='New Jersey'>New Jersey</option>	<option value='New Mexico'>New Mexico</option>	<option value='New York'>New York</option>	<option value='North Carolina'>North Carolina</option>	<option value='North Dakota'>North Dakota</option>	<option value='Ohio'>Ohio</option>	<option value='Oklahoma'>Oklahoma</option>	<option value='Oregon'>Oregon</option>	<option value='Pennsylvania'>Pennsylvania</option>	<option value='Puerto Rico'>Puerto Rico</option>	<option value='Rhode Island'>Rhode Island</option>	<option value='South Carolina'>South Carolina</option>	<option value='South Dakota'>South Dakota</option>	<option value='Tennessee'>Tennessee</option>	<option value='Texas'>Texas</option>	<option value='U.S. Virgin Islands'>U.S. Virgin Islands</option>	<option value='Utah'>Utah</option>	<option value='Vermont'>Vermont</option>	<option value='Virginia'>Virginia</option>	<option value='Washington'>Washington</option>	<option value='West Virginia'>West Virginia</option>	<option value='Wisconsin'>Wisconsin</option>	<option value='Wyoming'>Wyoming</option>
@@ -242,13 +257,13 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="zipcode" class="col-sm-2 control-label">Zipcode</label>
-                    <div class="col-sm-6">
+                    <label for="zipcode" class="col-sm-4 control-label">Zipcode</label>
+                    <div class="col-sm-4">
                         <input type="text" class="form-control" id="zipcode" placeholder="Zipcode" maxlength="5">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-2 control-label">Phone</label>
+                    <label class="col-sm-4 control-label">Phone</label>
                     <div class="col-sm-6">
                         <div class="form-group row">
                             <div class="frmt col-sm-1">(</div>
@@ -267,14 +282,20 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="email" class="col-sm-2 control-label">Email</label>
-                    <div class="col-sm-6">
-                        <input type="email" class="form-control" id="email" placeholder="Email@domain.com">
+                    <label for="email" class="col-sm-4 control-label">Email</label>
+                    <div class="col-sm-4">
+                        <input type="email" class="form-control" id="email" placeholder="Email@domain.com" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="route" class="col-sm-4 control-label">Route Affected</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="route" placeholder="FM1234" maxlength="30">
                     </div>
                 </div>
                 <div class="form-group" id="selectedissue">
-                    <label for="issuetype" class="col-sm-2 control-label">Issue Type:</label>
-                    <div class="col-sm-6" id="issuetype">
+                    <label for="issuetype" class="col-sm-4 control-label">Issue Type</label>
+                    <div class="col-sm-4" id="issuetype">
                         <div class="radio">
                             <label><input type='radio' value='Pothole' name="issueoption">Pothole</label>
                         </div>
@@ -305,15 +326,15 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="issuetext" class="col-sm-2 control-label">Issue Description:</label>
-                    <div class="col-sm-6">
-                        <textarea rows="4" class="form-control" id="issuetext" placeholder="Detailed description of the issue" maxlength="400"></textarea>
+                    <label for="issuetext" class="col-sm-4 control-label">Issue Description</label>
+                    <div class="col-sm-4">
+                        <textarea rows="4" class="form-control" id="issuetext" placeholder="Details further describing the issue and the approximate location. Maximum 400 characters in length." maxlength="400"></textarea>
                     </div>
                     <div id="invalidDesc" class="alert alert-danger col-sm-2" role="alert">You must provide an 'Issue Description' in order to submit an 'Other' type issue.</div>
                 </div>
                 <div class="form-group" id="selectedlocator">
-                    <label for="locationtype" class="col-sm-2 control-label">Locate with:</label>
-                    <div class="col-sm-6" id="locationtype">
+                    <label for="locationtype" class="col-sm-4 control-label">Locate with</label>
+                    <div class="col-sm-4" id="locationtype">
                         <div class="radio">
                             <label><input type="radio" value="map" name="locateoption">The Map</label>
                         </div>
@@ -323,15 +344,19 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="idlocation" class="col-sm-2 control-label">Identify Location</label>
+                    <label for="idlocation" class="col-sm-4 control-label">Identify Location</label>
                     <button type="button" class="btn btn-default col-sm-2" id="locate">Locate</button>
-                    <div id="invalidLocate" class="alert alert-danger col-md-6" role="alert">You must select a 'Locate with' option to identify the issue location.</div>
+                    <div id="invalidLocate" class="alert alert-danger col-sm-4" role="alert">You must select a 'Locate with' option to identify the issue location.</div>
                 </div>
                 <div class="form-group">
-                    <div class="col-sm-2"></div>
-                    <button type="button" class="btn btn-default col-sm-2" id="submit" disabled="disabled">Submit</button>
-                    <div id="standardDir" class="col-md-5">The issue location must be identified within the map to Submit.</div>
-                    <div id="invalidType" class="alert alert-danger col-md-5" role="alert">You must select an 'Issue Type' in order to submit an issue.</div>
+                    <div class="col-sm-4"></div>
+                    <button type="button" class="btn btn-primary col-sm-2" id="submit" disabled="disabled">Submit</button>
+                    <div id="standardDir" class="col-sm-4">The issue location must be identified within the map to Submit.</div>
+                    <div id="invalidType" class="alert alert-danger col-sm-4" role="alert">You must select an 'Issue Type' in order to submit an issue.</div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-4"></div>
+                    <div id="success" class="alert alert-success col-sm-6" role="alert" style="display:none;">Success! Your issue has been logged. Thank you for helping us to keep our roads safe!</div>
                 </div>
             </form>
         </div>
