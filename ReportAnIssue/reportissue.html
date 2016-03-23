@@ -5,10 +5,10 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Report An Issue</title>
 <!--swamp thang-->
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/dijit/themes/claro/claro.css">
-        <link rel="stylesheet" href="//js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
         <!--swamp thangs-->
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
         <style type="text/css">
             html, body{
@@ -52,10 +52,10 @@
         </style>
 
         <script data-dojo-config="async:true, aliases: [
-            ['jquery', '//code.jquery.com/jquery-2.1.4.min.js'],
-            ['jqueryui', '//code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['bootstrap', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="//js.arcgis.com/3.14/">
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">
             //swamp thangs, esri thang
         </script>
 
@@ -73,15 +73,17 @@
                 
                 "esri/symbols/SimpleMarkerSymbol",
                 "esri/Color",
+                "esri/request",
 
+                "dojo/on",
                 "dojo/ready", 
                 "dojo/parser",
                 "dojo/require",
                 "dojo/domReady!"],
             function($, $ui,
                     Map, FeatureLayer, Graphic, Geometry, Draw, Point,
-                    SimpleMarkerSymbol, Color,
-                    ready, parser, require) {
+                    SimpleMarkerSymbol, Color, esriRequest,
+                    on, ready, parser, require) {
                 ready(function(){
                     dojo.require("bootstrap");
                     parser.parse();
@@ -95,7 +97,7 @@
                       basemap: "topo"
                     });
                     
-                    var issuesURL = "//services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/PublicIssues/FeatureServer/0";//swamp thang
+                    var issuesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/PublicIssues/FeatureServer/0";//swamp thang
                     var issuesLyr = new FeatureLayer(issuesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         outFields: ['*']
@@ -118,6 +120,7 @@
                             mapGraphic = new Graphic(evt.geometry, sms);
                             map.graphics.add(mapGraphic);
                             map.centerAndZoom(evt.geometry,14);
+                            console.log(map.graphics);
                         });
                     };
                     
@@ -187,14 +190,42 @@
                                 var attributes = {"FirstName":FirstName, "LastName":LastName, "Address":Address, "City":City, "State":State, "ZipCode":ZipCode, "Phone":Phone, "Email":Email, "Type":Type, "Description":Description, "Route":Route};
                                 
                                 mapGraphic.setAttributes(attributes);
-                                issuesLyr.applyEdits([mapGraphic], null, null);
+                                issuesLyr.applyEdits([mapGraphic], null, null, function () {
+                                    map.graphics.clear();
+                                    issuesLyr.refresh();
+                                    issuesLyr.redraw();
+                                    mapGraphic = null;
+                                });
+
+                                // var serviceURL = issuesURL + "/applyEdits?f=json&adds=";
+                                // var theText = serviceURL + "[{'geometry':" + JSON.stringify(mapGraphic.geometry) + ",'attributes':" + JSON.stringify(attributes) + "}]";
+                                // try {
+                                //     var layersRequest = esriRequest({
+                                //         url: theText
+                                //         },{
+                                //         usePost: true
+                                //     });
+                                //     layersRequest.then(
+                                //         function(response) {
+                                //             console.log(response);
+                                //             var res = response.addResults[0]["success"];
+                                //             if (res) {
+                                //                 map.graphics.clear();
+                                //                 issuesLyr.refresh();
+                                //                 issuesLyr.redraw();
+                                //                 mapGraphic = null;
+                                //             }
+                                //             else {
+                                //                 alert("Sorry, the server responded failure. Please try again.")
+                                //             }
+                                //         }
+                                //     );
+                                // } catch (e) {
+                                //     alert("Sorry, the server could not be contacted. Please try again.")
+                                //     console.log("err");
+                                // }
                                 
-                                mapGraphic = null;
                                 $("#submit").prop("disabled", true);
-                                
-                                map.graphics.clear();
-                                map.graphics.redraw();
-                                issuesLyr.redraw();
                                 
                                 $("#success").attr("style", "display:block;");
                                 setTimeout(function(){
@@ -212,8 +243,6 @@
                         map.graphics.clear();
                         mapGraphic = null;
                     });
-                    
-                    
                 });
             });
         </script>
