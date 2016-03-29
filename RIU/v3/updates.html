@@ -169,7 +169,6 @@
         <script data-dojo-config="async:true, aliases: [
             ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
             ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
-            ['slick', 'http://cdn.jsdelivr.net/jquery.slick/1.5.7/slick.min.js'],
             ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
             ]" src="http://js.arcgis.com/3.14/">
         </script><!-- swamp thang -->
@@ -178,7 +177,6 @@
             require([
                 "jquery",
                 "jqueryui",
-                "slick",
 
                 "esri/map",
                 "esri/graphic",
@@ -227,7 +225,7 @@
                 "dojo/dom-style",
                 "dijit/form/Button",
                 "dojo/domReady!"],
-            function ($, $ui, slick,
+            function ($, $ui,
                     Map, Graphic, Geomtery, Edit, Draw, Extent, Point, BasemapLayer, Tiled,
                     request, scaleUtils, webMercatorUtils, geodesicUtils, config, Query, QueryTask,
                     Geoprocessor, FeatureLayer, Basemap, BasemapGallery, GeometryService, Units,
@@ -245,6 +243,7 @@
                     var serviceURL;
                     var aiCustom;
                     var uploadedLayers;
+                    var featureLayerEvents = [];
 
                     var d = new Date();
                     var m = d.getMonth() + 1;
@@ -605,7 +604,6 @@
                         initLegend(legendInfos);
                         initTemplates(templateLayers);
                         initAttributes(editorInfos);
-                        setupSelection();
                             
                     }
                     
@@ -614,13 +612,27 @@
                             var selectionSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0,255,255]), 2);
                             lyr.setSelectionSymbol(selectionSymbol);
 
-                            lyr.on("mouse-over", function(){
+                            var over = lyr.on("mouse-over", function(){
                                 map.setMapCursor("pointer");
                             });
-                            lyr.on("mouse-out", function(){
+                            var out = lyr.on("mouse-out", function(){
                                 map.setMapCursor("default");
                             });
 
+                            featureLayerEvents.push(over);
+                            featureLayerEvents.push(out);
+
+                        });
+                        
+                        var select1 = refLayers[0].on("click", selectFeature);
+                        var select2 = refLayers[1].on("click", selectFeature);
+                        featureLayerEvents.push(select1);
+                        featureLayerEvents.push(select2);
+                    }
+
+                    function disableEvents() {
+                        $.each(featureLayerEvents, function(index, evt){
+                            evt.remove();
                         });
                     }
 
@@ -651,14 +663,20 @@
                             if(tpCustom.getSelected()){
                                 selectedTemplate = tpCustom.getSelected();
                                 drawToolbar.activate(Draw.POLYLINE);
+                                map.setMapCursor("crosshair");
+                                disableEvents();
                             }
                             else {
                                 drawToolbar.deactivate();
+                                map.setMapCursor("default");
+                                setupSelection();
                             }
                         });
 
                         drawToolbar.on("draw-end", function(evt) {
                             drawToolbar.deactivate();
+                            map.setMapCursor("default");
+                            setupSelection();
                             var numb;
                             var autoAttributes;
                             
@@ -732,8 +750,7 @@
                     
                     function initAttributes(editorInfos) { 
                         
-                        refLayers[0].on("click", selectFeature);
-                        refLayers[1].on("click", selectFeature);
+                        setupSelection();
                      
 
                         aiCustom = new AttributeInspector({
@@ -1148,7 +1165,12 @@
                     });
                     
                     ////On load
-                    map.on("load", function(){$('#loginModal').modal({show: true, keyboard: false, backdrop: 'static'});});
+                    // map.on("load", presentModal);
+                    $(window).load(presentModal);
+                    function presentModal (event){
+                        $('#loginModal').modal({show: true, keyboard: false, backdrop: 'static'});
+                    }
+
                 });
             });
         </script>
