@@ -23,6 +23,14 @@
                 color: #303030;
                 text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
             }
+            #logoff {
+                position: absolute;
+                top: 3px;
+                right: 5px;
+                z-index: 50;
+                padding: 0 6px 0 6px;
+                background: rgba(0, 0, 0, .1);
+            }
             #user {
                 position: absolute;
                 bottom: 18px;
@@ -163,6 +171,12 @@
                 margin: .2em;
                 width: 50px;
             }
+            /*.dojoxGridContent {
+                margin: auto;
+            }*/
+            /*.dojoxGridRowTable {
+                
+            }*/
         
         </style>
 
@@ -623,7 +637,7 @@
                             featureLayerEvents.push(out);
 
                         });
-                        
+
                         var select1 = refLayers[0].on("click", selectFeature);
                         var select2 = refLayers[1].on("click", selectFeature);
                         featureLayerEvents.push(select1);
@@ -660,6 +674,10 @@
                         var drawToolbar = new Draw(map);
                         var selectedTemplate;
                         tpCustom.on("selection-change", function(){
+                            refLayers[0].clearSelection();
+                            refLayers[1].clearSelection();
+                            map.infoWindow.hide();
+
                             if(tpCustom.getSelected()){
                                 selectedTemplate = tpCustom.getSelected();
                                 drawToolbar.activate(Draw.POLYLINE);
@@ -781,6 +799,10 @@
 
                         map.infoWindow.setContent(aiCustom.domNode);
                         map.infoWindow.resize(350, 240);
+                        map.infoWindow.on("hide", function(){
+                            refLayers[0].clearSelection();
+                            refLayers[1].clearSelection();
+                        });
 
                     }
                         
@@ -1163,7 +1185,11 @@
 
                         }
                     });
-                    
+
+                    $('#logoff').click(function() {
+                        location.reload();
+                    });
+
                     ////On load
                     // map.on("load", presentModal);
                     $(window).load(presentModal);
@@ -1180,7 +1206,8 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 class="text-center">Sign-In</h1>
+                        <h1 class="text-center">Road Inventory Updates</h1>
+                        <h3 class="text-center">Sign-In</h1>
                     </div>
                     <div class="modal-body">
                         <form id="signIn" class="form col-md-12 center-block">
@@ -1205,7 +1232,7 @@
                                 <button class="btn btn-primary btn-lg btn-block">Sign In</button>
                                     <a id="needHelp" href="#">Need Help?</a>
                                     <div id="popHelp" style="display:none">
-                                            <p><br>Welcome to the Road Inventory Update Application!<br><br>If you do not have an access code, please contact TxDOT TPP's Data Management Section to acquire one.</p>
+                                            <p><br>If you do not have an access code, please contact TxDOT - Transportation, Planning, and Programming's Data Management Section at <a href="mailto:TPP-GIS@txdot.gov?Subject=RIU%20Access%20Code%20Request" target="_top">TPP-GIS@txdot.gov</a> to acquire one.</p>
                                     </div>
                             </div>
                         </form>
@@ -1295,7 +1322,8 @@
                     </div>
                 </div>
             </div>
-            <button id="menuBtn" type="button" class="btn btn-default"><span id="menuArrow" class="glyphicon glyphicon-chevron-down"></span></button>
+            <button id="menuBtn" type="button" class="btn btn-default"><span id="menuArrow" class="glyphicon glyphicon-chevron-up"></span></button>
+            <button id="logoff" type="button" class="btn btn-default">Log Off</button>
             <span id="user"></span>
             <span id="info"></span>
             <button id="basemapTrigger" type="button" class="btn btn-default"><span id="basemapArrow" class="glyphicon glyphicon-chevron-up"></span></button>
