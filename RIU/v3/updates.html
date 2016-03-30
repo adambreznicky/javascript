@@ -5,8 +5,8 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Road Inventory Updates</title>
 
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
-        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.16/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.16/esri/css/esri.css">
         <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
         <style type="text/css">
@@ -95,7 +95,7 @@
             
 
             /* Menu */
-            #menuBtn {
+            #homeBtn {
                 position: absolute;
                 top: 90px;
                 left: 20px;
@@ -108,9 +108,22 @@
                 margin: 0;
                 /*border-color: black;*/
             }
+            #menuBtn {
+                position: absolute;
+                top: 130px;
+                left: 20px;
+                width: 33px;
+                z-index: 50;
+                padding-left: 3px;
+                padding-right: 3px;
+                padding-top: 6px;
+                padding-bottom: 4px;
+                margin: 0;
+                /*border-color: black;*/
+            }
             #menuContainer {
                 position: absolute;
-                top: 120px;
+                top: 160px;
                 left: 15px;
                 z-index: 50;
                 padding: 0;
@@ -171,12 +184,23 @@
                 margin: .2em;
                 width: 50px;
             }
-            /*.dojoxGridContent {
+            .dojoxGridContent {
                 margin: auto;
-            }*/
-            /*.dojoxGridRowTable {
-                
-            }*/
+            }
+
+            /*loading spinner*/
+            .glyphicon-refresh-animate {
+                -animation: spin .7s infinite linear;
+                -webkit-animation: spin2 .7s infinite linear;
+            }
+            @-webkit-keyframes spin2 {
+                from { -webkit-transform: rotate(0deg);}
+                to { -webkit-transform: rotate(360deg);}
+            }
+            @keyframes spin {
+                from { transform: scale(1) rotate(0deg);}
+                to { transform: scale(1) rotate(360deg);}
+            }
         
         </style>
 
@@ -184,7 +208,7 @@
             ['jquery', 'http://code.jquery.com/jquery-2.1.4.min.js'],
             ['jqueryui', 'http://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
             ['bootstrap', 'http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
-            ]" src="http://js.arcgis.com/3.14/">
+            ]" src="http://js.arcgis.com/3.16/">
         </script><!-- swamp thang -->
 
         <script>
@@ -256,6 +280,8 @@
                     var templateFields;
                     var serviceURL;
                     var aiCustom;
+                    var homeExtent;
+                    var displayLayers = []
                     var uploadedLayers;
                     var featureLayerEvents = [];
 
@@ -283,7 +309,7 @@
                     base_maps.push(new Basemap({
                         id: "spm",
                         title: "TxDOT Planning Map",
-                        thumbnailUrl: "./statewideplanningmap.png",
+                        thumbnailUrl: "http://www.arcgis.com/sharing/rest/content/items/87a5fd8e8ff84e969b0265ec5c326993/info/thumbnail/StatewidePlanningMap.png",
                         layers:[tiled]
                     }));
                     base_maps.push(new Basemap({
@@ -302,7 +328,7 @@
                         id: "street",
                         title: "Open Street Map",
                         thumbnailUrl: "http://www.arcgis.com/sharing/rest/content/items/b834a68d7a484c5fb473d4ba90d35e71/info/thumbnail/osm.jpg",
-                        layers:[new BasemapLayer({type: "OpenStreetMap"})]
+                        layers:[new BasemapLayer({url: "http://services.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer"})]
                     }));
                     
                     var basemapGallery = new BasemapGallery({
@@ -401,8 +427,8 @@
                             var orgBoundary = array.map(results.features, function(result){
                                     return result;
                             });
-                            var ext = orgBoundary[0].geometry.getExtent().expand(1.15);
-                            map.setExtent(ext);
+                            homeExtent = orgBoundary[0].geometry.getExtent().expand(1.15);
+                            map.setExtent(homeExtent);
 
                         }
 
@@ -875,9 +901,9 @@
                         function statusCallback(jobInfo) {
                           var status = jobInfo.jobStatus;
                           //dom.byId('downloadMarquee').innerHTML = status;
-                          dom.byId('downloadMarquee').innerHTML = "<p style='color:black'>Preparing your download...<br> This may take several minutes for large datasets.</p>"
+                          dom.byId('downloadMarquee').innerHTML = "<br><span class='glyphicon glyphicon-refresh glyphicon-refresh-animate' style='text-align:center;'></span><br><p style='color:black'>Preparing download...<br>This may take several minutes for large datasets.</p>"
                           if ( status === "esriJobFailed" ) {
-                            dom.byId('downloadMarquee').innerHTML = "<p style='color:red'>Uh-oh... Something went wrong.</p>";
+                            dom.byId('downloadMarquee').innerHTML = "<br><p style='color:red'>Uh-oh... Something went wrong.</p>";
                             console.log(jobInfo);
                           }
                           else if (status === "esriJobSucceeded"){
@@ -913,7 +939,7 @@
                         var name = fileName.split(".");
                         name = name[0].replace("c:\\fakepath\\", "");
 
-                        dom.byId('upload-status').innerHTML = '<b>Loading </b>' + name;
+                        dom.byId('upload-status').innerHTML = "<span class='glyphicon glyphicon-refresh glyphicon-refresh-animate'></span><b> Loading </b>" + name;
 
                         var params = {
                           'name': name,
@@ -958,6 +984,7 @@
                             else if ($("#chooseUpload").val() == "DISPLAY") {
                                 addShapefileToMap(response.featureCollection);
                                 dom.byId('uploadMarquee').innerHTML = '<p style="color:black">Shapefile added to the map only and has not been submitted as an inventory update.</p>';
+                                $("#clearDisplay").attr("style", "display:block;");
                             }
                           }),
                           error: lang.hitch(this, errorHandler)
@@ -1020,13 +1047,14 @@
                         uploadedLayers = [];
 
                         array.forEach(featureCollection.layers, function (layer) {
-                            console.log(aiCustom);
-                            console.log(layer);
+                            // console.log(aiCustom);
+                            // console.log(layer);
 
                             var uploadedLayer = new FeatureLayer(layer);
                             fullExtent = fullExtent ?
                             fullExtent.union(uploadedLayer.fullExtent) : uploadedLayer.fullExtent;
                             uploadedLayers.push(uploadedLayer);
+                            displayLayers.push(uploadedLayer);
 
                             var fieldInfos = [];
                             array.forEach(layer.layerDefinition.fields, function(field) {
@@ -1102,10 +1130,21 @@
                         });
                     }
 
+                    function clearDisplay () {
+                        array.forEach(displayLayers, function (lyr) {
+                            map.removeLayer(lyr);
+                        });
+                        displayLayers = [];
+                        $("#clearDisplay").attr("style", "display:none;");
+                    }
+
 
 
                     ////JQUERY EVENTS
                     $("#needHelp").click(function(){$("#popHelp").toggle("fast");});
+                    $("#homeBtn").click(function(){
+                        map.setExtent(homeExtent);
+                    });
                     $("#menuBtn").click(function(){
                         $("#menuPanel").slideToggle("fast");
                         $("#menuArrow").toggleClass('glyphicon-chevron-up glyphicon-chevron-down');
@@ -1114,6 +1153,10 @@
                         $("#basemapPanel").slideToggle("fast");
                         $("#basemapArrow").toggleClass('glyphicon-chevron-up glyphicon-chevron-down');
                     });
+                    $('#logoff').click(function() {
+                        location.reload();
+                    });
+                    $('#clearDisplay').click(clearDisplay);
 
                     ////inital sign in page
                     $('#signIn').submit(function(event){
@@ -1186,9 +1229,7 @@
                         }
                     });
 
-                    $('#logoff').click(function() {
-                        location.reload();
-                    });
+                    
 
                     ////On load
                     // map.on("load", presentModal);
@@ -1287,7 +1328,7 @@
                             </div>
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Upload a zipped shapefile to the map for display or for a bulk inventory submission.</p>
+                                    <p>Upload a zipped (.zip) shapefile to the map for display or for a bulk inventory submission.</p>
 
                                     <div style='padding-left:4px;'><!-- swamp thang -->
                                         <p>Visit the <a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles </a>help topic for information and limitations.</p>
@@ -1304,6 +1345,7 @@
                                         <span class="file-upload-status" style="opacity:1;" id="upload-status"></span>
                                         <div id="fileInfo"></div>
                                         <div id="uploadMarquee"></div>
+                                        <button type="button" class="btn btn-default" id="clearDisplay" style="display:none;"><span class="glyphicon glyphicon-erase"></span> Clear Display</button>
                                     </div>
                                 </div>
                             </div>
@@ -1322,6 +1364,7 @@
                     </div>
                 </div>
             </div>
+            <button id="homeBtn" type="button" class="btn btn-default"><span class="glyphicon glyphicon-home"></span></button>
             <button id="menuBtn" type="button" class="btn btn-default"><span id="menuArrow" class="glyphicon glyphicon-chevron-up"></span></button>
             <button id="logoff" type="button" class="btn btn-default">Log Off</button>
             <span id="user"></span>
