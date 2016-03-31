@@ -401,7 +401,6 @@
                     map.on("load", function() {
                             map.on("mouse-move", showCoordinates);
                             map.on("mouse-drag", showCoordinates);
-                            map.disableDoubleClickZoom();
                         });
                     map.on("zoom-end", function() {
                         var current = $("#info").html();
@@ -668,12 +667,15 @@
                         var select2 = refLayers[1].on("click", selectFeature);
                         featureLayerEvents.push(select1);
                         featureLayerEvents.push(select2);
+
+                        map.enableDoubleClickZoom();
                     }
 
                     function disableEvents() {
                         $.each(featureLayerEvents, function(index, evt){
                             evt.remove();
                         });
+                        map.disableDoubleClickZoom();
                     }
 
                     function initLegend (Infos) {
@@ -1169,28 +1171,42 @@
                             if(organization != null){
                                 if(routeClass == "CR"){
                                     if(accessCode == "porksoda"){
-                                        $('#loginModal').modal("hide");
-                                        updateClass = routeClass;
-                                        org = organization;
-                                        presentData();
-                                        $("#user").html($("#selectOrg option[value='" + org + "']").text());
+                                        if($("#userAgreement").is(':checked')){
+                                            $('#loginModal').modal("hide");
+                                            updateClass = routeClass;
+                                            org = organization;
+                                            presentData();
+                                            $("#user").html($("#selectOrg option[value='" + org + "']").text());
+                                        }
+                                        else{
+                                            alert("You must check the user agreement to continue.");
+                                        }
                                     }
                                     else{
                                         alert("Invalid access code.");
                                         $("#accessCode").val("");
+                                        $("#signInButton").prop("disabled", true);
+                                        $("#agreementDiv").attr("style", "display:none;");
                                     }
                                 }
                                 else if(routeClass == "LS"){
                                     if(accessCode == "raindogs"){
-                                        $('#loginModal').modal("hide");
-                                        updateClass = routeClass;
-                                        org = organization;
-                                        presentData();
-                                        $("#user").html($("#selectOrg option[value='" + org + "']").text());
+                                        if($("#userAgreement").is(':checked')){
+                                            $('#loginModal').modal("hide");
+                                            updateClass = routeClass;
+                                            org = organization;
+                                            presentData();
+                                            $("#user").html($("#selectOrg option[value='" + org + "']").text());
+                                        }
+                                        else{
+                                            alert("You must check the user agreement to continue.");
+                                        }
                                     }
                                     else{
                                         alert("Invalid access code.");
                                         $("#accessCode").val("");
+                                        $("#signInButton").prop("disabled", true);
+                                        $("#agreementDiv").attr("style", "display:none;");
                                     }
                                 }
                             }
@@ -1214,6 +1230,26 @@
                         else if (routeClass == "LS") {
                             $(".crOption").attr("style", "display:none;");
                             $(".lsOption").attr("style", "display:block;");
+                        }
+                        $("#accessCode").prop("disabled", true);
+                        $("#signInButton").prop("disabled", true);
+                        $("#accessCode").val("");
+                        $("#agreementDiv").attr("style", "display:none;");
+                    });
+
+                    $("#selectOrg").change(function(){
+                        $("#accessCode").prop("disabled", false);
+                    });
+
+                    $("#accessCode").on('input', function(){
+                        var accessCode = $("#accessCode").val();
+                        if (accessCode != "") {
+                            $("#signInButton").prop("disabled", false);
+                            $("#agreementDiv").attr("style", "display:block;");
+                        }
+                        else {
+                            $("#signInButton").prop("disabled", true);
+                            $("#agreementDiv").attr("style", "display:none;");
                         }
                     });
 
@@ -1267,13 +1303,16 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <input type="password" class="form-control input-lg" placeholder="Access Code" id="accessCode">
+                                <input type="password" class="form-control input-lg" placeholder="Access Code" id="accessCode" disabled>
+                                <div class="checkbox" id="agreementDiv" style="display:none;">
+                                    <label style="font-size:.8em;"><input type="checkbox" id="userAgreement" style="cursor:pointer;">By agreeing to these terms and conditions, the user acknowledges that they understand this is a data submission by a third party process, and that the actual data maintained by the Texas Department of Transportation is not directly altered by these submissions. The user understands that all edits submitted via this application must be reviewed and accepted by Texas Department of Transportation. The Texas Department of Transportation makes no claim as to the accuracy of the information contained within this application.</label>
+                                </div>
                             </div>
                             <div class="form-group">
-                                <button class="btn btn-primary btn-lg btn-block">Sign In</button>
+                                <button class="btn btn-primary btn-lg btn-block" id="signInButton" disabled>Sign In</button>
                                     <a id="needHelp" href="#">Need Help?</a>
                                     <div id="popHelp" style="display:none">
-                                            <p><br>If you do not have an access code, please contact TxDOT - Transportation, Planning, and Programming's Data Management Section at <a href="mailto:TPP-GIS@txdot.gov?Subject=RIU%20Access%20Code%20Request" target="_top">TPP-GIS@txdot.gov</a> to acquire one.</p>
+                                            <p><br>To acquire an access code, please contact TxDOT - Transportation, Planning, and Programming's Data Management Section at <a href="mailto:TPP-GIS@txdot.gov?Subject=RIU%20Access%20Code%20Request" target="_top">TPP-GIS@txdot.gov</a></p>
                                     </div>
                             </div>
                         </form>
@@ -1309,7 +1348,7 @@
                             </div>
                             <div id="collapseThree" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Download a copy of your data inventory or a schema template for editing and uploading changes. Preparing a copy of your data inventory may take several minutes for large datasets.<br><p style="font-size: xx-small;">Note: Downloading your data inventory in the Shapefile format may truncate field names.</p></p>
+                                    <p>1. Download copy of road inventory<br>2. Download empty schema template shapefile<br><p style="font-size: xx-small;">Note: Downloading your data inventory in the Shapefile format may truncate field names.</p></p>
                                     <select class="form-control" id="chooseData">
                                         <option value="SCHEMA" selected>Schema Only</option> <option value="DATA">Data & Schema</option>  
                                     </select>
@@ -1328,10 +1367,11 @@
                             </div>
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>Upload a zipped (.zip) shapefile to the map for display or for a bulk inventory submission.</p>
+                                    <p style="font-weight:bold;text-align:center;">Bulk Inventory Submission</p>
+                                    <p>Upload a zipped (.zip) shapefile for display or submission.</p>
 
                                     <div style='padding-left:4px;'><!-- swamp thang -->
-                                        <p>Visit the <a target='_blank' href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles </a>help topic for information and limitations.</p>
+                                        <p>Help with <a target='_blank' style="font-weight:bold;color:blue;" href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a></p>
                                         <select class="form-control" id="chooseUpload">
                                             <option value="DISPLAY" selected>Display Only</option> <option value="UPLOAD">Upload Submission</option>  
                                         </select>
