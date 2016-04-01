@@ -882,7 +882,7 @@
 
                     ////DOWNLOAD FUNCTIONS
                     on(dom.byId("download"), "click", function () {
-                        var gp = new Geoprocessor("https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/downloadUpdates/GPServer/Updates");//swamp thang
+                        var gp = new Geoprocessor("http://txapp38/arcgis/rest/services/TPP_User/RIUdownload/GPServer/RIU_download");//swamp thang
                         var params = {
                             "UpdateClass": updateClass,
                             "Organization": org,
@@ -903,7 +903,7 @@
                         function statusCallback(jobInfo) {
                           var status = jobInfo.jobStatus;
                           //dom.byId('downloadMarquee').innerHTML = status;
-                          dom.byId('downloadMarquee').innerHTML = "<br><span class='glyphicon glyphicon-refresh glyphicon-refresh-animate' style='text-align:center;'></span><br><p style='color:black'>Preparing download...<br>This may take several minutes for large datasets.</p>"
+                          dom.byId('downloadMarquee').innerHTML = "<br><p style='color:black'><span class='glyphicon glyphicon-refresh glyphicon-refresh-animate'></span> Preparing the download...<br>This may take several minutes for large datasets.</p>"
                           if ( status === "esriJobFailed" ) {
                             dom.byId('downloadMarquee').innerHTML = "<br><p style='color:red'>Uh-oh... Something went wrong.</p>";
                             console.log(jobInfo);
@@ -914,6 +914,7 @@
                         }
                         function downloadFile(outputFile){
                           map.graphics.clear();
+                          console.log(outputFile);
                           var theurl = outputFile.value.url;  
                           window.location = theurl;
                         }
@@ -1312,7 +1313,7 @@
                                 <button class="btn btn-primary btn-lg btn-block" id="signInButton" disabled>Sign In</button>
                                     <a id="needHelp" href="#">Need Help?</a>
                                     <div id="popHelp" style="display:none">
-                                            <p><br>To acquire an access code, please contact TxDOT - Transportation, Planning, and Programming's Data Management Section at <a href="mailto:TPP-GIS@txdot.gov?Subject=RIU%20Access%20Code%20Request" target="_top">TPP-GIS@txdot.gov</a></p>
+                                            <p><br>To acquire an access code, please contact TxDOT - Transportation, Planning, and Programming's Data Management Section at <a href="mailto:TPP-GIS@txdot.gov?Subject=RIU%20Access%20Code%20Request" target="_top" style="color:blue;">TPP-GIS@txdot.gov</a></p>
                                     </div>
                             </div>
                         </form>
@@ -1348,9 +1349,10 @@
                             </div>
                             <div id="collapseThree" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p>1. Download copy of road inventory<br>2. Download empty schema template shapefile<br><p style="font-size: xx-small;">Note: Downloading your data inventory in the Shapefile format may truncate field names.</p></p>
+                                    <p style="font-weight:bold;text-align:center;">Options</p>
+                                    <p>1. Empty schema template shapefile<br>2. Copy of road inventory<br><p style="font-size: xx-small;">Note: Downloading your the inventory in the Shapefile format may truncate field names.</p></p>
                                     <select class="form-control" id="chooseData">
-                                        <option value="SCHEMA" selected>Schema Only</option> <option value="DATA">Data & Schema</option>  
+                                        <option value="SCHEMA" selected>Schema Template</option> <option value="DATA">Road Inventory</option>  
                                     </select>
                                     <select class="form-control" id="downloadFormat"  disabled="disabled">
                                         <option value="SHP" selected>Shapefile</option>  <option value="FGDB">File Geodatabase</option> 
@@ -1367,13 +1369,13 @@
                             </div>
                             <div id="collapseTwo" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <p style="font-weight:bold;text-align:center;">Bulk Inventory Submission</p>
-                                    <p>Upload a zipped (.zip) shapefile for display or submission.</p>
+                                    <p style="font-weight:bold;text-align:center;">Options</p>
+                                    <p>Upload a zipped (.zip) shapefile for:<br>1. Temporary display<br>2. Bulk Inventory Submission</p>
 
                                     <div style='padding-left:4px;'><!-- swamp thang -->
-                                        <p>Help with <a target='_blank' style="font-weight:bold;color:blue;" href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a></p>
+                                        <p>Help with <a target='_blank' style="color:blue;" href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a></p>
                                         <select class="form-control" id="chooseUpload">
-                                            <option value="DISPLAY" selected>Display Only</option> <option value="UPLOAD">Upload Submission</option>  
+                                            <option value="DISPLAY" selected>Temporary Display</option> <option value="UPLOAD">Bulk Submission</option>  
                                         </select>
                                         <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
                                             <div class="form-group">

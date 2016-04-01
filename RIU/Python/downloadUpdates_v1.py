@@ -1,5 +1,5 @@
 __file__ = 'downloadUpdates_v1'
-__date__ = '11/12/2015'
+__date__ = '4/1/2015'
 __author__ = 'ABREZNIC'
 """
 The MIT License (MIT)
@@ -32,7 +32,8 @@ updateClass = arcpy.GetParameterAsText(0)
 org = arcpy.GetParameterAsText(1)
 downloadFormat = arcpy.GetParameterAsText(2)
 chooseData = arcpy.GetParameterAsText(3)
-output = arcpy.GetParameterAsText(4).replace("\\", os.sep)
+label = ""
+the_filename = ""
 
 directory = arcpy.env.scratchFolder + os.sep + updateClass + str(org)
 if not os.path.exists(directory):
@@ -41,20 +42,20 @@ else:
     shutil.rmtree(directory)
     os.makedirs(directory)
 arcpy.AddMessage("directory created.")
-label = ""
+
 
 if updateClass == "CR":
     if chooseData == "SCHEMA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads_Updates/FeatureServer/0/query"
+        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/CountyRoads/MapServer/0/query"
+        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads/MapServer/0/query"
         where = """"COUNTY"=""" + str(org)
 
 elif updateClass == "LS":
     if chooseData == "SCHEMA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/LocalStreets_Updates/FeatureServer/0/query"
+        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
-        baseURL = "https://maps.dot.state.tx.us/arcgis/rest/services/TPPuser/LocalStreets/MapServer/0/query"
+        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets/MapServer/0/query"
         where = "(ACRNM1='" + str(org) + "' OR ACRNM2='" + str(org) + "')"
 arcpy.AddMessage("url created.")
 
@@ -70,13 +71,13 @@ def getObjectIDs(query):
 
 def createFC(fs):
     if downloadFormat == "SHP":
-        arcpy.CopyFeatures_management(fs, directory + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org) + ".shp")
-        newFC = directory + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org) + ".shp"
+        arcpy.CopyFeatures_management(fs, directory + os.sep + the_filename + ".shp")
+        newFC = directory + os.sep + the_filename + ".shp"
     elif downloadFormat == "FGDB":
         arcpy.CreateFileGDB_management(directory, "TxDOT_" + updateClass + "_" + str(org))
         fgdb = directory + os.sep + "TxDOT_" + updateClass + "_" + str(org)
-        arcpy.CopyFeatures_management(fs, fgdb + ".gdb" + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org))
-        newFC = fgdb + ".gdb" + os.sep + "TxDOT_" + label + "_" + updateClass + "_" + str(org)
+        arcpy.CopyFeatures_management(fs, fgdb + ".gdb" + os.sep + the_filename)
+        newFC = fgdb + ".gdb" + os.sep + the_filename
     arcpy.AddMessage("feature class created.")
     return newFC
 
@@ -96,6 +97,7 @@ token = ''
 
 if chooseData == "SCHEMA":
     label = "Updates"
+    the_filename = "TxDOT_" + label + "_" + updateClass + "_" + str(org)
     everything = "1=1"
     objectIDs = getObjectIDs(everything)
     where = """"OBJECTID" = """ + str(objectIDs[0])
@@ -112,6 +114,7 @@ if chooseData == "SCHEMA":
 
 elif chooseData == "DATA":
     label = "Inventory"
+    the_filename = "TxDOT_" + label + "_" + updateClass + "_" + str(org)
     objectIDs = getObjectIDs(where)
     total = len(objectIDs)
     arcpy.AddMessage("Total: " + str(total))
@@ -144,7 +147,9 @@ elif chooseData == "DATA":
         high += 1000
 
 arcpy.AddMessage("packing up...")
-zipper = output
+outputPath = os.path.join(arcpy.env.scratchFolder, the_filename + ".zip")
+arcpy.SetParameterAsText(4, outputPath)
+zipper = outputPath
 if os.path.isfile(zipper):
     os.remove(zipper)
 arcpy.AddMessage("zipfile started.")
