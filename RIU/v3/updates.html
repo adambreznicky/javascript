@@ -57,7 +57,7 @@
                 display:none;
                 padding-left:30px;
                 padding-right: 30px;
-                margin:0;
+                margin:0 auto;
                 background: rgb(0, 0, 0);
                 background: rgba(0, 0, 0, 0.5);
                 width: 100%;
@@ -186,6 +186,19 @@
             }
             .dojoxGridContent {
                 margin: auto;
+            }
+            .helpButton{
+                text-align: center;
+                border: 1px solid #0649FB;
+                background: rgba(0, 0, 0, .1);
+                color: #0649FB;
+                border-radius: 20px;
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+                z-index: 51;
+                font-weight: bold;
+                margin-top: 10px;
             }
 
             /*loading spinner*/
@@ -745,14 +758,12 @@
                             
                             tpCustom.clearSelection();
                         });
-                        
-                        //commeted out so menu stays open on login
-                        // $("#menuPanel").slideToggle();
-                        //un-comment these 2 to set RESOURCEs as defualt open panel, but it screws up accordion functionality
-                        // $('#collapseOne').collapse('toggle');
-                        // $('#collapseFour').collapse('toggle');
+                
+                        $('#collapseOne').removeClass('in');
+                        $('#collapseOneHdr').addClass('collapsed');
+                        $('#collapseFour').addClass('in');
+                        $('#collapseFourHdr').removeClass('collapsed');
                         buildEditToolbar();
-
                     }
                     
                     function selectFeature(evt){
@@ -909,7 +920,7 @@
                             console.log(jobInfo);
                           }
                           else if (status === "esriJobSucceeded"){
-                            dom.byId('downloadMarquee').innerHTML = "<p style='color:green'>Success!</p>";
+                            dom.byId('downloadMarquee').innerHTML = "<br><p style='color:green'>Success!</p>";
                           }
                         }
                         function downloadFile(outputFile){
@@ -942,7 +953,7 @@
                         var name = fileName.split(".");
                         name = name[0].replace("c:\\fakepath\\", "");
 
-                        dom.byId('upload-status').innerHTML = "<span class='glyphicon glyphicon-refresh glyphicon-refresh-animate'></span><b> Loading </b>" + name;
+                        dom.byId('upload-status').innerHTML = "<p style='text-align:left;'><span class='glyphicon glyphicon-refresh glyphicon-refresh-animate'></span><b> Loading: </b>" + name + "</p>";
 
                         var params = {
                           'name': name,
@@ -980,14 +991,14 @@
                               return;
                             }
                             var layerName = response.featureCollection.layers[0].layerDefinition.name;
-                            dom.byId('upload-status').innerHTML = '<b>Loaded: </b>' + layerName;
+                            dom.byId('upload-status').innerHTML = "<p style='text-align:left;'><b>Loaded: </b>" + layerName + "</p>";
                             if ($("#chooseUpload").val() == "UPLOAD") {
                                 verifySchema(response.featureCollection);
                             }
                             else if ($("#chooseUpload").val() == "DISPLAY") {
                                 addShapefileToMap(response.featureCollection);
                                 dom.byId('uploadMarquee').innerHTML = '<p style="color:black">Shapefile added to the map only and has not been submitted as an inventory update.</p>';
-                                $("#clearDisplay").attr("style", "display:block;");
+                                $("#clearDisplay").attr("style", "display:block;margin:auto;");
                             }
                           }),
                           error: lang.hitch(this, errorHandler)
@@ -1331,49 +1342,51 @@
                 <div id="menuPanel">
                     <div class="panel-group" id="accordion">
                         <div class="panel panel-default">
-                            <div class="panel-heading btn-default" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" style="cursor: pointer;">
+                            <div class="panel-heading btn-default" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" id="collapseOneHdr" style="cursor: pointer;">
                                 <h4 class="panel-title">Edit</h4>
                             </div>
                             <div id="collapseOne" class="panel-collapse collapse in">
-                                <div class="panel-body">
+                                <div class="panel-body" style="text-align:center;">
                                     <!--<p>Edit the data stuff here. Template, edit tools, etc. Submits edit button which sends email?</p>-->
                                     <div id="editTemplate"></div>
                                     <br>
                                     <div id="legend"></div>
+                                    <button type="button" class="helpButton" id="editHelp">?</button>
                                 </div>
                             </div>
                         </div>
                         <div class="panel panel-default">
-                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" style="cursor: pointer;">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" style="cursor: pointer;">
                                 <h4 class="panel-title">Download</h4>
                             </div>
-                            <div id="collapseThree" class="panel-collapse collapse">
-                                <div class="panel-body">
-                                    <p style="font-weight:bold;text-align:center;">Options</p>
-                                    <p>1. Empty schema template shapefile<br>2. Copy of road inventory<br><p style="font-size: xx-small;">Note: Downloading your the inventory in the Shapefile format may truncate field names.</p></p>
+                            <div id="collapseTwo" class="panel-collapse collapse">
+                                <div class="panel-body" style="text-align:center;">
+                                    <p style="font-weight:bold;">Options</p>
+                                    <p style="text-align:left;">1. Empty schema template shapefile<br>2. Copy of road inventory</p>
+                                    <p style="font-size: xx-small;">Note: Downloading your the inventory in the Shapefile format may truncate field names.</p>
                                     <select class="form-control" id="chooseData">
                                         <option value="SCHEMA" selected>Schema Template</option> <option value="DATA">Road Inventory</option>  
                                     </select>
                                     <select class="form-control" id="downloadFormat"  disabled="disabled">
                                         <option value="SHP" selected>Shapefile</option>  <option value="FGDB">File Geodatabase</option> 
                                     </select>
-                                    
                                     <button type="button" class="btn btn-default" id="download"><span class="glyphicon glyphicon-download-alt"></span> Download!</button>
-                                    <div id="downloadMarquee"></div>
+                                    <div id="downloadMarquee" style="text-align:left;"></div>
+                                    <button type="button" class="helpButton" id="downloadHelp">?</button>
                                 </div>
                             </div>
                         </div>
                         <div class="panel panel-default">
-                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" style="cursor: pointer;">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" style="cursor: pointer;">
                                 <h4 class="panel-title">Upload</h4>
                             </div>
-                            <div id="collapseTwo" class="panel-collapse collapse">
-                                <div class="panel-body">
+                            <div id="collapseThree" class="panel-collapse collapse">
+                                <div class="panel-body" style="text-align:center;">
                                     <p style="font-weight:bold;text-align:center;">Options</p>
-                                    <p>Upload a zipped (.zip) shapefile for:<br>1. Temporary display<br>2. Bulk Inventory Submission</p>
-
+                                    <p>Upload a zipped (.zip) shapefile for:</p>
+                                    <p style="text-align:left;">1. Temporary display<br>2. Bulk Inventory Submission</p>
                                     <div style='padding-left:4px;'><!-- swamp thang -->
-                                        <p>Help with <a target='_blank' style="color:blue;" href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a></p>
+                                        <p style="font-size: xx-small;">Help with <a target='_blank' style="color:blue;" href="http://doc.arcgis.com/en/arcgis-online/reference/shapefiles.htm">Shapefiles</a></p>
                                         <select class="form-control" id="chooseUpload">
                                             <option value="DISPLAY" selected>Temporary Display</option> <option value="UPLOAD">Bulk Submission</option>  
                                         </select>
@@ -1384,17 +1397,18 @@
                                                 </span>
                                             </div>
                                         </form>
-                                        <span class="file-upload-status" style="opacity:1;" id="upload-status"></span>
-                                        <div id="fileInfo"></div>
-                                        <div id="uploadMarquee"></div>
+                                        <span class="file-upload-status" style="opacity:1;text-align:left;" id="upload-status"></span>
+                                        <div id="fileInfo" style="text-align:left;"></div>
+                                        <div id="uploadMarquee" style="text-align:left;"></div>
                                         <button type="button" class="btn btn-default" id="clearDisplay" style="display:none;"><span class="glyphicon glyphicon-erase"></span> Clear Display</button>
+                                        <button type="button" class="helpButton" id="uploadHelp">?</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="panel panel-default">
-                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" style="cursor: pointer;">
+                            <div class="panel-heading btn-default collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" id="collapseFourHdr" style="cursor: pointer;">
                                 <h4 class="panel-title">Resources</h4>
                             </div>
                             <div id="collapseFour" class="panel-collapse collapse">
@@ -1413,10 +1427,10 @@
             <span id="info"></span>
             <button id="basemapTrigger" type="button" class="btn btn-default"><span id="basemapArrow" class="glyphicon glyphicon-chevron-up"></span></button>
             <div id="basemapPanel">
-                <div id="basemapContainer" class="container">
+                <div id="basemapContainer" class="container" style="width:100%;">
                     <div id="basemapGallery" class="row"></div>
                 </div>
-            </div>            
+            </div> 
         </div>
 
     </body>
