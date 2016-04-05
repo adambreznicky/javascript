@@ -56,7 +56,7 @@ elif updateClass == "LS":
         baseURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
         baseURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets/MapServer/0/query"
-        where = "(ADMN_ACRNM='" + str(org) + "' OR DIST_ACRNM='" + str(org) + "')"
+        where = "(ADMN_ACRNM='" + str(org) + "' OR DIST_ACRNM='" + str(org) + "' OR COG_ACRNM='" + str(org) + "')"
 arcpy.AddMessage("url created.")
 
 def getObjectIDs(query):
