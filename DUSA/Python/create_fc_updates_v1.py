@@ -27,40 +27,39 @@ THE SOFTWARE.
 """
 import arcpy, os
 
+# set input variables
 publish_db = "C:\\TxDOT\\Scripts\\javascript\\RIU\\Python\\Publish.gdb"
+updates_feature_classes = ["LocalStreets_Updates", "CountyRoads_Updates"]
+
+# global variables
 arcpy.env.workspace = "in_memory"
 
 
-def create_domains():
-    arcpy.CreateDomain_management(publish_db, "RDWY_UPDATE", "Inventory Update Type", "TEXT", "CODED")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_UPDATE", "Add", "Add Road")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_UPDATE", "Remove", "Remove Road")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_UPDATE", "Update", "Update Attributes/Alignment")
-
-    arcpy.CreateDomain_management(publish_db, "RDWY_DESIGN", "Road Design", "SHORT", "CODED")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", 1, "One Way")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", 2, "Two Way")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", 3, "Boulevard")
-
-    arcpy.CreateDomain_management(publish_db, "RDWY_SURFACE", "Road Surface Type", "SHORT", "CODED")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 12, "Dirt/Natural")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 13, "Gravel")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 10, "Paved")
-    arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 1, "Concrete")
-
-
 def create_feature_class(name):
+    print "creating feature class " + name
     sr = arcpy.SpatialReference("WGS 1984 Web Mercator (auxiliary sphere)")
     arcpy.CreateFeatureclass_management(publish_db, name, "POLYLINE", "", "DISABLED", "DISABLED", sr)
 
 
 def create_fields(name):
+    print "creating fields for " + name
     fc = publish_db + os.sep + name
-    if name == "LocalStreet_Updates":
+    arcpy.AddField_management(fc, "SOURCE", "TEXT", "", "", 75)
+    arcpy.AddField_management(fc, "UPDATE_DT", "DATE")
+    arcpy.AddField_management(fc, "LENGTH", "DOUBLE")
+    arcpy.AddField_management(fc, "CHANGE", "TEXT", "", "", 10, "", "", "", "RDWY_UPDATE")
+    arcpy.AddField_management(fc, "STREET_NM", "TEXT", "", "", 100)
+    arcpy.AddField_management(fc, "DESIGN", "SHORT", "", "", "", "", "", "", "RDWY_DESIGN")
+    arcpy.AddField_management(fc, "SURFACE", "SHORT", "", "", "", "", "", "", "RDWY_SURFACE")
+    arcpy.AddField_management(fc, "NUM_LANES", "SHORT")
+    arcpy.AddField_management(fc, "COMMENT", "TEXT", "", "", 150)
 
 
-create_domains()
-create_feature_class("LocalStreets_Updates")
-create_fields("LocalStreets_Updates")
+def build(fc_list):
+    for fc in fc_list:
+        create_feature_class(fc)
+        create_fields(fc)
+
+build(updates_feature_classes)
 
 print "that's all folks!!"

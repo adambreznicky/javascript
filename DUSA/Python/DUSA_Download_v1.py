@@ -49,7 +49,7 @@ if updateClass == "CR":
         baseURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
         baseURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads/MapServer/0/query"
-        where = """"COUNTY"=""" + str(org)
+        where = "CNTY_NBR = '" + str(org) + "'"
 
 elif updateClass == "LS":
     if chooseData == "SCHEMA":
