@@ -456,7 +456,7 @@
                             var pieces = selectorLabel.split(" - ");
                             var theName = pieces[0];
                             var caps = theName.toUpperCase();
-                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps + "_2015.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./DataDictionary.pdf' target='DataDictionary' title='Schema Data Dictionary for all Datasets within this App'>Data Dictionary</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps + "_2015.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
                         
                             var queryTask = new QueryTask(countiesURL);
                             query.where = expression;
@@ -550,10 +550,13 @@
                             if (org !== "CSEC") {
                                 localstreets.setDefinitionExpression("ADMN_ACRNM = '" + org + "' OR DIST_ACRNM = '" + org + "' OR COG_ACRNM = '" + org + "'");
                             }
+                            else {
+                                localstreets.setDefinitionExpression("ADMN_ACRNM <> 'MDA911'");
+                            }
 
                             map.addLayers([ls_maintenance, localstreets, ls_updatesLyr]);
 
-                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a>");
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./DataDictionary.pdf' target='DataDictionary' title='Schema Data Dictionary for all Datasets within this App'>Data Dictionary</a><br><a>&bull; </a><a href='./LOCAL_STREETS_CRITERIA.pdf' target='LS Criteria' title='TxDOT Definition of a Local Street'>Criteria</a>");
                         
                             var queryTask = new QueryTask(ls_maintenanceURL);
                             query.where = expression;

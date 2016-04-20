@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit //creativecommons.org/licenses/by-sa/4.0/ -->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Report An Issue</title>
+<!--swamp thang-->
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <!--swamp thangs-->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+        <style type="text/css">
+            html, body{
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                background-color: lightgray;
+            }
+            #divMap{
+                margin-bottom:5%;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                height: auto;
+            }
+/*            #standardDir {
+                padding:6px 12px;
+                margin-left:12px;*/
+            }
+            #invalidLocate {
+                display:none;
+                padding:6px 12px;
+                margin-left:12px;
+            }
+            #invalidType {
+                display:none;
+                padding:6px 12px;
+                margin-left:12px;
+            }
+            #invalidDesc {
+                display:none;
+                padding:6px 12px;
+                margin-left:12px;
+            }
+            .frmt {
+                text-align: center;
+                font-size: x-large;
+                padding: 0;
+            }
+            .container {
+                background-color:white;
+            }
+            
+        </style>
+
+        <script data-dojo-config="async:true, aliases: [
+            ['jquery', 'https://code.jquery.com/jquery-2.1.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js']
+            ]" src="http://js.arcgis.com/3.14/">
+            //swamp thangs, esri thang
+        </script>
+
+        <script>
+            require([
+                "jquery",
+                "jqueryui",
+
+                "esri/map",
+                "esri/layers/FeatureLayer",
+                "esri/graphic",
+                "esri/geometry/Geometry",
+                "esri/toolbars/draw",
+                "esri/geometry/Point",
+                "esri/geometry/webMercatorUtils",
+                
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/Color",
+                "esri/request",
+
+                "dojo/on",
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/require",
+                "dojo/domReady!"],
+            function($, $ui,
+                    Map, FeatureLayer, Graphic, Geometry, Draw, Point, webMercatorUtils,
+                    SimpleMarkerSymbol, Color, esriRequest,
+                    on, ready, parser, require) {
+                ready(function(){
+                    dojo.require("bootstrap");
+                    parser.parse();
+                    
+                    var mapGraphic = null;
+
+                    var flag = 0;    
+                    var cursorX;
+                    var cursorY;                
+
+                    var map = new Map("divMap", {
+                      center: [-100, 32],
+                      zoom: 7,
+                      basemap: "topo",
+                      showAttribution: false,
+                      logo: false
+                    });
+                    
+                    var issuesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/PublicIssues/FeatureServer/0";//swamp thang
+                    var issuesLyr = new FeatureLayer(issuesURL,{
+                        mode: FeatureLayer.MODE_ONDEMAND,
+                        outFields: ['*']
+                    });
+
+                    map.on("load", function() {
+                        map.disableScrollWheelZoom();
+                        map.on("mouse-move", showCoordinates);
+                        map.on("mouse-drag", showCoordinates);
+                    });
+                    map.addLayers([issuesLyr]);
+
+                    function showCoordinates (evt){
+                        var mp = webMercatorUtils.webMercatorToGeographic(evt.mapPoint);
+                        cursorX = mp.x.toFixed(5);
+                        cursorY = mp.y.toFixed(5);
+                        if($('input#location').prop("checked") == false || $('#submitDiv').is(":hidden") ) {
+                            $('#coords').html("(Coordinates: " + cursorY + ", " + cursorX + ")");
+                        }
+                    };
+                    
+                    function mapDraw () {
+                        var drawToolbar = new Draw(map, { showTooltips: true });
+                        drawToolbar.activate(Draw.POINT);
+                        $('#coords').html("(Coordinates: " + cursorY + ", " + cursorX + ")");
+                        
+                        $("#divMap_container").attr("style", "cursor:crosshair;");
+                        $("#standardDir").attr("style", "display:none;");
+
+                        drawToolbar.on("draw-end", function(evt) {
+                            drawToolbar.deactivate();
+                            $("#submitDiv").show();
+                            $("#divMap_container").attr("style", "cursor:initial;");
+                            
+                            var sms = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_SQUARE).setColor(new Color([255,0,0,0.5]));
+    
+                            mapGraphic = new Graphic(evt.geometry, sms);
+                            map.graphics.add(mapGraphic);
+                            map.centerAndZoom(evt.geometry,14);
+                            var mp = webMercatorUtils.webMercatorToGeographic(evt.geometry);
+                            var pointX = mp.x.toFixed(5);
+                            var pointY = mp.y.toFixed(5);
+                            $('#coords').html("(Coordinates: " + pointY + ", " + pointX + ")");
+                            console.log(evt);
+                        });
+                    };
+                    
+                    function startupGPS () {
+                        console.log("startupGPS fired");
+                        navigator.geolocation.watchPosition(showPosition,showError,{enableHighAccuracy:true});                       
+                    }
+                    
+                    function showPosition(position) {
+                        console.log("showPosition working");
+                        var latty = position.coords.latitude;
+                        var longy = position.coords.longitude;
+                        var fixLatty = latty.toFixed(5);
+                        var fixLongy = longy.toFixed(5);
+                        var pt = new Point(longy, latty);
+                        if(flag == 0){
+                           if (mapGraphic == null) {
+                            var sms = new SimpleMarkerSymbol().setStyle(SimpleMarkerSymbol.STYLE_SQUARE).setColor(new Color([255,0,0,0.5]));
+                            mapGraphic = new Graphic(pt, sms);
+                            map.graphics.add(mapGraphic);
+                           } else {
+                            mapGraphic.setGeometry(pt);
+                            map.graphics.redraw();
+                           }
+                           map.centerAndZoom(pt,14);
+                           $('#coords').html("(Coordinates: " + fixLatty + ", " + fixLongy + ")");
+                        }        
+                        $("#locationDiv").attr("style", "display:block;");
+                    }
+
+                    function showError(error) {
+                        console.log("error function working");
+                        $("#standardDir").attr("style", "display:block;");
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                standardDir.innerHTML = "Geolocation disabled on this device.  Enable geolocation in your settings, or use the button above to place a point on the map manually."
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                standardDir.innerHTML = "Location information is unavailable. Use the Place a Point button to place a point manually."
+                                break;
+                            case error.TIMEOUT:
+                                standardDir.innerHTML = "The request to get user location timed out. Use the Place a Point button to place a point manually."
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                standardDir.innerHTML = "An unknown error occurred."
+                                break;
+                        }                        
+                    }                    
+                    
+                    $("#placePoint").on("click", function () {
+                        map.graphics.clear();
+                        mapDraw();   
+                        flag = 1;                     
+                        // $("#invalidLocate").attr("style", "display:none;");
+                        
+                        // var sel = $('#selectedlocator input:radio:checked').val();
+                        // if (sel == "map") {
+                        //     map.graphics.clear();
+                        //     mapDraw();
+                        // } else if (sel == "gps") {
+                        //     startupGPS();
+                        // } else {
+                        //     $("#invalidLocate").attr("style", "display:block;");
+                        // }
+                    });
+
+                    $(document).ready(function(){
+                        startupGPS();
+                        $('input#location').click(function(){
+                            console.log("checkbox clicked");
+                            console.log($(this));
+                        if($(this).prop("checked") == true){
+                            $("#placePoint").prop("disabled", true);
+                            $("#submitDiv").show();
+                            console.log("checkbox is checked");
+                            flag = 0;
+                            showPosition();
+                        }
+                        else if($(this).prop("checked") == false){
+                            $("#placePoint").prop("disabled", false);
+                            $("#submitDiv").hide();
+                            console.log("checkbox is NOT checked");
+                        }
+                        });  
+                    });
+
+                         
+
+                    $("#submit").on("click", function(){
+                        console.log("submit function");
+                        $("#success").attr("style", "display:none;");
+                        
+                        var FirstName = $("#firstName").val();
+                        var LastName = $("#lastName").val();
+                        var Address = $("#address").val();
+                        var City = $("#city").val();
+                        var State = $("#state").val();
+                        var ZipCode = $("#zipcode").val();
+                        var Phone = $("#areacode").val() + "-" + $("#precode").val() + "-" + $("#postcode").val();
+                        var Email = $("#email").val();
+                        var Type = $("#issuetype option:selected" ).text();
+                        var Description = $("#issuetext").val();
+                        var Route = $("#route").val();
+                        
+                        if (Type !== undefined) {
+                            console.log(Type);
+                            console.log(Description);
+                            if (Type == "Other (Requires an Issue Description)" && (Description == undefined || Description == "")) {
+                                $("#invalidDesc").attr("style", "display:block;");
+                            } else {
+                                $("#invalidDesc").attr("style", "display:none;");
+                                $("#invalidType").attr("style", "display:none;");
+                                
+                                var attributes = {"FirstName":FirstName, "LastName":LastName, "Address":Address, "City":City, "State":State, "ZipCode":ZipCode, "Phone":Phone, "Email":Email, "Type":Type, "Description":Description, "Route":Route};
+                                
+                                mapGraphic.setAttributes(attributes);
+                                issuesLyr.applyEdits([mapGraphic], null, null, function () {
+                                    map.graphics.clear();
+                                    issuesLyr.refresh();
+                                    issuesLyr.redraw();
+                                    mapGraphic = null;
+                                });
+
+                                // var serviceURL = issuesURL + "/applyEdits?f=json&adds=";
+                                // var theText = serviceURL + "[{'geometry':" + JSON.stringify(mapGraphic.geometry) + ",'attributes':" + JSON.stringify(attributes) + "}]";
+                                // try {
+                                //     var layersRequest = esriRequest({
+                                //         url: theText
+                                //         },{
+                                //         usePost: true
+                                //     });
+                                //     layersRequest.then(
+                                //         function(response) {
+                                //             console.log(response);
+                                //             var res = response.addResults[0]["success"];
+                                //             if (res) {
+                                //                 map.graphics.clear();
+                                //                 issuesLyr.refresh();
+                                //                 issuesLyr.redraw();
+                                //                 mapGraphic = null;
+                                //             }
+                                //             else {
+                                //                 alert("Sorry, the server responded failure. Please try again.")
+                                //             }
+                                //         }
+                                //     );
+                                // } catch (e) {
+                                //     alert("Sorry, the server could not be contacted. Please try again.")
+                                //     console.log("err");
+                                // }
+                                
+                                $("#submitDiv").hide();                                
+                                $("#success").attr("style", "display:block;");
+                                setTimeout(function(){
+                                    $("#success").attr("style", "display:none;");
+                                    $('#placePoint').prop("disabled", false);
+                                    $('#location').attr("checked", false);
+                                }, 5000);
+                                flag = 0;
+                            }
+                        } else {
+                            $("#standardDir").attr("style", "display:none;");
+                            $("#invalidType").attr("style", "display:block;");
+                        }
+                        
+                    });
+
+                    // Automatically tab to next field upon entering phone number
+                    $('#areacode').keyup(function(){
+                        var ac = $('#areacode');
+                        var len = ac.val().length;
+                        var maxLen = ac[0].maxLength;
+                        if (len >= maxLen) { $('#precode').focus(); }                        
+                    });
+                    $('#precode').keyup(function(){
+                        var pc = $('#precode');
+                        var len = pc.val().length;
+                        var maxLen = pc[0].maxLength;
+                        if (len >= maxLen) { $('#postcode').focus(); }                        
+                    });
+
+                });
+            });
+        </script>
+    </head>
+    <body class="claro">
+        <div class="container" style="background-color: rgb(20,56,92); margin-top:0;">
+            <h1 id = "header" style="color:white;">Report An Issue<small> You've got issues?  We've got solutions!.</small></h1>
+        </div>
+        <div class="container">
+            <p style="padding:30px;">Some information about the size of Texas and how extensive the road network is. Maybe even some information about how many employees TxDOT has actively working to maintain the roads every day. Then an invitation to the user to help us keep the roads as safe as possible by reporting an issue and identifying it's location so we can alleviate the problem as quickly as possible. We value the publics opinion and strive to satisfy their needs.</p>
+        </div>
+        <div class="container">
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label for="firstName" class="col-sm-4 control-label">First Name</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="firstName" placeholder="First Name" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="lastName" class="col-sm-4 control-label">Last Name</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="lastName" placeholder="Last Name" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="address" class="col-sm-4 control-label">Address</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="address" placeholder="Address" maxlength="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="city" class="col-sm-4 control-label">City</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="city" placeholder="City" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="state" class="col-sm-4 control-label">State</label>
+                    <div class="col-sm-4">
+                        <select class="form-control" id="state">
+                            <option value="#" disabled selected>Select a State...</option>
+                            <option value='Alabama'>Alabama</option>    <option value='Alaska'>Alaska</option>  <option value='Arizona'>Arizona</option>    <option value='Arkansas'>Arkansas</option>  <option value='California'>California</option>  <option value='Colorado'>Colorado</option>  <option value='Connecticut'>Connecticut</option>    <option value='Delaware'>Delaware</option>  <option value='District of Columbia'>District of Columbia</option>  <option value='Florida'>Florida</option>    <option value='Georgia'>Georgia</option>    <option value='Hawaii'>Hawaii</option>  <option value='Idaho'>Idaho</option>    <option value='Illinois'>Illinois</option>  <option value='Indiana'>Indiana</option>    <option value='Iowa'>Iowa</option>  <option value='Kansas'>Kansas</option>  <option value='Kentucky'>Kentucky</option>  <option value='Louisiana'>Louisiana</option>    <option value='Maine'>Maine</option>    <option value='Maryland'>Maryland</option>  <option value='Massachusetts'>Massachusetts</option>    <option value='Michigan'>Michigan</option>  <option value='Minnesota'>Minnesota</option>    <option value='Mississippi'>Mississippi</option>    <option value='Missouri'>Missouri</option>  <option value='Montana'>Montana</option>    <option value='Nebraska'>Nebraska</option>  <option value='Nevada'>Nevada</option>  <option value='New Hampshire'>New Hampshire</option>    <option value='New Jersey'>New Jersey</option>  <option value='New Mexico'>New Mexico</option>  <option value='New York'>New York</option>  <option value='North Carolina'>North Carolina</option>  <option value='North Dakota'>North Dakota</option>  <option value='Ohio'>Ohio</option>  <option value='Oklahoma'>Oklahoma</option>  <option value='Oregon'>Oregon</option>  <option value='Pennsylvania'>Pennsylvania</option>  <option value='Puerto Rico'>Puerto Rico</option>    <option value='Rhode Island'>Rhode Island</option>  <option value='South Carolina'>South Carolina</option>  <option value='South Dakota'>South Dakota</option>  <option value='Tennessee'>Tennessee</option>    <option value='Texas'>Texas</option>    <option value='U.S. Virgin Islands'>U.S. Virgin Islands</option>    <option value='Utah'>Utah</option>  <option value='Vermont'>Vermont</option>    <option value='Virginia'>Virginia</option>  <option value='Washington'>Washington</option>  <option value='West Virginia'>West Virginia</option>    <option value='Wisconsin'>Wisconsin</option>    <option value='Wyoming'>Wyoming</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="zipcode" class="col-sm-4 control-label">Zipcode</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="zipcode" placeholder="Zipcode" maxlength="5">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">Phone</label>
+                    <div class="col-sm-4">
+                        <div class="form-group row">
+                            <!-- <div class="frmt col-sm-1"></div> -->
+                            <div class="col-sm-3 pull-left" >
+                            <!-- <div> -->
+                                <input type="text" class="form-control" id="areacode" placeholder="xxx" maxlength="3" >
+                            </div>
+                            <!-- <div class="frmt col-sm-1"></div> -->
+                            <div class="col-sm-3 pull-left">
+                                <input type="text" class="form-control" id="precode" placeholder="xxx" maxlength="3" >
+                            </div>
+                            <!-- <div class="frmt col-sm-1"></div> -->
+                            <div class="col-sm-6 pull-left">
+                                <input type="text" class="form-control" id="postcode" placeholder="xxxx" maxlength="4" >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email" class="col-sm-4 control-label">Email</label>
+                    <div class="col-sm-4">
+                        <input type="email" class="form-control" id="email" placeholder="Email@domain.com" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="route" class="col-sm-4 control-label">Route Affected</label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="route" placeholder="FM1234" maxlength="30">
+                    </div>
+                </div>
+                <div class="form-group" id="selectedissue">
+                    <label for="issuetype" class="col-sm-4 control-label">*Issue Type</label>
+                    <div class="col-sm-4" id="issuetype">
+                        <select class="form-control" id="sel1">
+                            <option>Pothole</option>
+                            <option>Mowing</option>
+                            <option>Striping</option>
+                            <option>Signs</option>
+                            <option>Signal</option>
+                            <option>Highway Lighting</option>
+                            <option>Guardrail/Guard Cable</option>
+                            <option>Illegal dumping</option>
+                            <option>Other (Requires an Issue Description)</option>                          
+                        </select>
+                        <!-- <div class="radio">
+                            <label><input type='radio' value='Pothole' name="issueoption">Pothole</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Mowing' name="issueoption">Mowing</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Striping' name="issueoption">Striping</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Signs' name="issueoption">Signs</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Signal' name="issueoption">Signal</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Highway Lighting' name="issueoption">Highway Lighting</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Guardrail/Guard Cable' name="issueoption">Guardrail/Guard Cable</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Illegal dumping' name="issueoption">Illegal dumping</label>
+                        </div>
+                        <div class="radio">
+                            <label><input type='radio' value='Other' name="issueoption">Other (Requires an Issue Description)</label>
+                        </div> -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="issuetext" class="col-sm-4 control-label">Issue Description</label>
+                    <div class="col-sm-4">
+                        <textarea rows="4" class="form-control" id="issuetext" placeholder="Details further describing the issue and the approximate location. Maximum 400 characters in length." maxlength="400"></textarea>
+                    </div>
+                    <div id="invalidDesc" class="alert alert-danger col-sm-2" role="alert">You must provide an 'Issue Description' when Issue Type of "Other" is selected.</div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-4"></div>
+                    <div class="col-sm-4">
+                        <button type="button" class="btn btn-primary col-sm-6" id="placePoint">Place A Point</button>
+                    <!-- <div id="invalidLocate" class="alert alert-danger col-sm-4" role="alert">You must select a 'Locate with' option to identify the issue location.</div> -->
+                    </div>
+                </div>
+                <div class="form-group" id="locationDiv" style="display:none;">
+                    <div class="col-sm-4"></div>
+                    <div class="col-sm-4">
+                        <div class="checkbox">
+                            <label><input type="checkbox" id="location" value="">Use My Current Location</label>
+                        </div>
+                    </div>
+                </div>                
+                <div class="form-group">
+                    <div class="col-sm-4"></div>
+                    <div class="col-sm-6">
+                    <div id="standardDir" class="alert alert-danger col-sm-8" role="alert" style="display:none;"></div>  
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-4"></div>
+                    <div class="col-sm-4">                  
+                        <label id="coords" style="color: dimgrey; font-weight: normal;"></label>
+                    </div>
+                </div>                
+                <div class="form-group" id="submitDiv" style="display: none;">
+                    <div class="col-sm-4"></div>
+                    <div class="col-sm-4">
+                    <button type="button" class="btn btn-success col-sm-6" id="submit" >Submit</button>
+                    <!-- <div id="invalidType" class="alert alert-danger col-sm-4" role="alert">You must select an 'Issue Type' in order to submit an issue.</div> -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-4"></div>
+                    <div class="col-sm-6">
+                    <div id="success" class="alert alert-success col-sm-8" role="alert" style="display:none;">Success! Your issue has been logged. Thank you for helping us to keep our roads safe!</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="container">
+            <div id="divMap"></div>
+        </div>
+    </body>
+</html>
