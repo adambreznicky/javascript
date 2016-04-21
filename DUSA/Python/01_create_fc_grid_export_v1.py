@@ -59,18 +59,19 @@ def create_dbase_domains():
 
     if "RDWY_DESIGN" not in domain_names:
         print "creating domain " + "RDWY_DESIGN"
-        arcpy.CreateDomain_management(publish_db, "RDWY_DESIGN", "Road Design", "SHORT", "CODED")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", 1, "One Way")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", 2, "Two Way")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", 3, "Boulevard")
+        arcpy.CreateDomain_management(publish_db, "RDWY_DESIGN", "Road Design", "TEXT", "CODED")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", '1', "One Way")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", '2', "Two Way")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_DESIGN", '3', "Boulevard")
 
     if "RDWY_SURFACE" not in domain_names:
         print "creating domain " + "RDWY_SURFACE"
-        arcpy.CreateDomain_management(publish_db, "RDWY_SURFACE", "Road Surface Type", "SHORT", "CODED")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 12, "Dirt/Natural")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 13, "Gravel")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 10, "Paved")
-        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", 1, "Concrete")
+        arcpy.CreateDomain_management(publish_db, "RDWY_SURFACE", "Road Surface Type", "TEXT", "CODED")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", '12', "Dirt/Natural")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", '13', "Gravel")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", '11', "Brick")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", '10', "Paved")
+        arcpy.AddCodedValueToDomain_management(publish_db, "RDWY_SURFACE", '1', "Concrete")
 
 
 def delete_current(name):
@@ -226,11 +227,11 @@ def populate_ls_admin(ls, poly):
 # dbase creator
 create_dbase_domains()
 # local streets filter
-local_streets = filter_roads("7", "LocalStreets")
+local_streets = filter_roads("7", "LocalStreets_Export")
 local_streets_schema(local_streets)
 populate_ls_admin(local_streets, local_streets_poly)
 # county roads filter
-county_roads = filter_roads("1", "CountyRoads")
+county_roads = filter_roads("1", "CountyRoads_Export")
 county_roads_schema(county_roads)
 
 print "that's all folks!!"

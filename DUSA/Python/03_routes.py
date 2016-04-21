@@ -14,8 +14,8 @@ import create_routes
 env.workspace = 'in_memory'
 
 fgdb = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Publish.gdb')
-local_streets = os.path.join(fgdb,'LocalStreets')
-county_roads = os.path.join(fgdb,'CountyRoads')
+local_streets = os.path.join(fgdb,'LocalStreets_Export')
+county_roads = os.path.join(fgdb,'CountyRoads_Export')
 roads = [local_streets, county_roads]
 create_routes.main(fgdb,roads)
 

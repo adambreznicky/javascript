@@ -49,9 +49,9 @@ def create_fields(name):
     arcpy.AddField_management(fc, "LENGTH", "DOUBLE")
     arcpy.AddField_management(fc, "CHANGE", "TEXT", "", "", 10, "", "", "", "RDWY_UPDATE")
     arcpy.AddField_management(fc, "STREET_NM", "TEXT", "", "", 100)
-    arcpy.AddField_management(fc, "DESIGN", "SHORT", "", "", "", "", "", "", "RDWY_DESIGN")
-    arcpy.AddField_management(fc, "SURFACE", "SHORT", "", "", "", "", "", "", "RDWY_SURFACE")
-    arcpy.AddField_management(fc, "NUM_LANES", "SHORT")
+    arcpy.AddField_management(fc, "DESIGN", "TEXT", "", "", 1, "", "", "", "RDWY_DESIGN")
+    arcpy.AddField_management(fc, "SURFACE", "TEXT", "", "", 2, "", "", "", "RDWY_SURFACE")
+    arcpy.AddField_management(fc, "NUM_LANES", "LONG", 2)
     arcpy.AddField_management(fc, "COMMENT", "TEXT", "", "", 150)
 
 

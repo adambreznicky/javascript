@@ -5,6 +5,7 @@ import os.path
 import arcpy
 from arcpy import env
 import cx_Oracle
+import datetime
 
 #set Environment Variables
 env.workspace = 'in_memory'
@@ -101,9 +102,10 @@ def buildTable(con, tableName, tableSchema, tableSQL):
 
 #Route Events, Join Fiellds, Save Final FeatureClass
 def route_events(fgdb,roads,eventTables):
-    layerName = os.path.basename(roads)
+    whole_layerName = os.path.basename(roads)
+    layerName = whole_layerName.split("_")[0]
     routeProps = 'GID LINE BEGIN_DFO END_DFO'
-    savedFc = os.path.join(fgdb,layerName + '_routed')
+    savedFc = os.path.join(fgdb,layerName)
     print "Routing events for: " + layerName
 
     arcpy.OverlayRouteEvents_lr(eventTables[0], routeProps, eventTables[1], routeProps, 'UNION', 'TEMP_ROUTE',routeProps)
@@ -114,10 +116,10 @@ def route_events(fgdb,roads,eventTables):
     view_name = layerName + "_View"
     arcpy.MakeTableView_management(roads, out_view=view_name)
     if layerName == 'LocalStreets':
-        arcpy.JoinField_management(savedFc, "GID", view_name, "GID", "ROUTE_ID;STREET_NM;PRIME_ADMN;ADMN_TYPE;ADMN_ACRNM;COG_NM;COG_ACRNM;TxDOT_DIST;DIST_ACRNM")
+        arcpy.JoinField_management(savedFc, "GID", view_name, "GID", "ROUTE_ID;STREET_NM;PRIME_ADMN;ADMN_TYPE;ADMN_ACRNM;COG_NM;COG_ACRNM;TxDOT_DIST;DIST_ACRNM;LENGTH")
     elif layerName == 'CountyRoads':
         print('Create Join for County Roads')
-        arcpy.JoinField_management(savedFc, "GID", view_name, "GID", "ROUTE_ID;STREET_NM;CNTY_NM;CNTY_NBR;TxDOT_DIST")
+        arcpy.JoinField_management(savedFc, "GID", view_name, "GID", "ROUTE_ID;STREET_NM;CNTY_NM;CNTY_NBR;TxDOT_DIST;LENGTH")
 #Main Process to kick off creation of Routed FeatureClass
 def main(fgdb, roads):
     schemaList = create_schema()
@@ -133,8 +135,12 @@ def main(fgdb, roads):
         con.close()
     
     print('Routing Events to FeatureClass')
+    now = datetime.datetime.now()
+    print now
     for road_class in roads:
         route_events(fgdb,road_class,eventTables)
+    now = datetime.datetime.now()
+    print now
     
 if __name__ == "__main__":
     print('\n')
