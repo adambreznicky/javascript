@@ -24,14 +24,18 @@
                 padding-left: 20px;
             }
             #mapContainer {
-                height:100%;
+                height:1000px;
+                max-width: 1140px;
+                padding: 0;
             }
             #divMap {
-                height: 100%;
+                height: 1000px;
                 width:100%;
                 padding:0;
                 margin:0;
-                page-break-before: always;
+                border-style: solid;
+                border-width: 1px;
+                border-color: lightgray;
             }
             #category {
                 padding-left: 20px;
@@ -272,7 +276,7 @@
                         } catch (e) {
                             console.log(e);
                         }
-                        $("#reportTable").html("<h2 id='reportTitle'></h2><p id='chosenParameters'></p><p id='generationDateTime'></p><table class='table'><tbody id='reportBody0'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody></table>");// style='text-align:right;'
+                        $("#reportTable").html("<h2 id='reportTitle'></h2><h4>Do Not Disclose - Excepted From Disclosure by 23 USC §409</h4><p id='chosenParameters'></p><p id='generationDateTime'></p><div style='float:left;'><span  id='totalDisplay' style='font-weight:bold;'></span></div><div style='float:right;padding-bottom:10px;'><button type='button' class='btn btn-default' id='resolveAll'><span class='glyphicon glyphicon-ok'></span></button></div><table class='table' style='max-width:1140px;'><tr><td style='padding:0;border-top:0px;'><div id='mapContainer' class='container' style='display:none;''><div id='divMap' class='pointMap' style='display:none;height:100%;padding-right:12px;'></div></div></td></tr></table><div style='page-break-after:always;'></div><h5 style='text-align:center;'>Do Not Disclose - Excepted From Disclosure by 23 USC §409</h5><table class='table'><tbody id='reportBody0'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody></table>");// style='text-align:right;'
                         $("#reportTable").attr("style", "display:block;");
                         var ms = $("#maintenanceSection").val();
                         var deficiency = $("#deficiency").val();
@@ -298,9 +302,13 @@
                         var queryTask = new QueryTask(maintenanceDeficiencyURL);
                         queryTask.execute(query, function (results) {
                             if (results.features.length !== 0) {
+                                $('#totalDisplay').html("TOTAL: " + results.features.length);
+                                $('#resolveAll').html( 'Resolve All ' + results.features.length + ' Deficiencies');
+                                $("#resolveAll").click(resolveAllDeficiencies);
+                                buildMap(where, "divMap");
                                 var counter = 0;
                                 var reportBodyNum = 0;
-                                var pageBreaker = 1;
+                                var pageBreaker = 0;
                                 var shaded = false;
                                 $.each(results.features, function (position) {
                                     var def = results.features[position];
@@ -316,25 +324,19 @@
 
                                     trPrfx = "<tr style='background-color: rgb(226,231,235);'>";
                                     
-                                    var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' class='pointMap' style='border-style:solid;border-width:1px;border-color:lightgray;page-break-inside:avoid;'></div></td></tr>";  //style='text-align:right;'
+                                    var theText = trPrfx+"<td>"+objID+"</td><td>"+def.attributes["Latitude"]+"</td><td>"+def.attributes["Longitude"]+"</td><td>"+def.attributes["Route"]+"</td><td>"+def.attributes["Notes"]+"</td><td>"+formatDate+"</td></tr><tr><td colspan=6 style='padding:0;'><div id='"+oidString+"' class='pointMap' style='border-style:solid;border-width:1px;border-color:lightgray;'></div></td></tr>";  //style='text-align:right;'
                                     $(reportBodyID).append(theText);
                                     counter += 1;
                                     pageBreaker += 1;
                                     if (pageBreaker == 3 && counter !== results.features.length) {
                                         var nextReportBodyNum = reportBodyNum + 1;
-                                        $("#reportTable").append("<div style='page-break-after:always;'></div><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody>");// style='text-align:right;'
+                                        $("#reportTable").append("<div style='page-break-after:always;'></div><h5 style='text-align:center;'>Do Not Disclose - Excepted From Disclosure by 23 USC §409</h5><table class='table'><tbody id='reportBody"+nextReportBodyNum.toString()+"'><tr><td>OBJECTID</td><td>Latitude</td><td>Longitude</td><td>Route</td><td>Notes</td><td>Creation Date</td></tr></tbody>");// style='text-align:right;'
                                         
                                         reportBodyNum += 1;
                                         pageBreaker = 0;
                                     }
                                     
                                     buildMap(curWhere, oidString, def.geometry);
-                                    if (counter == results.features.length) {
-                                        var finalText = "<tr><td colspan=5></td><td><span style='font-weight:bold;'>TOTAL: "+counter+"</span></td></tr><tr><td colspan=5></td><td><button type='button' class='btn btn-default' id='resolveAll'><span class='glyphicon glyphicon-ok'></span> Resolve All "+counter+" Deficiencies</button></td></tr>";// style='text-align:right;'       
-                                        $(reportBodyID).append(finalText);
-                                        $("#resolveAll").click(resolveAllDeficiencies);
-                                        buildMap(where, "divMap");
-                                    }
                                     
                                 });
                                 
@@ -444,6 +446,20 @@
 
                         map.on("load", function(event) {
                             event.map.disableScrollWheelZoom();
+                            if (div == "divMap") {
+                                console.log(where);
+                                var query = new Query();
+                                query.where = where;
+                                maintenanceDeficiencies.queryExtent(query, function (result) {
+                                    console.log(result);
+                                    var ext = result.extent.expand(1.5);
+                                    event.map.setExtent(ext);
+                                }, function (e) {
+                                    console.log(e);
+                                });
+                            } else {
+                                    event.map.centerAndZoom(geom, 15);
+                            }
                         });
                         
                         var infoTemplate = new InfoTemplate($("#deficiency").val(), "OBJECTID: ${OBJECTID}<br>Latitude: ${Latitude}<br>Longitude: ${Longitude}<br>County: ${County}<br>Deficiency: ${Deficiency}<br>Route: ${Route}<br>Notes: ${Notes}<br>Resolved: ${Resolved}<br>Assigned Crew: ${AssignedCrew}<br>Creation Date: ${CreationDate}<br>Creator: ${Creator}");
@@ -463,19 +479,7 @@
                         labels.addFeatureLayer(maintenanceDeficiencies, defLabelRenderer, "{" + labelField + "}");
                         map.addLayer(labels);
 
-                        if (div == "divMap") {
-                            var query = new Query();
-                            query.where = where;
-                            maintenanceDeficiencies.queryExtent(query, function (result) {
-                                var ext = result.extent.expand(1.5);
-                                map.setExtent(ext);
-                                $("#divMap_container").attr("style", "border-style:solid;");
-                            }, function (e) {
-                                console.log(e);
-                            });
-                        } else {
-                            map.centerAndZoom(geom, 15);
-                        }
+                        
 
                     }
 
@@ -539,9 +543,6 @@
             </tbody>
           </table>
         </div>
-        <div class="container" id="reportTable" style="display:none;"></div>
-        <div id="mapContainer" class="container" style="display:none;">
-            <div id="divMap" class='pointMap' style="display:none;"></div> 
-        </div>
+        <div class="container" id="reportTable" style="display:none;"></div>  
     </body>
 </html>

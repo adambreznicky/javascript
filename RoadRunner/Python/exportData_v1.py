@@ -117,7 +117,7 @@ while low <= total:
 
 arcpy.AddMessage("converting to " + downloadFormat)
 if downloadFormat == "CSV":
-    data = []
+    data = [["Do Not Disclose - Excepted From Disclosure by 23 USC " + chr(167) + "409"]]
     field_names = [f.name for f in arcpy.ListFields(theFC)]
     data.append(field_names)
     cursor = arcpy.da.SearchCursor(theFC, field_names)
@@ -133,6 +133,15 @@ elif downloadFormat == "KML":
     arcpy.LayerToKML_conversion("temp", directory + os.sep + boundary + "_" + downloadFormat + "_" + today + ".kmz")
     outbound = directory + os.sep + boundary + "_" + downloadFormat + "_" + today + ".kmz"
 
+baconFile = open(directory + os.sep + 'ACCESS_AND_USE_CONSTRAINTS.txt', 'w')
+baconFile.write('Pertaining to all data and information contained within this export:\nACCESS AND USE CONSTRAINTS\nDo Not Disclose - Excepted From Disclosure by 23 USC ' + chr(167) + '409')
+baconFile.close()
+baconFile = open(directory + os.sep + 'ACCESS_AND_USE_CONSTRAINTS.txt')
+content = baconFile.read()
+baconFile.close()
+baconFile = directory + os.sep + 'ACCESS_AND_USE_CONSTRAINTS.txt'
+arcpy.AddMessage(content)
+
 arcpy.AddMessage("packing up...")
 zipper = output
 arcpy.AddMessage(zipper)
@@ -141,6 +150,7 @@ if os.path.isfile(zipper):
 arcpy.AddMessage("zipfile started.")
 zip = zipfile.ZipFile(zipper, 'w', zipfile.ZIP_DEFLATED)
 zip.write(outbound, os.path.basename(outbound))
+zip.write(baconFile, os.path.basename(baconFile))
 zip.close()
 arcpy.AddMessage("zipfile completed.")
 

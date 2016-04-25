@@ -361,7 +361,7 @@
                     });
 
                     ////CRI FEATURE LAYERS & EVENTS
-                    var countiesURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Poly/MapServer/0";//swamp thang
+                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_Poly/FeatureServer/0";//swamp thang
                     var counties = new FeatureLayer(countiesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         opacity: .5,
@@ -369,7 +369,7 @@
                         outFields: ["CNTY_NM", "CNTY_NBR"]
                     });
 
-                    var cr_updatesURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Updates/FeatureServer/0";//swamp thang
+                    var cr_updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_Updates/FeatureServer/0";//swamp thang
                     var cr_updatesLyr = new FeatureLayer(cr_updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
@@ -377,7 +377,7 @@
                     });
 
                     // var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
-                    var crURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads/MapServer/0";
+                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_DUSA/FeatureServer/0";
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -386,7 +386,7 @@
                     });
 
                     ////LS FEATURE LAYERS & EVENTS
-                    var ls_maintenanceURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Poly/MapServer/0";//swamp thang
+                    var ls_maintenanceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_Poly/FeatureServer/0";//swamp thang
                     var ls_maintenance = new FeatureLayer(ls_maintenanceURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         opacity: .5,
@@ -394,14 +394,14 @@
                         outFields: ["*"]
                     });
 
-                    var ls_updatesURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Updates/FeatureServer/0";//swamp thang
+                    var ls_updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_Updates/FeatureServer/0";//swamp thang
                     var ls_updatesLyr = new FeatureLayer(ls_updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
-                    var lsURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets/MapServer/0";//swamp thang
+                    var lsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_DUSA/FeatureServer/0";//swamp thang
                     var localstreets = new FeatureLayer(lsURL,{
                         id: "LS",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -475,7 +475,7 @@
 
                             templateLayers = [cr_updatesLyr];
                             refLayers = [cr_updatesLyr, countyroads];
-                            serviceURL = updatesURL;
+                            serviceURL = cr_updatesURL;
 
                             editorInfos = [{
                                     'featureLayer':cr_updatesLyr,

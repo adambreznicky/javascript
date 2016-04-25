@@ -102,7 +102,7 @@ def local_streets_schema(ls):
     arcpy.AddField_management(ls, "COG_ACRNM", "TEXT", "", "", 20)
     arcpy.AddField_management(ls, "TxDOT_DIST", "TEXT", "", "", 100)
     arcpy.AddField_management(ls, "DIST_ACRNM", "TEXT", "", "", 20)
-    arcpy.AddField_management(ls, "LENGTH", "DOUBLE")
+    arcpy.AddField_management(ls, "LENGTH", "DOUBLE", "", 3)
     arcpy.AddField_management(ls, "ROUTE_ID", "TEXT", "", "", 17)
     arcpy.AddField_management(ls, "STREET_NM", "TEXT", "", "", 100)
 
@@ -130,7 +130,7 @@ def county_roads_schema(cr):
     arcpy.AddField_management(cr, "CNTY_NM", "TEXT", "", "", 50)
     arcpy.AddField_management(cr, "CNTY_NBR", "TEXT", "", "", 3)
     arcpy.AddField_management(cr, "TxDOT_DIST", "TEXT", "", "", 100)
-    arcpy.AddField_management(cr, "LENGTH", "DOUBLE")
+    arcpy.AddField_management(cr, "LENGTH", "DOUBLE", "", 3)
     arcpy.AddField_management(cr, "ROUTE_ID", "TEXT", "", "", 17)
     arcpy.AddField_management(cr, "STREET_NM", "TEXT", "", "", 100)
 
