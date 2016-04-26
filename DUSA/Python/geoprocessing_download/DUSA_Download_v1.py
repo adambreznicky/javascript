@@ -46,16 +46,16 @@ arcpy.AddMessage("directory created.")
 
 if updateClass == "CR":
     if chooseData == "SCHEMA":
-        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Updates/FeatureServer/0/query"
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
-        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads/MapServer/0/query"
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_DUSA/FeatureServer/0/query"
         where = "CNTY_NBR = '" + str(org) + "'"
 
 elif updateClass == "LS":
     if chooseData == "SCHEMA":
-        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Updates/FeatureServer/0/query"
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_Updates/FeatureServer/0/query"
     elif chooseData == "DATA":
-        baseURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets/MapServer/0/query"
+        baseURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_DUSA/FeatureServer/0/query"
         if org != "CSEC":
             where = "(ADMN_ACRNM='" + str(org) + "' OR DIST_ACRNM='" + str(org) + "' OR COG_ACRNM='" + str(org) + "')"
         else:
