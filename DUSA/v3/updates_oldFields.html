@@ -3,7 +3,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>Data Updates & Sharing Application</title>
+        <title>Road Inventory Updates</title>
 
         <link rel="stylesheet" href="http://js.arcgis.com/3.16/dijit/themes/tundra/tundra.css"><!-- swamp thang -->
         <link rel="stylesheet" href="http://js.arcgis.com/3.16/esri/css/esri.css">
@@ -290,6 +290,7 @@
                     var org;
                     var editToolbar;
                     var refLayers;
+                    var templateFields;
                     var serviceURL;
                     var aiCustom;
                     var homeExtent;
@@ -361,7 +362,7 @@
                     });
 
                     ////CRI FEATURE LAYERS & EVENTS
-                    var countiesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_Poly/FeatureServer/0";//swamp thang
+                    var countiesURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Poly/MapServer/0";//swamp thang
                     var counties = new FeatureLayer(countiesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         opacity: .5,
@@ -369,15 +370,15 @@
                         outFields: ["CNTY_NM", "CNTY_NBR"]
                     });
 
-                    var cr_updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_Updates/FeatureServer/0";//swamp thang
-                    var cr_updatesLyr = new FeatureLayer(cr_updatesURL,{
+                    var updatesURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads_Updates/FeatureServer/0";//swamp thang
+                    var updatesLyr = new FeatureLayer(updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
                     // var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads/FeatureServer/0";//swamp thang
-                    var crURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/CountyRoads_DUSA/FeatureServer/0";
+                    var crURL = "http://txapp38/arcgis/rest/services/TPP_User/CountyRoads/MapServer/0";
                     var countyroads = new FeatureLayer(crURL,{
                         id: "CR",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -386,7 +387,7 @@
                     });
 
                     ////LS FEATURE LAYERS & EVENTS
-                    var ls_maintenanceURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_Poly/FeatureServer/0";//swamp thang
+                    var ls_maintenanceURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Poly/MapServer/0";//swamp thang
                     var ls_maintenance = new FeatureLayer(ls_maintenanceURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         opacity: .5,
@@ -394,14 +395,14 @@
                         outFields: ["*"]
                     });
 
-                    var ls_updatesURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_Updates/FeatureServer/0";//swamp thang
+                    var ls_updatesURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets_Updates/FeatureServer/0";//swamp thang
                     var ls_updatesLyr = new FeatureLayer(ls_updatesURL,{
                         mode: FeatureLayer.MODE_ONDEMAND,
                         showLabels: true,
                         outFields: ['*']
                     });
 
-                    var lsURL = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LocalStreets_DUSA/FeatureServer/0";//swamp thang
+                    var lsURL = "http://txapp38/arcgis/rest/services/TPP_User/LocalStreets/MapServer/0";//swamp thang
                     var localstreets = new FeatureLayer(lsURL,{
                         id: "LS",
                         mode: FeatureLayer.MODE_ONDEMAND,
@@ -446,17 +447,17 @@
                         if (updateClass == "CR") {
                             expression = "CNTY_NBR = " + org;
 
-                            cr_updatesLyr.setDefinitionExpression("SOURCE = '" + org + "'");
+                            updatesLyr.setDefinitionExpression("COUNTY = " + org);
                             counties.setDefinitionExpression(expression);
-                            countyroads.setDefinitionExpression("CNTY_NBR = '" + org + "'");
+                            countyroads.setDefinitionExpression("COUNTY = " + org);
 
-                            map.addLayers([counties, countyroads, cr_updatesLyr]);
+                            map.addLayers([counties, countyroads, updatesLyr]);
 
                             var selectorLabel = $("#selectOrg option[value='" + org + "']").text();
                             var pieces = selectorLabel.split(" - ");
                             var theName = pieces[0];
                             var caps = theName.toUpperCase();
-                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./DataDictionary.pdf' target='DataDictionary' title='Schema Data Dictionary for all Datasets within this App'>Data Dictionary</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps + "_2015.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps + "_2015.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
                         
                             var queryTask = new QueryTask(countiesURL);
                             query.where = expression;
@@ -473,38 +474,41 @@
                                     title: "Active County"
                                 }];
 
-                            templateLayers = [cr_updatesLyr];
-                            refLayers = [cr_updatesLyr, countyroads];
-                            serviceURL = cr_updatesURL;
+                            templateLayers = [updatesLyr];
+                            refLayers = [updatesLyr, countyroads];
+                            templateFields = ['LENGTH', 'SURFACE', 'NUM_LANES', 'HWY_DESIGN', 'FULL_NAME', 'CHANGE', 'COMMENT', 'COUNTY', 'CONTROLSEC'];
+                            serviceURL = updatesURL;
 
                             editorInfos = [{
-                                    'featureLayer':cr_updatesLyr,
+                                    'featureLayer':updatesLyr,
                                     'showAttachments': false,
                                     'isEditable': true,
                                     'fieldInfos': [{
-                                        'fieldName': "SOURCE",
-                                        'label': "Source (County Number)",
+                                        'fieldName': "CHANGE",
+                                        'label': "Update Type",
+                                        'isEditable': true
+                                    },{
+                                        'fieldName': "COUNTY",
+                                        'label': "County Number",
                                         'isEditable': false
                                     },{
                                         'fieldName': "LENGTH",
                                         'label': "Length (Miles)",
                                         'isEditable': false
                                     },{
-                                        'fieldName': "CHANGE",
-                                        'label': "Update Type",
-                                        'isEditable': true
-                                    },{
-                                        'fieldName': "STREET_NM",
-                                        'label': "Full Street Name",
-                                    },{
-                                        'fieldName': "DESIGN",
-                                        'label': "Roadway Design",
-                                    },{
                                         'fieldName': "SURFACE",
-                                        'label': "Surface Type"
+                                        'label': "Surface Type",
+                                        // 'tooltip': "Acceptable Values:<br>10 - Dirt/Natural<br>32 - Gravel<br>51 - Paved<br>61 - Concrete"
                                     },{
                                         'fieldName': "NUM_LANES",
-                                        'label': "Number of Lanes",
+                                        'label': "Number of Lanes"
+                                    },{
+                                        'fieldName': "HWY_DESIGN",
+                                        'label': "Highway Design",
+                                        // 'tooltip': "Acceptable Values:<br>1 - One Way<br>2 - Two Way<br>3 - Boulevard"
+                                    },{
+                                        'fieldName': "FULL_NAME",
+                                        'label': "Full Street Name"
                                     },{
                                         'fieldName': "COMMENT",
                                         'label': "Comment"
@@ -514,29 +518,23 @@
                                     'showAttachments': false,
                                     'isEditable': false,
                                     'fieldInfos': [{
-                                        'fieldName': "CNTY_NBR",
+                                        'fieldName': "COUNTY",
                                         'label': "County Number"
                                     },{
-                                        'fieldName': "CNTY_NM",
-                                        'label': "County Name"
-                                    },{
-                                        'fieldName': "LENGTH",
+                                        'fieldName': "LEN_OF_SECTION",
                                         'label': "Length (Miles)"
                                     },{
-                                        'fieldName': "ROUTE_ID",
-                                        'label': "Route Identifier"
-                                    },{
-                                        'fieldName': "STREET_NM",
-                                        'label': "Full Street Name"
-                                    },{
-                                        'fieldName': "DESIGN",
-                                        'label': "Roadway Design"
-                                    },{
-                                        'fieldName': "SURFACE",
+                                        'fieldName': "SURFACE_TYPE",
                                         'label': "Surface Type"
                                     },{
-                                        'fieldName': "NUM_LANES",
+                                        'fieldName': "NUMBER_OF_LANES",
                                         'label': "Number of Lanes"
+                                    },{
+                                        'fieldName': "HIGHWAY_DESIGN",
+                                        'label': "Highway Design"
+                                    },{
+                                        'fieldName': "FULL_NAME",
+                                        'label': "Full Street Name"
                                     }]
                                 }];
                             
@@ -548,15 +546,12 @@
                             ls_updatesLyr.setDefinitionExpression("SOURCE = '" + org + "'");
                             ls_maintenance.setDefinitionExpression(expression);
                             if (org !== "CSEC") {
-                                localstreets.setDefinitionExpression("ADMN_ACRNM = '" + org + "' OR DIST_ACRNM = '" + org + "' OR COG_ACRNM = '" + org + "'");
-                            }
-                            else {
-                                localstreets.setDefinitionExpression("ADMN_ACRNM <> 'MDA911'");
+                                localstreets.setDefinitionExpression("ACRNM1 = '" + org + "' OR ACRNM2 = '" + org + "'");
                             }
 
                             map.addLayers([ls_maintenance, localstreets, ls_updatesLyr]);
 
-                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./DataDictionary.pdf' target='DataDictionary' title='Schema Data Dictionary for all Datasets within this App'>Data Dictionary</a><br><a>&bull; </a><a href='./LOCAL_STREETS_CRITERIA.pdf' target='LS Criteria' title='TxDOT Definition of a Local Street'>Criteria</a>");
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a>");
                         
                             var queryTask = new QueryTask(ls_maintenanceURL);
                             query.where = expression;
@@ -575,6 +570,7 @@
 
                             templateLayers = [ls_updatesLyr];
                             refLayers = [ls_updatesLyr, localstreets];
+                            templateFields = ['SOURCE', 'DateUpdate', 'RoadUnqID', 'SN_PreMod', 'SN_PreDir', 'SN_PreType', 'StreetName', 'SN_PstType', 'SN_PstDir', 'SN_PstMod', 'FS_PreDir', 'FS_PstType', 'FS_PstDir', 'SpeedLimit', 'RoadClass', 'CHANGE','LENGTH','FULL_NAME', 'HWY_DESIGN', 'COMMENT'];
                             serviceURL = ls_updatesURL;
 
                             editorInfos = [{
@@ -582,29 +578,47 @@
                                     'showAttachments': false,
                                     'isEditable': true,
                                     'fieldInfos': [{
+                                        'fieldName': "CHANGE",
+                                        'label': "Update Type",
+                                        'isEditable': true
+                                    },{
                                         'fieldName': "SOURCE",
-                                        'label': "Source (Primary Admin)",
+                                        'label': "Source",
                                         'isEditable': false
                                     },{
                                         'fieldName': "LENGTH",
                                         'label': "Length (Miles)",
                                         'isEditable': false
                                     },{
-                                        'fieldName': "CHANGE",
-                                        'label': "Update Type",
-                                        'isEditable': true
+                                        'fieldName': "SN_PreMod",
+                                        'label': "Street Name Pre-Modifier",
                                     },{
-                                        'fieldName': "STREET_NM",
-                                        'label': "Full Street Name",
+                                        'fieldName': "SN_PreDir",
+                                        'label': "Street Name Pre-Directional",
                                     },{
-                                        'fieldName': "DESIGN",
-                                        'label': "Roadway Design",
+                                        'fieldName': "SN_PreType",
+                                        'label': "Street Name Pre-Type"
                                     },{
-                                        'fieldName': "SURFACE",
-                                        'label': "Surface Type"
+                                        'fieldName': "StreetName",
+                                        'label': "Street Name",
                                     },{
-                                        'fieldName': "NUM_LANES",
-                                        'label': "Number of Lanes",
+                                        'fieldName': "SN_PstType",
+                                        'label': "Street Name Post-Type"
+                                    },{
+                                        'fieldName': "SN_PstDir",
+                                        'label': "Street Name Post-Directional"
+                                    },{
+                                        'fieldName': "SN_PstMod",
+                                        'label': "Street Name Post-Modifier",
+                                    },{
+                                        'fieldName': "RoadClass",
+                                        'label': "Road Class",
+                                    },{
+                                        'fieldName': "SpeedLimit",
+                                        'label': "Speed Limit"
+                                    },{
+                                        'fieldName': "HWY_DESIGN",
+                                        'label': "Design"
                                     },{
                                         'fieldName': "COMMENT",
                                         'label': "Comment"
@@ -614,40 +628,29 @@
                                     'showAttachments': false,
                                     'isEditable': false,
                                     'fieldInfos': [{
-                                        'fieldName': "PRIME_ADMN",
-                                        'label': "Primary Admin"
+                                        'fieldName': "RTE_RB_NM",
+                                        'label': "Street Name"
                                     },{
-                                        'fieldName': "ADMN_ACRNM",
-                                        'label': "Admin Abbrev."
-                                    },{
-                                        'fieldName': "ADMN_TYPE",
-                                        'label': "Admin Type"
-                                    },{
-                                        'fieldName': "COG_NM",
-                                        'label': "COG"
-                                    },{
-                                        'fieldName': "TxDOT_DIST",
-                                        'label': "TxDOT District"
-                                    },{
-                                        'fieldName': "LENGTH",
+                                        'fieldName': "RTE_LEN",
                                         'label': "Length (Miles)"
                                     },{
-                                        'fieldName': "ROUTE_ID",
-                                        'label': "Route Identifier"
+                                        'fieldName': "RTE_NBR",
+                                        'label': "Route Number"
                                     },{
-                                        'fieldName': "STREET_NM",
-                                        'label': "Full Street Name"
+                                        'fieldName': "NAME1",
+                                        'label': "Primary Admin"
                                     },{
-                                        'fieldName': "DESIGN",
-                                        'label': "Roadway Design"
+                                        'fieldName': "ACRNM1",
+                                        'label': "Admin Abbrev."
                                     },{
-                                        'fieldName': "SURFACE",
-                                        'label': "Surface Type"
+                                        'fieldName': "SOURCE1",
+                                        'label': "Admin Type"
                                     },{
-                                        'fieldName': "NUM_LANES",
-                                        'label': "Number of Lanes"
+                                        'fieldName': "NAME2",
+                                        'label': "TxDOT District"
                                     }]
                                 }];
+                            
                         }
 
                         initLegend(legendInfos);
@@ -733,6 +736,7 @@
                             drawToolbar.deactivate();
                             map.setMapCursor("default");
                             setupSelection();
+                            var numb;
                             var autoAttributes;
                             
                             var fixed = webMercatorUtils.webMercatorToGeographic(evt.geometry);
@@ -740,7 +744,14 @@
                             var rounder = parseFloat(lengther).toFixed(3);
                             
                             var blankAttributes = lang.mixin({}, selectedTemplate.template.prototype.attributes);
-                            autoAttributes = lang.mixin(blankAttributes, {"SOURCE":org, "LENGTH": rounder, "UPDATE_DT": t});
+                            if (updateClass == "CR"){
+                                numb = parseInt(org);
+                                autoAttributes = lang.mixin(blankAttributes, {"COUNTY":numb, "LENGTH": rounder});
+                            }
+                            else if (updateClass == "LS"){
+                                numb = org;
+                                autoAttributes = lang.mixin(blankAttributes, {"SOURCE":numb, "LENGTH": rounder, "DateUpdate": t});
+                            }
                             
                             var newGraphic = new Graphic(evt.geometry, null, autoAttributes);
                             selectedTemplate.featureLayer.applyEdits([newGraphic], null, null);
@@ -838,13 +849,22 @@
                     function buildEditToolbar() {
                         editToolbar = new Edit(map);
                         editToolbar.on("deactivate", function(evt) {
+                            var numb;
                             var fixed = webMercatorUtils.webMercatorToGeographic(evt.graphic.geometry);
                             var lengther = geodesicUtils.geodesicLengths([fixed], Units.MILES);
                             var rounder = parseFloat(lengther).toFixed(3);
                             
-                            evt.graphic.attributes.SOURCE = org;
-                            evt.graphic.attributes.LENGTH = rounder;
-                            evt.graphic.attributes.UPDATE_DT = t;
+                            if (updateClass == "CR") {
+                                numb = parseInt(org);
+                                evt.graphic.attributes.COUNTY = numb;
+                                evt.graphic.attributes.LENGTH = rounder;
+                            }
+                            else if (updateClass == "LS") {
+                                numb = org;
+                                evt.graphic.attributes.SOURCE = numb;
+                                evt.graphic.attributes.LENGTH = rounder;
+                                evt.graphic.attributes.DateUpdate = t;
+                            }
                             
                             refLayers[0].applyEdits(null, [evt.graphic], null);
                         });
@@ -990,7 +1010,7 @@
                     }
 
                     function verifySchema (featureCollection) {
-                        var templateFields = ['CHANGE', 'STREET_NM', 'DESIGN', 'SURFACE', 'NUM_LANES', 'COMMENT'];
+
                         var fieldFlag = false;
                         var attFlag = false;
                         var badField;
@@ -1092,8 +1112,12 @@
                                     att = "Update";
                                 }
 
-                                theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'UPDATE_DT':'" + t.toString() + ", 'LENGTH':" + rounder.toString() + ", 'CHANGE':" + att + ", 'STREET_NM':" + feature.attributes.STREET_NM + ", 'DESIGN':" + feature.attributes.DESIGN + ", 'SURFACE':" + feature.attributes.SURFACE + ", 'NUM_LANES':" + feature.attributes.NUM_LANES + ", 'COMMENT':" + feature.attributes.COMMENT + "}}";
-
+                                if (updateClass == "CR") {
+                                   theText = "{'geometry':{'paths':" + paths + "},'attributes':{'LENGTH':" + rounder.toString() + ", 'NUM_LANES':" + feature.attributes.NUM_LANES  + ", 'HWY_DESIGN':" + feature.attributes.HWY_DESIGN + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + ", 'CHANGE':" + att + ", 'COMMENT':" + feature.attributes.COMMENT + ", 'COUNTY':" + org + ", 'CONTROLSEC':" + feature.attributes.CONTROLSEC + "}}";
+                                }
+                                else if (updateClass == "LS") {
+                                    theText = "{'geometry':{'paths':" + paths + "},'attributes':{'SOURCE':" + org + ", 'DateUpdate':'" + t.toString() + "', 'RoadUnqID':" + feature.attributes.RoadUnqID + ", 'SN_PreMod':" + feature.attributes.SN_PreMod + ", 'SN_PreDir':" + feature.attributes.SN_PreDir + ", 'SN_PreType':" + feature.attributes.SN_PreType + ", 'StreetName':" + feature.attributes.StreetName + ", 'SN_PstType':" + feature.attributes.SN_PstType + ", 'SN_PstDir':" + feature.attributes.SN_PstDir + ", 'SN_PstMod':" + feature.attributes.SN_PstMod + ", 'FS_PreDir':" + feature.attributes.FS_PreDir + ", 'FS_PstType':" + feature.attributes.FS_PstType + ", 'FS_PstDir':" + feature.attributes.FS_PstDir + ", 'SpeedLimit':" + feature.attributes.SpeedLimit + ", 'RoadClass':" + feature.attributes.RoadClass + ", 'CHANGE':" + att + ", 'LENGTH':" + rounder + ", 'FULL_NAME':" + feature.attributes.FULL_NAME + ", 'HWY_DESIGN':" + feature.attributes.HWY_DESIGN + ", 'COMMENT':" + feature.attributes.COMMENT + "}}";
+                                }
                                 theText = uploadURL + "[" + theText + "]";
                                 var layersRequest = request({
                                     url: theText
@@ -1271,7 +1295,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 class="text-center">Data Updates & Sharing Application</h1>
+                        <h1 class="text-center">Road Inventory Updates</h1>
                         <h3 class="text-center">Sign-In</h1>
                     </div>
                     <div class="modal-body">
