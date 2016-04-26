@@ -60,6 +60,7 @@ def build(fc_list):
         create_feature_class(fc)
         create_fields(fc)
 
-build(updates_feature_classes)
 
-print "that's all folks!!"
+def process():
+    build(updates_feature_classes)
+

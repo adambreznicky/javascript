@@ -224,14 +224,15 @@ def populate_ls_admin(ls, poly):
     del cursor
     arcpy.Append_management(["medina_layer"], ls, "NO_TEST")
 
-# dbase creator
-create_dbase_domains()
-# local streets filter
-local_streets = filter_roads("7", "LocalStreets_Export")
-local_streets_schema(local_streets)
-populate_ls_admin(local_streets, local_streets_poly)
-# county roads filter
-county_roads = filter_roads("1", "CountyRoads_Export")
-county_roads_schema(county_roads)
 
-print "that's all folks!!"
+def process():
+    # dbase creator
+    create_dbase_domains()
+    # local streets filter
+    local_streets = filter_roads("7", "LocalStreets_Export")
+    local_streets_schema(local_streets)
+    populate_ls_admin(local_streets, local_streets_poly)
+    # county roads filter
+    county_roads = filter_roads("1", "CountyRoads_Export")
+    county_roads_schema(county_roads)
+

@@ -9,13 +9,24 @@ All the lolipop and baloon alignments (loops) will not make it through the routi
 
 import os
 from arcpy import env
-import create_routes
+import _01_create_fc_grid_export_v1
+import _02_create_fc_updates_v1
+import _03_create_routes_v1
+import _04_recalc_Lengths_v1
+
 
 env.workspace = 'in_memory'
+
+_01_create_fc_grid_export_v1.process()
+_02_create_fc_updates_v1.process()
 
 fgdb = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Publish.gdb')
 local_streets = os.path.join(fgdb,'LocalStreets_Export')
 county_roads = os.path.join(fgdb,'CountyRoads_Export')
 roads = [local_streets, county_roads]
-create_routes.main(fgdb,roads)
+_03_create_routes_v1.main(fgdb,roads)
+
+_04_recalc_Lengths_v1.process()
+
+print "that's all folks!!"
 

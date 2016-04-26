@@ -45,33 +45,54 @@ def recalc_lengths(fc):
         miles = meters * 0.000621371192
         row[0] = float(format(float(miles), '.3f'))
 
-        surface = row[2]
-        # dirt/natural codes
-        if surface in ["", "99", "12"]:
-            row[2] = "12"
-        # gravel codes
-        elif surface in ["13"]:
-            row[2] = "13"
-        # brick codes
-        elif surface in ["11"]:
-            row[2] = "11"
-        # paved codes
-        elif surface in ["8", "9", "10"]:
-            row[2] = "10"
-        # concrete codes
-        elif surface in ["1", "2", "3", "4", "5", "6", "7"]:
-            row[2] = "1"
-        # print bad code OIDs
-        else:
-            print row[3]
+        fc_name = os.path.basename(fc)
+        if fc_name == "CountyRoads":
+            surface = row[2]
+            # dirt/natural codes
+            if surface in ["", "99", "12"]:
+                row[2] = "12"
+            # gravel codes
+            elif surface in ["13"]:
+                row[2] = "13"
+            # brick codes
+            elif surface in ["11"]:
+                row[2] = "11"
+            # paved codes
+            elif surface in ["8", "9", "10"]:
+                row[2] = "10"
+            # concrete codes
+            elif surface in ["1", "2", "3", "4", "5", "6", "7"]:
+                row[2] = "1"
+            # print bad code OIDs
+            else:
+                print row[3]
+        elif fc_name == "LocalStreets":
+            surface = row[2]
+            # dirt/natural codes
+            if surface in ["12"]:
+                row[2] = "12"
+            # gravel codes
+            elif surface in ["13"]:
+                row[2] = "13"
+            # brick codes
+            elif surface in ["11"]:
+                row[2] = "11"
+            # paved codes
+            elif surface in ["8", "9", "10", "99", ""]:
+                row[2] = "10"
+            # concrete codes
+            elif surface in ["1", "2", "3", "4", "5", "6", "7"]:
+                row[2] = "1"
+            # print bad code OIDs
+            else:
+                print row[3]
         cursor.updateRow(row)
     del cursor
     del row
 
-for name in update_feature_classes:
-    path = os.path.join(publish_db, name)
-    recalc_lengths(path)
 
-
-print "that's all folks!!"
+def process():
+    for name in update_feature_classes:
+        path = os.path.join(publish_db, name)
+        recalc_lengths(path)
 
