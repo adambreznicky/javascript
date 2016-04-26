@@ -90,6 +90,9 @@ def recalc_lengths(fc):
     del cursor
     del row
 
+    arcpy.AssignDomainToField_management(fc, "SURFACE", "RDWY_SURFACE")
+    arcpy.AssignDomainToField_management(fc, "DESIGN", "RDWY_DESIGN")
+
 
 def process():
     for name in update_feature_classes:
