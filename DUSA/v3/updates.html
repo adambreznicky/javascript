@@ -311,7 +311,8 @@
                     var map = new Map("divMap", {
                       center: [-100, 32],
                       zoom: 7,
-                      logo: false
+                      logo: false,
+                      showLabels : true
                     });
 
                     tiled = new Tiled("http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
@@ -456,7 +457,7 @@
                             var pieces = selectorLabel.split(" - ");
                             var theName = pieces[0];
                             var caps = theName.toUpperCase();
-                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./DataDictionary.pdf' target='DataDictionary' title='Schema Data Dictionary for all Datasets within this App'>Data Dictionary</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2015/" + caps + "_2015.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
+                            $("#resources").append("<a>&bull; </a><a href='./ApplicationInstructions.pdf' target='Instructions' title='How to use this Webmap'>Instructions</a><br><a>&bull; </a><a href='./DataDictionary.pdf' target='DataDictionary' title='Schema Data Dictionary for all Datasets within this App'>Data Dictionary</a><br><a>&bull; </a><a href='./COUNTY_ROAD_CRITERIA.pdf' target='CRI Criteria' title='TxDOT Definition of a County Road'>Criteria</a><br><a>&bull; </a><a href='ftp://ftp.dot.state.tx.us/pub/txdot-info/tpp/countyfiles/2016/" + caps + "_2016.zip' id='FTPlink' target='Download' title='Download CRI Zipfile Packet for Selected County'>Download Packet</a>");
                         
                             var queryTask = new QueryTask(countiesURL);
                             query.where = expression;
@@ -916,6 +917,7 @@
                     on(dom.byId("uploadForm"), "change", function (event) {
                         dom.byId('uploadMarquee').innerHTML = "";
                         var fileName = event.target.value.toLowerCase();
+                        
 
                         if (sniff("ie")) { //filename is full path in IE so extract the file name
                           var arr = fileName.split("\\");
@@ -923,6 +925,7 @@
                         }
                         if (fileName.indexOf(".zip") !== -1) {//is file a zip - if not notify user
                           generateFeatureCollection(fileName);
+                          dom.byId("uploadFile").value = "";
                         }
                         else {
                           dom.byId('upload-status').innerHTML = '<p style="color:red">Add shapefile as .zip file</p>';
@@ -1327,7 +1330,7 @@
                                     <div id="editTemplate"></div>
                                     <br>
                                     <div id="legend"></div>
-                                    <button type="button" class="helpButton" id="editHelp">?</button>
+                                    <a href="./EditInstructions.pdf" target="EditInstructions" title="How to Edit"><button type="button" class="helpButton" id="editHelp">?</button></a>
                                 </div>
                             </div>
                         </div>
@@ -1348,7 +1351,7 @@
                                     </select>
                                     <button type="button" class="btn btn-default" id="download"><span class="glyphicon glyphicon-download-alt"></span> Download!</button>
                                     <div id="downloadMarquee" style="text-align:left;"></div>
-                                    <button type="button" class="helpButton" id="downloadHelp">?</button>
+                                    <a href="./DownloadInstructions.pdf" target="DownloadInstructions" title="How to Download"><button type="button" class="helpButton" id="downloadHelp">?</button></a>
                                 </div>
                             </div>
                         </div>
@@ -1369,7 +1372,7 @@
                                         <form class="form-group" enctype="multipart/form-data" method="post" id="uploadForm">
                                             <div class="form-group">
                                                 <span class="btn btn-default btn-file"><span class="glyphicon glyphicon-search"></span> Choose a File
-                                                    <input type="file" name="file"/>
+                                                    <input type="file" name="file" id="uploadFile"/>
                                                 </span>
                                             </div>
                                         </form>
@@ -1377,7 +1380,7 @@
                                         <div id="fileInfo" style="text-align:left;"></div>
                                         <div id="uploadMarquee" style="text-align:left;"></div>
                                         <button type="button" class="btn btn-default" id="clearDisplay" style="display:none;"><span class="glyphicon glyphicon-erase"></span> Clear Display</button>
-                                        <button type="button" class="helpButton" id="uploadHelp">?</button>
+                                        <a href="./UploadInstructions.pdf" target="UploadInstructions" title="How to Upload"><button type="button" class="helpButton" id="uploadHelp">?</button></a>
                                     </div>
                                 </div>
                             </div>
