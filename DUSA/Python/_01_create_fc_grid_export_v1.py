@@ -188,7 +188,7 @@ def populate_ls_admin(ls, poly):
     cursor = arcpy.da.SearchCursor(poly, ["SOURCE", "NAME", "ACRNM"], "SOURCE <> 'DISTRICT' AND SOURCE <> 'STATE' AND SOURCE <> 'COG' AND NAME <> 'Medina 911'")
     for row in cursor:
         print row[1]
-        poly_layer.definitionQuery = "NAME = '" + row[1] + "'"
+        poly_layer.definitionQuery = "ACRNM = '" + row[2] + "'"
         arcpy.SelectLayerByLocation_management('ls_lyr', 'INTERSECT', poly_layer)
         updator = arcpy.da.UpdateCursor('ls_lyr', ["ADMN_TYPE", "PRIME_ADMN", "ADMN_ACRNM"])
         for record in updator:
