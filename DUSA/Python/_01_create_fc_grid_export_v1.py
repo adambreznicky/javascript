@@ -224,6 +224,10 @@ def populate_ls_admin(ls, poly):
     del cursor
     arcpy.Append_management(["medina_layer"], ls, "NO_TEST")
 
+    print "copying local streets poly into publish db"
+    arcpy.CopyFeatures_management(poly, publish_db + os.sep + "LocalStreets_Poly")
+
+
 
 def process():
     # dbase creator
