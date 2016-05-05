@@ -62,6 +62,7 @@ elif updateClass == "LS":
             where = "ADMN_ACRNM <> 'MDA911'"
 arcpy.AddMessage("url created.")
 
+
 def getObjectIDs(query):
     params = {'where': query, 'returnIdsOnly': 'true', 'token': token, 'f': 'json'}
     req = urllib2.Request(baseURL, urllib.urlencode(params))
@@ -71,6 +72,7 @@ def getObjectIDs(query):
     array.sort()
     arcpy.AddMessage("Object IDs Found")
     return array
+
 
 def createFC(fs):
     if downloadFormat == "SHP":
@@ -84,6 +86,7 @@ def createFC(fs):
     arcpy.AddMessage("feature class created.")
     return newFC
 
+
 def updatedQuery(low, high, trigger):
     if low != high:
         addition = """ AND "OBJECTID" >= """ + str(low) + " AND " + """"OBJECTID" < """ + str(high)
@@ -94,6 +97,15 @@ def updatedQuery(low, high, trigger):
     newQuery = where + addition
     return newQuery
 
+
+def download_file(download_url):
+    urllib.urlretrieve(download_url, directory + os.sep + "DataDictionary.pdf")
+    # response = urllib2.urlopen(download_url)
+    # file = open(directory + os.sep + "DataDictionary.pdf", 'wb+')
+    # file.write(response.read())
+    # file.close()
+    arcpy.AddMessage("Data Dictionary Completed")
+
 fields ='*'
 token = ''
 
@@ -103,6 +115,7 @@ if chooseData == "SCHEMA":
     the_filename = "TxDOT_" + label + "_" + updateClass + "_" + str(org)
     everything = "1=1"
     objectIDs = getObjectIDs(everything)
+    arcpy.AddMessage(objectIDs)
     where = """"OBJECTID" = """ + str(objectIDs[0])
     query = "?where={}&outFields={}&returnGeometry=true&f=json&token={}".format(where, fields, token)
     fsURL = baseURL + query
@@ -148,6 +161,9 @@ elif chooseData == "DATA":
             arcpy.Append_management(fs, theFC, "NO_TEST")
         low += 1000
         high += 1000
+
+download_file("http://elcamino.atwebpages.com/DataDictionary.pdf")
+# download_file("http://www.txdot.gov/apps/statewide_mapping/dusa/DataDictionary.pdf")
 
 arcpy.AddMessage("packing up...")
 outputPath = os.path.join(arcpy.env.scratchFolder, the_filename + ".zip")
