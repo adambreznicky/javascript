@@ -296,6 +296,7 @@
                     var displayLayers = []
                     var uploadedLayers;
                     var featureLayerEvents = [];
+                    var previousBasemap;
 
                     var d = new Date();
                     var m = d.getMonth() + 1;
@@ -352,7 +353,7 @@
 
                     $.each(basemapGallery.basemaps, function (bm, value) {
                         var image = value.thumbnailUrl;
-                        var label = value.title;
+                        var label = value.title; 
                         var id = value.id;
                         $("#basemapGallery").append("<div class='col-md-3 basemapItem' id='" + id + "'><img class='basemapImg' id='" + id + "' src='" + image + "'><p id='" + id + "' style='color:white;text-shadow: 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000;'>" + label + "</p></div>");
                     });
@@ -419,6 +420,18 @@
                         var current = $("#info").html();
                         var coords = ", " + current.split(",")[1] + ", " + current.split(",")[2];
                         $("#info").html("Level: " + map.getZoom() + coords);
+
+                        var lvl = map.getZoom();
+                        var currentBasemap = basemapGallery.getSelected();
+                        if ((currentBasemap == null||currentBasemap.id == "spm") && lvl > 16) {
+                            basemapGallery.select("imagery");
+                            previousBasemap = "spm";
+                        } else if ((currentBasemap == null||currentBasemap.id == "imagery") && previousBasemap == "spm" && lvl < 17) {
+                            basemapGallery.select("spm");
+                            previousBasemap = "";
+                        } else if (previousBasemap != "spm") {
+                            previousBasemap = "";
+                        }
                     });
                     
 
