@@ -98,4 +98,6 @@ def process():
     for name in update_feature_classes:
         path = os.path.join(publish_db, name)
         recalc_lengths(path)
+        if name == "LocalStreets":
+            arcpy.Generalize_edit(path, "18 feet")
 
