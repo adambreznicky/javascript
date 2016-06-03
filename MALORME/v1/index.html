@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<!-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/4.0/ -->
+<!-- <html manifest="malorme.manifest"> -->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>MALORME</title>
+
+        <link rel="stylesheet" href="https://js.arcgis.com/3.16/esri/css/esri.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+        <style type="text/css">
+            html, body, #divMap {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+            }
+            button:active {
+                background-color: red !important;
+            }
+            button:focus, div:focus {
+                outline:0px !important;
+            }
+            div {
+                border-style: solid;
+                border-width: 0px;
+                text-align: center;
+                font-size: 40px;
+            }
+            td {
+                width: 50%;
+            }
+            table {
+                border-style: solid;
+                border-width: 0px;
+                text-align: center;
+                margin-left:auto; 
+                margin-right:auto;
+                width: 95%;
+            }
+            .btn {
+                font-size: 5vw;
+                margin: 20px auto;
+                width: 90%;
+                padding: 6px;
+            }
+            .btn:focus {
+                background-color: #fff;
+                border-color: #ccc;
+            }
+            #wait {
+                z-index:1001;
+                width: 100%;
+                position: absolute;
+                
+                top: 50%;
+                display: none;
+                color: white;
+                text-align: center;
+                font-size: 100px;
+            }
+            #overlay {
+                display: none;
+                width: 100%;
+                height: 150%;
+                position: absolute;
+                left: 0px;
+                top: 0px;
+                background-color:#000;
+                opacity: .75
+            }
+            #header {
+                width: 100%;
+                height: 60px;
+            }
+            #outputLocation {
+                float:left;
+                position: relative;
+                left: 30px;
+            }
+            #pointStatus {
+                float:right;
+                position: relative;
+                right: 30px;
+            }
+            #user {
+                font-size: 40px;
+                float:left;
+                position: relative;
+                cursor: pointer;
+            }
+            input, label {
+                display:block;
+                text-align:center;
+            }
+            .form-control.mkr_option {
+                font-size: 5vw;
+                height: 8vw;
+                width:  90%;
+                margin: 0 auto;
+            }
+            .table>tbody>tr>td {
+                border-top: 0;
+            }
+            .option_line {
+                background-color: rgb(226,231,235);
+            }
+
+        </style>
+
+        <script data-dojo-config="async:true, aliases: [
+            ['jquery', 'https://code.jquery.com/jquery-2.2.4.min.js'],
+            ['jqueryui', 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'],
+            ['bootstrap', 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js']
+            ]" src="https://js.arcgis.com/3.16/">
+        </script>
+
+        <script>
+            require([
+                "jquery",
+                "jqueryui",
+
+                "esri/map",
+                "esri/geometry/Point",
+                "esri/SpatialReference",
+                "esri/geometry/webMercatorUtils",
+
+                "esri/arcgis/OAuthInfo",
+                "esri/IdentityManager",
+                "esri/arcgis/Portal",
+                "esri/request",
+
+                "dojo/dom-attr",
+                "dojo/dom-class",
+                "dojo/dom",
+                "dojo/on",
+
+                "dojo/ready", 
+                "dojo/parser",
+                "dojo/require",
+                "dojo/domReady!"],
+            function($, $ui,
+                    Map, Point, SpatialReference, webMercatorUtils,
+                    OAuthInfo, IdentityManager, arcgisPortal, esriRequest,
+                    domAttr, domClass, dom, on,
+                    ready, parser, require) {
+                ready(function(){
+                    dojo.require("bootstrap");
+                    parser.parse();
+                    var latty=0;
+                    var longy=0;
+                    var accy;
+                    var speedy;
+                    var totalpoints = 0;
+
+                    function startupGPS () {
+                        if (navigator.geolocation) {
+                                navigator.geolocation.watchPosition(showPosition,null,{enableHighAccuracy:true});
+                        }
+                        else {
+                            var x = document.getElementById("outputLocation");
+                            x.style.color = "red";
+                            x.innerHTML="Geolocation is not supported by this browser.";    
+                        }
+                    }
+
+                    function showPosition(position) {
+                        latt = position.coords.latitude;
+                        long = position.coords.longitude;
+                        accy = position.coords.accuracy * 3.28084;
+                        var spd = position.coords.speed * 2.23694;
+                        speedy = Math.round(spd);
+                        latty = latt.toFixed(5);
+                        longy = long.toFixed(5);
+                        if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                            var x = document.getElementById("outputLocation");
+                            x.style.color = "green";
+                            x.innerHTML = latty + "," + longy;
+                        }
+                        else {
+                            x.style.color = "red";
+                        }
+                    }
+
+                    function beep() {
+                        var snd = new  Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");  
+                        snd.play();
+                    }
+
+                    $('#cmdCollectMarker').on('click', collectPoint);
+                    function collectPoint() {
+                        beep();
+                        var intKEY = totalpoints;
+                        var ps = document.getElementById("pointStatus");
+
+                        var routePrefix = $('#rte_prefix').val();
+                        var routeNumber = $('#rte_number').val();
+                        var markerNumber = $('#mkr_number').val();
+                        var markerSuffix = $('#mkr_suffix').val();
+
+                        if (markerNumber != "") {
+                            if (routeNumber != "") {
+                                var routeIdentifier = routePrefix + routeNumber;
+                                var markerIdentifier = markerNumber + markerSuffix;
+
+                                var info = [routeIdentifier, markerIdentifier, latty, longy, accy, speedy];
+
+                                if (latty !== 0 && latty !== undefined && latty !== null && latty !== "") {
+                                    try {
+                                        localStorage.setItem(intKEY,JSON.stringify(info));
+                                        totalpoints += 1;
+                                        ps.innerHTML=totalpoints + " point(s) logged.";
+                                    } catch (e) {
+                                        console.log(e);
+                                        alert(e);
+                                    }
+                                }
+                                else {
+                                    ps.innerHTML=totalpoints + " point(s) logged.";
+                                }
+                            } else {
+                                alert("You must enter a Route Number.");
+                            }
+                        } else {
+                            alert("You must enter a Marker Number.");
+                        }
+                    };
+
+                    $("#cmdClearMyStorage").on("click", function clearStorage(){
+                            var yes = confirm("Discard all logged points?");
+                            if (yes === true) {
+                                if (totalpoints > 0) {
+                                    localStorage.clear();
+                                    totalpoints = 0;
+                                    var y = document.getElementById("pointStatus");
+                                    y.innerHTML=totalpoints + " point(s) logged.";
+                                    beep();
+                                }
+                                else {
+                                    var y = document.getElementById("pointStatus");
+                                    y.innerHTML=totalpoints + " point(s) logged.";
+                                }
+                            }
+                        }
+                    );
+
+                    $("#cmdDeleteLast").on("click", function DeleteLast() {
+                            var yes = confirm("Delete last logged point?");
+                            if (yes === true) {
+                                var last = localStorage.length;
+                                last = last - 1;
+                                var key = localStorage.key(last);
+                                localStorage.removeItem(key);
+                                if (totalpoints > 0) {
+                                    totalpoints = totalpoints - 1;
+                                    var y = document.getElementById("pointStatus");
+                                    y.innerHTML=totalpoints + " point(s) logged.";
+                                    beep();
+                                }
+                                else {
+                                    var y = document.getElementById("pointStatus");
+                                    y.innerHTML=totalpoints + " point(s) logged.";
+                                }
+                            }
+                        }
+                    );
+
+                    $("#cmdUploadData").on("click", function uploadStorage() {
+                        beep();
+                        var x = document.getElementById("uploadStatus");
+                        var Buttons = document.getElementsByTagName("button");
+                        for (var i = 0; i < Buttons.length; i++) {
+                            Buttons[i].disabled = true;
+                            Buttons[i].style.display = 'none';
+                        }
+                        
+                        setTimeout(function(){
+                            if(localStorage.length > 0){
+                                x.innerHTML = 'Uploading Data, please wait...';
+                                document.getElementById('overlay').style.display='block';
+                                document.getElementById('wait').style.display='block';
+                                //Service URL 
+                                var markerURL = "https://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/MALORME_Reference_Markers/FeatureServer/0/addFeatures?f=json&features=";
+                                //Build the String
+                                var counter = 0;
+                                for (var i=0, len = localStorage.length; i  <  len; i++) {
+                                    var theText = "";
+
+                                    var key = localStorage.key(i);
+                                    var feature = localStorage.getItem(key);
+
+                                    var pnt = JSON.parse(feature);
+
+                                    var newPT = webMercatorUtils.lngLatToXY(pnt[3],pnt[2]);
+                                    theText = "{'geometry':{'x':" + newPT[0] + ",'y':" + newPT[1] + "},'attributes':{'ROUTE':'" + pnt[0] + "','MARKER_NUMBER':'" + pnt[1] + "','LATITUDE':'" + pnt[2] + "','LONGITUDE':'" + pnt[3] + "','ACCURACY':'" + pnt[4] + "','SPEED':'" + pnt[5] + "'}}";           
+                                    theText = markerURL + "[" + theText + "]";
+
+                                    try {
+                                        var layersRequest = esriRequest({
+                                            url: theText
+                                            },{
+                                            usePost: true
+                                        });
+                                        layersRequest.then(
+                                            function(response) {
+                                                var res = response.addResults[0]["success"];
+                                                if (res) {
+                                                    counter += 1;
+                                                    if (counter === localStorage.length){
+                                                        document.getElementById('overlay').style.display='none';
+                                                        document.getElementById('wait').style.display='none';
+                                                        localStorage.clear();
+                                                        totalpoints = 0;
+                                                        var y = document.getElementById("pointStatus");
+                                                        y.innerHTML=totalpoints + " point(s) logged.";
+                                                        beep();
+                                                        x.style.color = "green";
+                                                        x.innerHTML = 'Data uploaded successfully!';
+                                                        for (var i = 0; i < Buttons.length; i++) {
+                                                            Buttons[i].disabled = false;
+                                                            Buttons[i].style.display = 'block';
+                                                        }
+                                                        alert("Data uploaded successfully");
+                                                        setTimeout(function(){
+                                                            x.style.color = "initial";
+                                                            x.innerHTML = '';
+                                                        }, 5000);
+                                                    }
+                                                    console.log("Success: ", response);
+                                                } else {
+                                                    document.getElementById('overlay').style.display='none';
+                                                    document.getElementById('wait').style.display='none';
+                                                    x.innerHTML = "(1) Request responded 'Success' = false.";
+                                                    for (var i = 0; i < Buttons.length; i++) {
+                                                        Buttons[i].disabled = false;
+                                                        Buttons[i].style.display = 'block';
+                                                    }
+                                                    alert("(1) Request responded 'Success' = false.");
+                                            }
+                                            }, function(error) {
+                                                document.getElementById('overlay').style.display='none';
+                                                document.getElementById('wait').style.display='none';
+                                                x.innerHTML = "(2) Request error. Try again with an internet connection.";
+                                                for (var i = 0; i < Buttons.length; i++) {
+                                                    Buttons[i].disabled = false;
+                                                    Buttons[i].style.display = 'block';
+                                                }
+                                                alert("(2) Request error. Try again with an internet connection.");
+                                                console.log("Error: ", error.message);
+                                        });
+                                        
+                                    } catch (e) {
+                                        document.getElementById('overlay').style.display='none';
+                                        document.getElementById('wait').style.display='none';
+                                        x.innerHTML = "(3) Pre-request failure. Try again with an internet connection.";
+                                        for (var i = 0; i < Buttons.length; i++) {
+                                            Buttons[i].disabled = false;
+                                            Buttons[i].style.display = 'block';
+                                        }
+                                        alert("(3) Pre-request failure. Try again with an internet connection.");
+                                    }
+                                }
+                            }
+                            else{
+                                document.getElementById('overlay').style.display='none';
+                                document.getElementById('wait').style.display='none';
+                                for (var i = 0; i < Buttons.length; i++) {
+                                    Buttons[i].disabled = false;
+                                    Buttons[i].style.display = 'block';
+                                }
+                                x.style.color = "initial";
+                                x.innerHTML = 'No data collected. Please collect data and try to upload again.';
+                                setTimeout(function(){
+                                    x.innerHTML = '';
+                                }, 5000);
+                            }  
+                        }, 1);
+                    });
+
+                    function start() {
+                        startupGPS();
+                        totalpoints = localStorage.length;
+                        var y = document.getElementById("pointStatus");
+                        y.innerHTML=totalpoints + " point(s) logged.";
+                        try {
+                            localStorage.setItem('mod', 'mod');
+                            localStorage.removeItem('mod');
+                        }
+                        catch (e) {
+                            alert('You are in Private Browsing mode. Please turn off Private Browsing to use this application.');
+                        }
+                    }
+
+                    var info = new OAuthInfo({
+                            appId: "CxvikkBbFfDyeH9P",
+                            portalUrl: "https://txdot.maps.arcgis.com",
+                            popup: false
+                        });
+                    IdentityManager.registerOAuthInfos([info]);
+                    IdentityManager.getCredential(info.portalUrl + "/sharing");
+
+                    new arcgisPortal.Portal(info.portalUrl).signIn().then(
+                        function (portalUser){
+                            username = portalUser.fullName;
+                            domAttr.set("user", "innerHTML", portalUser.fullName);
+                        }
+                    )
+                    on(dom.byId("user"), "click", function (){
+                        var yes = confirm("Would you like to sign out?");
+                        if (yes === true) {
+                            IdentityManager.destroyCredentials();
+                            window.location.reload();
+                        }
+                    });
+
+                    window.onload = start;
+
+
+                });
+            });
+        </script>
+    </head>
+    <body ontouchstart="">
+        <div>
+            <table>
+                <tr>
+                    <td><span id="user" style="display:block;"></span></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+        <div>
+        <div id="wait">Uploading Data, please wait...</div>
+        <div id="overlay"></div>
+        <div id="header">
+            <div id="outputLocation"></div>
+            <div id="pointStatus"></div>
+        </div>
+        <div id="container">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td class="option_line">
+                            <div>
+                                <label for="rte_prefix">Route Prefix</label>
+                                <select class="form-control mkr_option" id="rte_prefix">
+                                    <option class='rte_pfx' value='BF'>Business FM - BF</option>
+                                    <option class='rte_pfx' value='BI'>Business IH - BI</option>
+                                    <option class='rte_pfx' value='BS'>Business State - BS</option>
+                                    <option class='rte_pfx' value='BU'>Business US - BU</option>
+                                    <option class='rte_pfx' value='CR'>County roads - CR</option>
+                                    <option class='rte_pfx' value='CS'>Local City Street - CS</option>
+                                    <option class='rte_pfx' value='FC'>Functionally Classified City Streets - FC</option>
+                                    <option class='rte_pfx' value='FD'>Federal Road - FD</option>
+                                    <option class='rte_pfx' value='FM'>Farm to Market - FM</option>
+                                    <option class='rte_pfx' value='FS'>FM Spur - FS</option>
+                                    <option class='rte_pfx' value='IH'>Interstate - IH</option>
+                                    <option class='rte_pfx' value='PA'>Principal Arterial - PA</option>
+                                    <option class='rte_pfx' value='PR'>Park Road - PR</option>
+                                    <option class='rte_pfx' value='RE'>Recreational Road - RE</option>
+                                    <option class='rte_pfx' value='RM'>Ranch to Market - RM</option>
+                                    <option class='rte_pfx' value='RP'>Recreational Road Spur - RP</option>
+                                    <option class='rte_pfx' value='RR'>Ranch Road - RR</option>
+                                    <option class='rte_pfx' value='RS'>RM Spur - RS</option>
+                                    <option class='rte_pfx' value='RU'>RR Spur - RU</option>
+                                    <option class='rte_pfx' value='SA'>State Alternate - SA</option>
+                                    <option class='rte_pfx' value='SH'>State Highway - SH</option>
+                                    <option class='rte_pfx' value='SL'>State Loop - SL</option>
+                                    <option class='rte_pfx' value='SS'>State Spur - SS</option>
+                                    <option class='rte_pfx' value='UA'>US Alternate - UA</option>
+                                    <option class='rte_pfx' value='UP'>US Spur - UP</option>
+                                    <option class='rte_pfx' value='US'>US Highway - US</option>
+                                    <option class='rte_pfx' value='NA'>Not Applicable - NA</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td class="option_line">
+                            <div>
+                                <label for="rte_number">Route Number</label>
+                                <input type="text" class="form-control mkr_option" placeholder="XXXX + Suffix" id="rte_number" maxlength="5">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="option_line">
+                            <div>
+                                <label for="mkr_number">Marker Number</label>
+                                <input type="text" class="form-control mkr_option" placeholder="XXX" id="mkr_number" maxlength="3">
+                            </div>
+                        </td>
+                        <td class="option_line">
+                            <div>
+                                <label for="mkr_suffix">Marker Suffix</label>
+                                <select class="form-control mkr_option" id="mkr_suffix">
+                                    <option class='mkr_sfx' value=''>None</option>
+                                    <option class='mkr_sfx' value='A'>A</option>
+                                    <option class='mkr_sfx' value='B'>B</option>
+                                    <option class='mkr_sfx' value='C'>C</option>
+                                    <option class='mkr_sfx' value='D'>D</option>
+                                    <option class='mkr_sfx' value='E'>E</option>
+                                    <option class='mkr_sfx' value='F'>F</option>
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan=2 class="option_line"><button id="cmdCollectMarker" class="btn btn-default" value="Collect Marker" type="button">Collect Marker</button></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2><div style="font-weight: bold;"><hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;">  Options  <hr color="black" width="35%" style="display: inline-block; vertical-align:middle; height:3px;"></div></td>
+                    </tr>
+                    <tr>
+                        <td><button id="cmdClearMyStorage" class="btn btn-default" value="Clear Local Storage" type="button">Start Over</button></td>
+                        <td><button id="cmdDeleteLast" class="btn btn-default" value="Delete Last Point" type="button">Delete Last Point</button></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2><button id="cmdUploadData" class="btn btn-default" value="Upload Data" type="button">Upload Collected Data</button></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2><div id="uploadStatus" style="min-height: 80px;"></div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- <div id="divMap"></div> -->
+    </body>
+</html>

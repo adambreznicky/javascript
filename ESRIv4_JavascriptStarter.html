@@ -3,9 +3,9 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>TPP WebMap Template</title>
-        <link rel="stylesheet" href="https://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
-        <link rel="stylesheet" href="https://js.arcgis.com/3.14/esri/css/esri.css">
+        <title>Listen to Tom Waits.</title>
+        <link rel="stylesheet" href="https://js.arcgis.com/4.0/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="https://js.arcgis.com/4.0/esri/css/main.css">
         <style type="text/css">
             html, body, #divMap {
                 padding: 0;
@@ -14,20 +14,27 @@
             }
         </style>
         <script> var dojoConfig = {async: true};</script>
-        <script src="https://js.arcgis.com/3.14/"></script>
+        <script src="https://js.arcgis.com/4.0/"></script>
         <script>
-            require(["esri/map",
+            require(["esri/Map",
+                "esri/views/MapView",
                 "dojo/ready", 
                 "dojo/parser",
                 "dojo/domReady!"],
-            function(Map, ready, parser) {
+            function(Map, MapView, ready, parser) {
                 ready(function(){
                     parser.parse();
-                    var map = new Map("divMap", {
-                      center: [-100, 32],
-                      zoom: 7,
-                      basemap: "topo"
+                    var map = new Map({
+                        basemap: "topo"
                     });
+
+                    var view = new MapView({
+                        container: "divMap",
+                        map: map,
+                        zoom: 7,
+                        center: [-100, 32]
+                    });
+
                 });
             });
         </script>
