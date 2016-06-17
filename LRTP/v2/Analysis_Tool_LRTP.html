@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=EDGE">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+        <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+        <title>
+            Project Tracker Analysis - TxDOT, TPP-Data Management
+        </title>
+        <style type="text/css">
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            }
+            .infotableHeader
+            {
+              background-color: #5499C7;
+              color: white;
+              text-align: center;
+            }
+            #map {
+                float: bottom;
+                width: 600px;
+                height: 600px;
+                border-radius: 10px;
+                border-style: solid;
+                border-width: 1px;
+                border-color: gray;
+            }
+            #main {
+                width: 600px;
+                border-radius: 13px;
+                border-style: solid;
+                border-width: 1px;
+                border-color: gray;
+            }
+            #summary {
+                background-color: #E8E8E8;
+                text-align: center;
+                border-radius: 10px;
+                border-style: solid;
+                border-width: 1px;
+                border-color: gray;
+                position: relative;
+                top: 50px;
+                display: table;
+            }
+            .adminChild {
+                height: 35px;
+                width: 125px;
+                padding: 5px;
+            }
+            select {
+                background-color: #F0F0F0;
+            }
+            .steps {
+                color: white;
+                text-decoration: underline;
+                cursor: pointer;
+            }
+            .summaryTable {
+                padding: 15px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                text-align: left;
+            }
+            .spacer {
+                background-color: #E8E8E8;
+            }
+            th {
+                text-align: center;
+                font-size: 20px;
+                padding: 10px;
+                width:550px;
+            }
+            td {
+                padding: 10px;
+            }
+            /*tr:nth-child(odd) {*/
+            /*    background-color: #5499C7;*/
+            /*    color: white;*/
+            /*}*/
+            /*tr:nth-child(even) {*/
+            /*    background-color: #ffffff;*/
+            /*    color: #626567;*/
+            /*}            */
+            #header {
+                background-color: #5499C7;
+                color: white;
+                text-align: center;
+                padding: 5px;
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
+                font-size: 20px;
+            }
+            #options {
+                background-color: #E8E8E8;
+                display: flex;
+                height: 200px;
+                justify-content: center;
+                align-items: center;
+                padding: 10px;
+                flex-direction: column;
+                font-size: 18px;
+            }
+            #footer {
+                background-color: #5499C7;
+                color: white;
+                text-align: center;
+                padding: 5px;
+                border-bottom-left-radius: 10px;
+                border-bottom-right-radius: 10px;
+                font-size: 17px;
+            }
+
+        </style>
+        <script src="http://js.arcgis.com/3.14/"></script>
+        <script type="text/javascript">
+          var map;
+          var activeLayer;
+
+         var theQuery;
+
+
+    	  var theTotalErrorsOn = 0;
+    	  var theTotalErrorsOff = 0;
+
+
+          require(["esri/map",
+              "esri/layers/ArcGISTiledMapServiceLayer",
+              "esri/geometry/Extent",
+		      "esri/geometry/webMercatorUtils",
+		      "esri/geometry/geodesicUtils",
+		      "esri/tasks/StatisticDefinition",
+		      "esri/tasks/query",
+		      "esri/tasks/QueryTask",
+              "dojo/domReady!"], function(Map,Tiled,Extent,webMercatorUtils,geodesicUtils,StatisticDefinition,Query,QueryTask) {
+
+                 map = new Map("map", {minZoom:6, maxZoom:15});
+		         tiled = new Tiled("http://tiles.arcgis.com/tiles/KTcxiTD9dsQw4r7Z/arcgis/rest/services/Statewide_Planning_Map/MapServer");
+		         map.addLayer(tiled);
+
+        		 map.on("load", function() {
+        			map.disableScrollWheelZoom();
+        		 });
+
+		         var theExtent = new esri.geometry.Extent(-107,25.27,-93,37.27, new esri.SpatialReference({ wkid: 4269 }));
+		         map.setExtent(esri.geometry.geographicToWebMercator(theExtent));
+		         addProjectLayer();
+		         //addSearchLayers();
+		         //incrementStep(0);
+		         //document.getElementById("spnAreas").style.color = "black";
+          });
+
+      	//Info window data
+      	var tableText = "";
+      	tableText += "<table border=1 cellspacing=0 cellpadding=3 style='font-size:small'>";
+      	tableText += "<tr><td>HIGHWAY</td><td>${HIGHWAY_NUMBER}</td></tr>";
+      	tableText += "<tr><td>CSJ</td><td>${CONTROL_SECT_JOB}</td></tr>";
+      	tableText += "<tr><td>District</td><td>${DISTRICT_NAME}</td></tr>";
+      	tableText += "<tr><td>County</td><td>${COUNTY_NAME}</td></tr>";
+      	tableText += "<tr><td>Project Class</td><td>${PROJ_CLASS}</td></tr>";
+      	tableText += "<tr><td>Type of Work</td><td>${TYPE_OF_WORK}</td></tr>";
+      	tableText += "<tr><td>Layman Description</td><td>${LAYMAN_DESCRIPTION1}</td></tr>";
+      	tableText += "<tr><td>Construction Cost</td><td>${EST_CONST_COST:NumberFormat(places:0)}</td></tr>";
+      	tableText += "<tr><td>Year</td><td>${NBR_LET_YEAR}</td></tr>";
+      	//tableText += "<tr><td>Month</td><td>${NBR_LET_MONTH}</td></tr>";
+      	//tableText += "<tr><td>AADT</td><td>${PRJ_AADT:NumberFormat(places:0)}</td></tr>";
+      	//tableText += "<tr><td>AADT Truck</td><td>${PRJ_AADT_TRUCK:NumberFormat(places:0)}</td></tr>";
+    //   	tableText += "<tr><td>VMT</td><td>${VMT}</td></tr>";
+    //   	tableText += "<tr><td>Strategic Score</td><td>${UTP_STRATEGIC_SCORE:NumberFormat(places:0)}</td></tr>";
+    //   	tableText += "<tr><td>Total Score</td><td>${UTP_TOTAL_SCORE:NumberFormat(places:0)}</td></tr>";
+      	tableText += "</table>";
+
+        var theOutFields = ['HIGHWAY_NUMBER',
+        'CONTROL_SECT_JOB',
+        'DISTRICT_NAME',
+        'COUNTY_NAME',
+        'TYPE_OF_WORK',
+        'LAYMAN_DESCRIPTION1',
+        'PROJ_CLASS',
+        'EST_CONST_COST',
+        'PROJ_LENGTH',
+        'TRUNK_SYS',
+        'ALT_RTE',
+        'NATL_FRT',
+        'PHFS_FRT',
+        'PRMRY_FRT',
+        'SCNDRY_FRT',
+        'ENRGY_SCTR',
+        'EVAC_ROUTE',
+        'EVAC_CNTRA',
+        'EVAC_LANE',
+        'PRT_TO_PLN',
+        'KEY_COR',
+        'SPR_2',
+        'PROP_SPR_2'];
+
+        function addProjectLayer() {
+          		var infoTemplate = new esri.InfoTemplate("LRTP Project:",tableText);
+          		//var projectsUrl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/TxDOT_Projects/FeatureServer/0";
+              var projectsUrl = "http://services.arcgis.com/KTcxiTD9dsQw4r7Z/arcgis/rest/services/LRTP_Projects/FeatureServer/0";
+
+          		projectLyr = new esri.layers.FeatureLayer(projectsUrl, {id:"Projects",visible: true, outFields: theOutFields, infoTemplate: infoTemplate});
+          		map.addLayer(projectLyr);
+          		activeLayer = projectLyr;
+          		//activeLayer.setDefinitionExpression("OBJECTID<0");
+        }
+
+
+
+        function search() {
+
+            //Display note that query is running
+            document.getElementById("summary").innerHTML = "&nbsp;Searching for projects.....&nbsp;";
+
+
+            //LRTP Projects
+            var trunkString;
+            var altRteString;
+            var evacRouteString;
+            var evacCntraString;
+            var evacLaneString;
+            var prtToPlnString;
+            var keyCorString;
+            var energySctrString;
+            var spr2String;
+            var propSpr2String;
+            var prmryFrtString;
+            var scndryFrtString;
+            var natlFrtString;
+            var phfsString;
+
+
+            if (document.getElementById("trunkSystem").checked){
+              trunkString = "Yes";
+            }
+
+            if (document.getElementById("altRoute").checked){
+              altRteString = "Yes";
+            }
+
+            if (document.getElementById("evacRoute").checked){
+              evacRouteString = "Yes";
+            }
+
+            if (document.getElementById("contraflow").checked){
+              evacCntraString = "Yes";
+            }
+
+            if (document.getElementById("evacLane").checked){
+              evacLaneString = "Yes";
+            }
+
+            if (document.getElementById("portsToPlains").checked){
+              prtToPlnString = "Yes";
+            }
+
+            if (document.getElementById("keyCorridor").checked){
+              keyCorString = "Yes";
+            }
+
+            if (document.getElementById("energySector").checked){
+              energySctrString = "Yes";
+            }
+
+            if (document.getElementById("super2Lane").checked){
+              spr2String = "Yes";
+            }
+
+            if (document.getElementById("proposedSuper2").checked){
+              propSpr2String = "Yes";
+            }
+
+            if (document.getElementById("primaryFreight").checked){
+              prmryFrtString = "Yes";
+            }
+
+            if (document.getElementById("secondaryFreight").checked){
+              scndryFrtString = "Yes";
+            }
+
+            if (document.getElementById("natlFreight").checked){
+              natlFrtString = "Yes";
+            }
+
+            if (document.getElementById("phfsFreight").checked){
+              phfsString = "Yes";
+            }
+
+
+            theQuery = "TRUNK_SYS = '"+ trunkString +"' OR ALT_RTE = '"+ altRteString +"' OR NATL_FRT = '"+ natlFrtString +"' OR PHFS_FRT = '"+ phfsString +"' OR PRMRY_FRT = '"+ prmryFrtString +"' OR SCNDRY_FRT = '"+ scndryFrtString +"' OR ENRGY_SCTR = '"+ energySctrString +"' OR EVAC_ROUTE = '"+ evacRouteString +"' OR EVAC_CNTRA = '"+ evacCntraString +"' OR EVAC_LANE = '"+ evacLaneString +"' OR PRT_TO_PLN = '"+ prtToPlnString +"' OR KEY_COR = '"+ keyCorString +"' OR SPR_2 = '"+ spr2String +"' OR PROP_SPR_2 = '"+ propSpr2String +"'";
+
+
+
+            activeLayer.setDefinitionExpression(theQuery);
+            //zeroLengthOn("Shape_Length=0 and HIGHWAY_NUMBER NOT IN ('VA','CR','CS')");
+            //zeroLengthOff("Shape_Length=0 and HIGHWAY_NUMBER IN ('VA','CR','CS')");
+            queryAttributes(theQuery);
+        }
+
+        function resetChoices() {
+
+
+            //LRTP
+            document.getElementById("trunkSystem").checked = false;
+            document.getElementById("altRoute").checked = false;
+            document.getElementById("natlFreight").checked = false;
+            document.getElementById("phfsFreight").checked = false;
+            document.getElementById("primaryFreight").checked = false;
+            document.getElementById("secondaryFreight").checked = false;
+            document.getElementById("energySector").checked = false;
+            document.getElementById("evacRoute").checked = false;
+            document.getElementById("contraflow").checked = false;
+            document.getElementById("evacLane").checked = false;
+            document.getElementById("portsToPlains").checked = false;
+            document.getElementById("keyCorridor").checked = false;
+            document.getElementById("super2Lane").checked = false;
+            document.getElementById("proposedSuper2").checked = false;
+        }
+
+
+
+    	//Zoom to District Extent
+
+
+    	function spatialQueryAttributes(theGeom) {
+    		var query = new esri.tasks.Query();
+    		query.geometry = theGeom;
+    		query.returnGeometry = false;
+    		query.outFields = ["EST_CONST_COST","UTP_TOTAL_FUNDING_AVAILABLE","Shape_Length","PRJ_AADT","PRJ_AADT_TRUCK","VMT","FATAL_COUNT","CRASH_COUNT"];
+    // 		query.where = theQuery;
+    		activeLayer.queryIds(query, function (objectIds) {
+    			if (objectIds.length>0) {
+    				getProjectAttributes(objectIds);
+    			}
+    			else {
+    				//document.getElementById("tableResults").innerHTML = "No projects were found.  Please choose another area or project.";
+    				alert("No projects were found.  Please choose another area.");
+    			}
+    		});
+    	}
+
+    	function zoomTo(theX,theY,theZ) {
+    	  var thePt = new esri.geometry.Point(theX,theY, new esri.SpatialReference({ wkid: 4269 }));
+    	  map.centerAndZoom(esri.geometry.geographicToWebMercator(thePt),theZ);
+    	}
+
+        function removeOptions(selectbox) {
+            var i;
+            for(i=selectbox.options.length-1;i>=0;i--) {
+                selectbox.remove(i);
+            }
+        }
+
+    	function queryAttributes(theQuery) {
+    		var query = new esri.tasks.Query();
+    		query.returnGeometry = false;
+    		query.where = theQuery;
+    		activeLayer.queryIds(query, function (objectIds) {getProjectAttributes(objectIds)});
+    	}
+
+    	function getProjectAttributes(theIDs) {
+            var query = new esri.tasks.Query();
+            query.objectIds = theIDs.slice();
+            query.outFields = ["EST_CONST_COST","UTP_TOTAL_FUNDING_AVAILABLE","Shape_Length","PRJ_AADT","PRJ_AADT_TRUCK","VMT","FATAL_COUNT","CRASH_COUNT"];
+
+    		activeLayer.queryFeatures(query, function (featureSet) {
+    			showResults(featureSet);
+    		});
+    	}
+
+    	// function zeroLengthOn(theQuery) {
+    	//     theTotalErrorsOn=0;
+    	// 	var query = new esri.tasks.Query();
+    	// 	query.returnGeometry = false;
+    	// 	query.where = theQuery;
+    	// 	activeLayer.queryIds(query, function (objectIds) {
+    	// 		theTotalErrorsOn = objectIds.length;
+    	// 	});
+    	// }
+
+    	// function zeroLengthOff(theQuery) {
+    	//     theTotalErrorsOff=0;
+    	// 	var query = new esri.tasks.Query();
+    	// 	query.returnGeometry = false;
+    	// 	query.where = theQuery;
+    	// 	activeLayer.queryIds(query, function (objectIds) {
+    	// 		theTotalErrorsOff = objectIds.length;
+    	// 	});
+    	// }
+
+        function showResults(results) {
+            // var stAADT = 0;
+            // var stTrkAADT = 0;
+            // var stAvgCost = 0;
+            // var stCenterlineMiles = 0;
+            // var stFunding = 0;
+            // var stConstCost = 0;
+            // var stProjects = 0;
+            // var stCrash = 0;
+            // var stFatalCrash = 0;
+            // var summaryTableText = "";
+
+            // var resultItems = [];
+            // var resultCount = results.features.length;
+            // stProjects = resultCount;
+
+            // for (var i = 0; i < resultCount; i++) {
+            //     var featureAttributes = results.features[i].attributes;
+            //     stConstCost = stConstCost + featureAttributes.EST_CONST_COST;
+            //     stFunding = stFunding + featureAttributes.UTP_TOTAL_FUNDING_AVAILABLE;
+            //     stCenterlineMiles = stCenterlineMiles + featureAttributes.Shape_Length;
+            //     stCrash = stCrash + featureAttributes.CRASH_COUNT;
+            //     stFatalCrash = stFatalCrash + featureAttributes.FATAL_COUNT;
+            //     stAADT = stAADT + featureAttributes.PRJ_AADT;
+            //     stTrkAADT = stTrkAADT + featureAttributes.PRJ_AADT_TRUCK;
+            // }
+
+            //Query
+            summaryTableText += "<table class='summaryTable'>";
+            //Results
+            summaryTableText += "<tr class='infotableHeader'><th colspan=2>Results</th></tr>";
+            summaryTableText += "<tr><td><b>Projects</b></td><td>" + addCommas(stProjects) + "</td></tr>";
+            summaryTableText += "<tr><td><b>Unmapped Projects</b></td><td>On System: " + addCommas(theTotalErrorsOn) + "<br>Off System: " + addCommas(theTotalErrorsOff) + "</td></tr>";
+            summaryTableText += "<tr><td><b>Est. Construction Cost</b></td><td>$" + addCommas(Math.round(stConstCost)) + "</td></tr>";
+            summaryTableText += "<tr><td><b>Est. Funding</b></td><td>$" + addCommas(Math.round(stFunding)) + "</td></tr>";
+            summaryTableText += "<tr><td><b>Avg. Project Cost</b></td><td>$" + addCommas(Math.round(stConstCost/stProjects)) + "</td></tr>";
+            summaryTableText += "<tr><td><b>Est. Centerline Miles</b></td><td>" + addCommas(Math.round(stCenterlineMiles/1609.344)) + "</td></tr>";
+
+            //Spacer
+            summaryTableText += "<tr><td class='spacer' colspan=2>&nbsp;</td></tr>";
+
+            //Search Criteria
+            summaryTableText += "<tr class='infotableHeader'><th colspan=2>Search Criteria</th></tr>";
+            summaryTableText += "<tr><td><b>Area</b></td><td>" + document.getElementById("areaOptions").value + "</td></tr>";
+            summaryTableText += "<tr><td><b>From Fiscal Year</b></td><td>" + document.getElementById("fromYear").value + "</td></tr>";
+            summaryTableText += "<tr><td><b>To Fiscal Year</b></td><td>" + document.getElementById("toYear").value + "</td></tr>";
+            summaryTableText += "<tr><td><b>Project Types</b></td><td>" + typeString.replace(/,/g,"<br>") + "</td></tr>";
+            summaryTableText += "<tr><td><b>Project Phases</b></td><td>" + phaseString.replace(/,/g,"<br>") + "</td></tr>";
+            summaryTableText += "<tr><td><b>Min. Construction Cost</b></td><td>$" + addCommas(document.getElementById("fromAmount").value) + "</td></tr>";
+            summaryTableText += "<tr><td><b>Max. Construction Cost</b></td><td>$" + addCommas(document.getElementById("toAmount").value) + "</td></tr>";
+
+
+            // summaryTableText += "<tr><td>Avg. AADT</td><td>" + addCommas(Math.round(stAADT/stProjects)) + "</td></tr>";
+            // summaryTableText += "<tr><td>Avg. Truck AADT</td><td>" + addCommas(Math.round(stTrkAADT/stProjects)) + "</td></tr>";
+            // summaryTableText += "<tr><td>Avg. Vehicle Miles Traveled</td><td>" + addCommas(Math.round((stCenterlineMiles/1609.344)*(stAADT/stProjects))) + "</td></tr>";
+            // summaryTableText += "<tr><td>Avg. Crashes</td><td>" + addCommas(Math.round(stCrash/stProjects)) + "</td></tr>";
+            // summaryTableText += "<tr><td>Avg. Fatal Crashes</td><td>" + addCommas(Math.round(stFatalCrash/stProjects)) + "</td></tr>";
+            summaryTableText += "</table>";
+
+            //Writing output to the page
+            document.getElementById("summary").innerHTML = summaryTableText;
+        }
+
+    	function addCommas(nStr) {
+    	  nStr += '';
+    	  x = nStr.split('.');
+    	  x1 = x[0];
+    	  x2 = x.length > 1 ? '.' + x[1] : '';
+    	  var rgx = /(\d+)(\d{3})/;
+    	  while (rgx.test(x1)) {
+    		x1 = x1.replace(rgx, '$1' + ',' + '$2');
+    	  }
+    	  return x1 + x2;
+    	}
+        </script>
+    </head>
+    <body>
+        <div id="main">
+            <div id="header">
+                <span id="label"></span>
+            </div>
+            <div id="options">
+                <div id="lrtp">
+                  <div style="float:left;">
+                    <input type="checkbox" id="trunkSystem" name="trunkSystem" value="Yes"> Trunk System
+                    <br>
+                    <input type="checkbox" id="altRoute" name="altRoute" value="Yes"> Alternate Route                    
+                    <br>                    
+                    <input type="checkbox" id="evacRoute" name="evacRoute" value="Yes"> Evacuation Route
+                    <br>
+                    <input type="checkbox" id="contraflow" name="contraflow" value="Yes"> Contraflow Lane
+                    <br>
+                    <input type="checkbox" id="evacLane" name="evacLane" value="Yes"> Evacuation Lane
+                  </div>
+                  <div style="float:left;">
+                    <input type="checkbox" id="portsToPlains" name="portsToPlains" value="Yes"> Ports to Plains
+                    <br>
+                    <input type="checkbox" id="keyCorridor" name="keyCorridor" value="Yes"> Key Corridor
+                    <br>
+                    <input type="checkbox" id="energySector" name="energySector" value="Yes"> Energy Sector
+                    <br>
+                    <input type="checkbox" id="super2Lane" name="super2Lane" value="Yes"> Super 2
+                    <br>
+                    <input type="checkbox" id="proposedSuper2" name="proposedSuper2" value="Yes"> Proposed Super 2
+                  </div>
+                  <div style="float:left;">
+                    <input type="checkbox" id="primaryFreight" name="primaryFreight" value="Yes"> TX Primary Freight Network
+                    <br>
+                    <input type="checkbox" id="secondaryFreight" name="secondaryFreight" value="Yes"> TX Secondary Freight Network
+                    <br>
+                    <input type="checkbox" id="natlFreight" name="natlFreight" value="Yes"> Natl Highway Freight Network
+                    <br>
+                    <input type="checkbox" id="phfsFreight" name="phfsFreight" value="Yes"> Primary Highway Freight System                    
+                  </div>             
+                </div>      
+            </div>
+            <div id="footer">
+                <span id="spnlrtp" class="steps" onclick="this.style.color='black'">LRTP</span>
+                &nbsp;&nbsp;<span id="reset" class="steps" onclick="resetChoices()">Reset</span>
+                &nbsp;&nbsp;-&nbsp;&nbsp;<span id="go" class="steps" onclick="search()">Search</span>
+            </div>
+        </div>
+        <br>
+        <br>
+        <div id="map"></div>
+        <!-- <div id="tppLegend"><img src="http://apps.dot.state.tx.us/apps-cq/project_tracker/img/legend.png" alt="Project Legend" border=1/></div> -->
+        <div id="summary">
+            &nbsp;Search results will be displayed here.&nbsp;
+        </div>
+    </body>
+</html>
