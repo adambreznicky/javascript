@@ -4,8 +4,11 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Listen to Tom Waits.</title>
-        <link rel="stylesheet" href="https://js.arcgis.com/4.0/dijit/themes/claro/claro.css">
-        <link rel="stylesheet" href="https://js.arcgis.com/4.0/esri/css/main.css">
+
+        <link rel="stylesheet" href="http://js.arcgis.com/4.0/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/4.0/esri/css/main.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
         <style type="text/css">
             html, body, #divMap {
                 padding: 0;
@@ -13,33 +16,72 @@
                 height: 100%;
             }
         </style>
-        <script> var dojoConfig = {async: true};</script>
-        <script src="https://js.arcgis.com/4.0/"></script>
+
+      <script>
+        var dojoConfig = {
+          async:true, 
+         
+          packages: [
+            {
+              name: "jquery",
+              location: "https://code.jquery.com/",
+              main: "jquery-2.2.4.min"
+            },
+            {
+              name: "jqueryui",
+              location: "https://code.jquery.com/ui/1.11.4/",
+              main: "jquery-ui.min"
+            },
+            {
+              name: "bootstrap",
+              location: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/",
+              main: "bootstrap.min"
+            }
+          ]
+        }
+      </script>
+        <script src="http://js.arcgis.com/4.0/">
+        </script>
+
         <script>
-            require(["esri/Map",
+          var map, view;
+            
+         
+          
+          require([
+                "jquery",
+                "jqueryui",
+                
+                "esri/Map",
                 "esri/views/MapView",
-                "dojo/ready", 
-                "dojo/parser",
+                "bootstrap",
                 "dojo/domReady!"],
-            function(Map, MapView, ready, parser) {
-                ready(function(){
-                    parser.parse();
-                    var map = new Map({
+            function($, $ui,
+                    Map, MapView, bootstrap) {
+            
+              
+            
+             var map = new Map({
                         basemap: "topo"
                     });
-
                     var view = new MapView({
                         container: "divMap",
                         map: map,
                         zoom: 7,
                         center: [-100, 32]
                     });
-
-                });
-            });
+          });
+            
+            
+            
+            
+          
         </script>
     </head>
     <body class="claro">
-        <div id="divMap"></div>
+      <button class="btn btn-default" style="left:20px; top: 50px;">howdy</button>
+        <div id="divMap">
+          
+        </div>
     </body>
 </html>
