@@ -30,8 +30,8 @@ from arcpy import env
 
 # variables
 remove_fields = ["created_user", "created_date", "last_edited_user", "last_edited_date", "GRID_OP", "CREATE_DT", "CREATE_NM", "EDIT_DT", "EDIT_NM", "OGEOMS", "EDIT_TYPE", "ETL_JOB_ID", "ETL_STAT", "GSC", "CreationDate", "Creator", "EditDate", "Editor"]
-local_fgdb = r"C:\TxDOT\Scripts\javascript\OpenData\PublishOfficialServices_Project\test.gdb"
-feature_class_name = "road_test"
+local_fgdb = r"C:\TxDOT\Scripts\javascript\OpenData\PublishOfficialServices_Project\Adam.gdb"
+feature_class_name = "Texas_Urbanized_Area_Boundaries"
 
 env.workspace = local_fgdb
 now = datetime.datetime.now()
