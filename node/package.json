@@ -1,0 +1,21 @@
+{
+  "name": "brez",
+  "version": "1.2.1",
+  "description": "ugly",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "none"
+  },
+  "keywords": [
+    "poop"
+  ],
+  "author": "me",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.14.0"
+  }
+}
