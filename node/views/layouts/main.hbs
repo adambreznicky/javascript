@@ -1,8 +1,10 @@
-<html>  
+<html ng-app>  
   <head>
     <title>Express handlebars</title>
   </head>
   <body>
-    {{{body}}}
+    {{!--{{{body}}}--}}
+    <input ng-model="name"> Hello {{ name }}
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>
   </body>
 </html>

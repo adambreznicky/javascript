@@ -1,0 +1,31 @@
+<html ng-app="catalog">  
+  <head>
+    <title>Angular</title>
+  </head>
+  <body ng-controller="TodoController">
+    <input ng-model="name"> Hello {{ name }}
+    <button onclick="makeAlert()">SHIT!!</button>
+    <ul>
+        <li ng-repeat="todo in todos">
+            <input type="checkbox" ng-model="todo.completed"> {{ todo.name }}
+        </li>
+    </ul>
+    // <script>
+    //     var angular = require('./node_modules/angular/index.js');
+    //     angular.module('catalog', [])
+    //       .controller('TodoController', ['$scope', function ($scope) {
+    //         $scope.todos = [
+    //           { title: 'Learn Javascript', completed: true },
+    //           { title: 'Learn Angular.js', completed: false },
+    //           { title: 'Love this tutorial', completed: true },
+    //           { title: 'Learn Javascript design patterns', completed: false },
+    //           { title: 'Build Node.js backend', completed: false },
+    //         ];
+    //       }]);
+    // </script>
+    
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>-->
+    <script src="./sandbox.js"></script>
+    <script src="./angular/index.js"></script>
+  </body>
+</html>
