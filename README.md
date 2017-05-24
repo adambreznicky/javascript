@@ -1,4 +1,4 @@
-# javascript
+# smudge space: javascript
 
 Collection of various simple, single page JS apps, templates, and code snippets from my tenure at TxDOT. Random code snippets and sample functionality for team projects. Apps heavily utilized ESRI's JS api for geospatial data collection, processing, and manipulation for point and linear feature sets. Largely experimental, exploratory, educational, testing ground. 
 
